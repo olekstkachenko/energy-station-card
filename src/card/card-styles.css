@@ -1,0 +1,706 @@
+:host {
+  display: block;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #e2e8f0;
+  user-select: none;
+  --es-bg: #050b14;
+  --es-card-bg: #08101e;
+  --es-panel-bg: rgba(11, 20, 37, 0.85);
+  --es-border: rgba(255, 255, 255, 0.08);
+  --es-solar: #fbbf24;
+  --es-battery: #10b981;
+  --es-grid: #38bdf8;
+  --es-inverter: #f97316;
+  --es-load: #06b6d4;
+  --es-aux: #c084fc;
+}
+
+.energy-station-container {
+  background-color: var(--es-bg);
+  color: #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--es-border);
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 16px 20px 16px;
+  transition: all 0.3s ease;
+}
+
+.es-mono {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Energy Flow Canvas & Conduit Network */
+.es-energy-flow-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 1;
+}
+
+.flow-track {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.flow-pulse {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 10 14;
+  transition: opacity 0.35s ease, stroke 0.35s ease;
+}
+
+.flow-pulse.flow-forward {
+  animation: esFlowForward var(--flow-speed, 1.2s) linear infinite;
+}
+
+.flow-pulse.flow-reverse {
+  animation: esFlowBackward var(--flow-speed, 1.2s) linear infinite;
+}
+
+.flow-pulse.flow-grid {
+  stroke: #38bdf8;
+  filter: drop-shadow(0 0 6px #0284c7) drop-shadow(0 0 2px #38bdf8);
+}
+
+.flow-pulse.flow-solar {
+  stroke: #fbbf24;
+  filter: drop-shadow(0 0 6px #d97706) drop-shadow(0 0 2px #fde047);
+}
+
+.flow-pulse.flow-load {
+  stroke: #22d3ee;
+  filter: drop-shadow(0 0 6px #0891b2) drop-shadow(0 0 2px #67e8f9);
+}
+
+.flow-pulse.flow-battery.charging {
+  stroke: #34d399;
+  filter: drop-shadow(0 0 6px #059669) drop-shadow(0 0 2px #6ee7b7);
+}
+
+.flow-pulse.flow-battery.discharging {
+  stroke: #f87171;
+  filter: drop-shadow(0 0 6px #dc2626) drop-shadow(0 0 2px #fca5a5);
+}
+
+.flow-pulse.flow-car {
+  stroke: #38bdf8;
+  filter: drop-shadow(0 0 6px #0284c7) drop-shadow(0 0 2px #38bdf8);
+}
+
+.flow-pulse.flow-wind {
+  stroke: #06b6d4;
+  filter: drop-shadow(0 0 6px #0891b2) drop-shadow(0 0 2px #67e8f9);
+}
+
+.flow-pulse.inactive {
+  opacity: 0;
+  animation: none !important;
+}
+
+@keyframes esFlowForward {
+  from { stroke-dashoffset: 48; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes esFlowBackward {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: 48; }
+}
+
+/* Animations & Flows */
+.flow-line {
+  stroke-dasharray: 6 8;
+  animation: esDashflow var(--flow-speed, 1.2s) linear infinite;
+}
+
+.flow-line-reverse {
+  stroke-dasharray: 6 8;
+  animation: esDashflowRev var(--flow-speed, 1.2s) linear infinite;
+}
+
+@keyframes esDashflow {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+
+@keyframes esDashflowRev {
+  to {
+    stroke-dashoffset: 28;
+  }
+}
+
+/* Glow filters */
+.glow-solar {
+  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.45));
+}
+.glow-battery {
+  filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.45));
+}
+.glow-grid {
+  filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.45));
+}
+.glow-inverter {
+  filter: drop-shadow(0 0 14px rgba(249, 115, 22, 0.45));
+}
+.glow-aux {
+  filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.45));
+}
+.glow-wind {
+  filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.55));
+}
+
+/* Wind Turbine Rotor Spin Animation */
+@keyframes esSpinTurbine {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.turbine-rotor {
+  transform-origin: 12px 10px;
+  transition: transform 0.4s ease;
+}
+
+.turbine-rotor.spinning {
+  animation: esSpinTurbine var(--turbine-speed, 1.5s) linear infinite;
+}
+
+/* Interactive Card Elements */
+.clickable-node {
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.clickable-node:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.12);
+}
+.clickable-node:active {
+  transform: translateY(0);
+}
+
+/* Header */
+.es-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.es-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #f59e0b;
+  letter-spacing: -0.02em;
+}
+
+.es-header-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.es-header-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.es-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+/* Sections Layout */
+.es-solar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.es-sun-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.es-sun-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+  margin-bottom: 4px;
+}
+
+.es-pv-grid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  padding: 2px 0;
+}
+
+.es-pv-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 12px;
+  background: rgba(14, 23, 42, 0.85);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 12px;
+  min-width: 84px;
+  transition: all 0.2s ease;
+}
+
+.es-pv-top-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 2px;
+}
+
+.es-pv-label {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.es-pv-val {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fbbf24;
+}
+
+.es-pv-metrics {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 3px;
+  padding-top: 3px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  width: 100%;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.es-pv-metrics span.volt {
+  color: #38bdf8;
+  font-weight: 600;
+}
+.es-pv-metrics span.sep {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 8px;
+}
+.es-pv-metrics span.curr {
+  color: #34d399;
+  font-weight: 600;
+}
+
+/* Solar Bus Trunk */
+.es-bus-container {
+  width: 100%;
+  max-width: 860px;
+  height: 26px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Center Tri-Col Hub */
+.es-hub-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr 1fr;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+  max-width: 1100px;
+  margin: 4px auto 12px auto;
+  position: relative;
+}
+
+@media (max-width: 820px) {
+  .es-hub-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+/* Wing columns */
+.es-wing-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.es-wing-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+@media (max-width: 820px) {
+  .es-wing-left, .es-wing-right {
+    align-items: center;
+  }
+}
+
+/* Nodes */
+.es-node-box {
+  background: var(--es-panel-bg);
+  border-radius: 14px;
+  padding: 10px 14px;
+  box-sizing: border-box;
+  width: 190px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.es-inverter-card {
+  width: 230px;
+  padding: 14px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #18233a 0%, #0d1628 100%);
+  border: 2px solid rgba(249, 115, 22, 0.7);
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  margin: 0 auto;
+}
+
+.es-inverter-model-tag {
+  position: absolute;
+  top: -11px;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  background: #090e1a;
+  border: 1px solid rgba(249, 115, 22, 0.6);
+  color: #fdba74;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.es-inverter-status-badge {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin: 4px 0 8px 0;
+}
+
+.es-aux-box {
+  margin-top: 12px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: rgba(88, 28, 135, 0.35);
+  border: 1px solid rgba(192, 132, 252, 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 175px;
+}
+
+/* Multi Wind Turbines Station */
+.es-wind-station {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  width: 100%;
+  max-width: 440px;
+  position: relative;
+  z-index: 5;
+}
+
+.es-wind-pods-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.es-wind-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: rgba(8, 47, 73, 0.35);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  color: #94a3b8;
+}
+
+.es-turbine-card {
+  flex: 1;
+  min-width: 135px;
+  max-width: 195px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: rgba(8, 47, 73, 0.45);
+  border: 1px solid rgba(6, 182, 212, 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.25s ease;
+}
+
+.es-turbine-card:hover {
+  border-color: #22d3ee;
+  transform: translateY(-2px);
+}
+
+/* Sub-loads grid */
+.es-subloads-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.es-subload-card {
+  padding: 6px 10px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 78px;
+  text-align: center;
+}
+
+/* Battery section */
+.es-battery-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.es-master-battery-hub {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 12px 24px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, rgba(6, 78, 59, 0.25) 0%, rgba(15, 23, 42, 0.7) 50%, rgba(6, 78, 59, 0.25) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.es-battery-rack {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+}
+
+.es-battery-pack-card {
+  padding: 8px 12px;
+  background: rgba(14, 23, 42, 0.85);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 148px;
+  transition: all 0.25s ease;
+  position: relative;
+}
+.es-battery-pack-card:hover {
+  border-color: #34d399;
+  transform: translateY(-2px);
+}
+.es-bat-temp {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fb7185;
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.es-bat-main-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+.es-bat-soc-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.es-bat-soc-val {
+  font-size: 22px;
+  font-weight: 900;
+  color: #f1f5f9;
+  line-height: 1;
+}
+.es-bat-name {
+  font-size: 9px;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.es-battery-gauge {
+  width: 26px;
+  height: 46px;
+  border: 2px solid #fb7185;
+  border-radius: 5px;
+  padding: 2px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2px;
+  position: relative;
+  background: rgba(0, 0, 0, 0.4);
+}
+.es-battery-gauge-nipple {
+  position: absolute;
+  top: -6px;
+  left: 6px;
+  width: 10px;
+  height: 4px;
+  background: #fb7185;
+  border-radius: 2px 2px 0 0;
+}
+.es-battery-gauge-body {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+}
+.es-bat-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  transition: background 0.3s;
+}
+.es-bat-bar.active-red { background: #ef4444; }
+.es-bat-bar.active-orange { background: #f97316; }
+.es-bat-bar.active-yellow { background: #eab308; }
+.es-bat-bar.active-green { background: #10b981; }
+
+.es-bat-telemetry-badge {
+  background: rgba(8, 13, 25, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 4px 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 10px;
+  text-align: right;
+}
+.es-bat-telemetry-badge .volt {
+  color: #f1f5f9;
+  font-weight: 700;
+}
+.es-bat-telemetry-badge .curr {
+  color: #38bdf8;
+  font-weight: 700;
+}
+.es-bat-telemetry-badge .power {
+  color: #34d399;
+  font-weight: 800;
+}
+.es-bat-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 10px;
+}
+.es-bat-state-tag {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.es-bat-state-tag.charge {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+.es-bat-state-tag.discharge {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+.es-bat-kwh {
+  color: #cbd5e1;
+  font-weight: 600;
+}

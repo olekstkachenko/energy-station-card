@@ -1,0 +1,26 @@
+{
+  "name": "energy-station-ha",
+  "version": "1.0.0",
+  "description": "Energy Station Dashboard & Custom Card for Home Assistant (Deye / SunSynk / Hybrid Inverter)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && npm run build:card",
+    "build:card": "vite build --config vite.card.config.js",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "home-assistant",
+    "lovelace",
+    "custom-card",
+    "deye",
+    "sunsynk",
+    "energy-flow",
+    "solar"
+  ],
+  "author": "Antigravity",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^5.2.8"
+  }
+}
