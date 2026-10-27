@@ -1093,6 +1093,10 @@ export class EnergyStationCard extends HTMLElement {
                 <div class="es-inverter-title">Гібридний інвертор</div>
                 <div class="es-mono es-inverter-power" id="inverterPowerVal">8,000 кВт</div>
                 <div class="es-inverter-status-badge" id="inverterStatusBadge">ПРАЦЮЄ</div>
+                <div class="es-inverter-self-consumption es-mono" id="inverterSelfConsumptionBox" style="display: ${c.inverter?.show_self_consumption !== false ? 'flex' : 'none'}; align-items: center; justify-content: center; gap: 4px; margin-top: 5px; padding: 2px 7px; border-radius: 6px; background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.35); font-size: 10px; color: #fdba74;">
+                  <span style="color: #94a3b8;">⚡ Власне:</span>
+                  <span id="inverterSelfConsumptionVal" style="font-weight: 700; color: #fb923c;">0 Вт</span>
+                </div>
               </div>
 
               <!-- Right Telemetry: Voltage & Current -->
@@ -1232,6 +1236,8 @@ export class EnergyStationCard extends HTMLElement {
       inverterModelTag: root.getElementById('inverterModelTag'),
       inverterPowerVal: root.getElementById('inverterPowerVal'),
       inverterStatusBadge: root.getElementById('inverterStatusBadge'),
+      inverterSelfConsumptionBox: root.getElementById('inverterSelfConsumptionBox'),
+      inverterSelfConsumptionVal: root.getElementById('inverterSelfConsumptionVal'),
       inverterVolt: root.getElementById('inverterVolt'),
       inverterCurrent: root.getElementById('inverterCurrent'),
       inverterFreq: root.getElementById('inverterFreq'),
@@ -1468,6 +1474,12 @@ export class EnergyStationCard extends HTMLElement {
     root.getElementById('inverterNode')?.addEventListener('click', () => {
       this._fireMoreInfo(c.inverter?.power_entity);
     });
+    root.getElementById('inverterSelfConsumptionBox')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (c.inverter?.self_consumption_entity) {
+        this._fireMoreInfo(c.inverter.self_consumption_entity);
+      }
+    });
     root.getElementById('auxNode')?.addEventListener('click', () => {
       this._fireMoreInfo(c.aux?.power_entity);
     });
@@ -1615,6 +1627,7 @@ export class EnergyStationCard extends HTMLElement {
     const isWindActive = c.wind?.show !== false || c.aux?.type === 'wind';
     const windStationContainer = this.shadowRoot.getElementById('windStationContainer');
     const auxNode = this._nodes.auxNode;
+    let totalWindKw = 0;
 
     // 1. Wind Turbines Update
     if (windStationContainer) {
@@ -1655,6 +1668,7 @@ export class EnergyStationCard extends HTMLElement {
           const sPower = this._getEntityState(t.power_entity);
           const formatted = this._formatPower(sPower, fallbackKw);
           if (powerEl) powerEl.innerText = formatted.str;
+          totalWindKw += formatted.kw;
 
           let powerWatts = formatted.kw * 1000;
           if (sPower && sPower.unit === 'W') {
@@ -1911,26 +1925,7 @@ export class EnergyStationCard extends HTMLElement {
       }
     }
 
-    // 4. House
-    const sEss = this._getEntityState(c.load?.essential_power_entity);
-    this._nodes.essentialPowerVal.innerText = this._formatPower(sEss, 0).str;
-
-    const sHouseDaily = this._getEntityState(c.load?.daily_house_entity);
-    this._nodes.dailyHouseKwh.innerText = sHouseDaily ? `${sHouseDaily.val.toFixed(2)} kWh` : '12,40 kWh';
-
-    // Subloads
-    let subloadsTotalKw = 0;
-    (c.load?.subloads || []).forEach((sub, idx) => {
-      const subVal = this.shadowRoot.getElementById(`subloadVal_${idx}`);
-      const sSub = this._getEntityState(sub.entity);
-      const formatted = this._formatPower(sSub, 2.0);
-      subloadsTotalKw += formatted.kw;
-      if (subVal) {
-        subVal.innerText = formatted.str;
-      }
-    });
-
-    // 5. Battery
+    // 4. Battery System
     const sSoc = this._getEntityState(c.battery?.soc_entity);
     const socVal = sSoc ? sSoc.val : 80.0;
     this._nodes.masterBatterySoc.innerText = `${socVal.toFixed(1)}%`;
@@ -2000,6 +1995,81 @@ export class EnergyStationCard extends HTMLElement {
       const rSoc = c.battery?.reserve_soc !== undefined ? c.battery.reserve_soc : 20;
       this._nodes.batReserveProgressBar.style.width = `${rSoc}%`;
     }
+
+    // 5. Inverter Self-Consumption & Essential House Loads Calculation
+    const gridInKw = isImport ? absGridKw : 0;
+    const batOutKw = isDischarging ? absBatKw : 0;
+    const totalInflowKw = totalSolarKw + totalWindKw + (auxKw > 0 ? auxKw : 0) + gridInKw + batOutKw;
+
+    const batInKw = isCharging ? absBatKw : 0;
+    const gridOutKw = isExport ? absGridKw : 0;
+    const totalOutflowKnownKw = batInKw + gridOutKw + nonEssKw + carKw;
+
+    // Net remaining power available for House load and Inverter self-consumption
+    const netAvailableKw = Math.max(0, totalInflowKw - totalOutflowKnownKw);
+
+    // Inverter Self-Consumption
+    const sSelf = this._getEntityState(c.inverter?.self_consumption_entity);
+    let selfConsumptionKw = 0;
+
+    const sEss = this._getEntityState(c.load?.essential_power_entity);
+    const isAutoCalculateHouse = c.load?.auto_calculate !== false;
+    const hasValidPositiveMeasuredHouse = Boolean(sEss && typeof sEss.val === 'number' && !isNaN(sEss.val) && sEss.val > 0 && !isAutoCalculateHouse);
+
+    if (sSelf && typeof sSelf.val === 'number' && !isNaN(sSelf.val)) {
+      selfConsumptionKw = Math.max(0, sSelf.unit === 'W' ? sSelf.val / 1000 : sSelf.val);
+    } else if (hasValidPositiveMeasuredHouse) {
+      // If house load is explicitly measured and positive: Inverter loss is the unmeasured residue!
+      const measuredHouseKw = sEss.unit === 'W' ? sEss.val / 1000 : sEss.val;
+      selfConsumptionKw = Math.max(0, netAvailableKw - measuredHouseKw);
+    } else {
+      // House load is auto-calculated: use nominal standby power (default 100 W)
+      const standbyWatts = (c.inverter?.standby_power !== undefined) ? c.inverter.standby_power : 100;
+      const nominalLossKw = standbyWatts / 1000;
+      selfConsumptionKw = Math.min(netAvailableKw, nominalLossKw);
+    }
+
+    // Essential House Load (Гарантоване)
+    let essentialKw = 0;
+    if (isAutoCalculateHouse || !sEss || typeof sEss.val !== 'number' || isNaN(sEss.val) || sEss.val <= 0) {
+      // Auto-calculate from balance: Net Available - Inverter Self Consumption
+      essentialKw = Math.max(0, netAvailableKw - selfConsumptionKw);
+    } else {
+      // Explicit sensor configured and positive
+      essentialKw = Math.max(0, sEss.unit === 'W' ? sEss.val / 1000 : sEss.val);
+    }
+
+    // Update Inverter Self-Consumption display
+    if (this._nodes.inverterSelfConsumptionBox && this._nodes.inverterSelfConsumptionVal) {
+      if (c.inverter?.show_self_consumption !== false) {
+        this._nodes.inverterSelfConsumptionBox.style.display = 'flex';
+        if (selfConsumptionKw < 1.0) {
+          this._nodes.inverterSelfConsumptionVal.innerText = `${Math.round(selfConsumptionKw * 1000)} Вт`;
+        } else {
+          this._nodes.inverterSelfConsumptionVal.innerText = `${selfConsumptionKw.toFixed(3)} кВт`;
+        }
+      } else {
+        this._nodes.inverterSelfConsumptionBox.style.display = 'none';
+      }
+    }
+
+    // Update Essential House Load display
+    this._nodes.essentialPowerVal.innerText = `${essentialKw.toFixed(3)} кВт`;
+
+    const sHouseDaily = this._getEntityState(c.load?.daily_house_entity);
+    this._nodes.dailyHouseKwh.innerText = sHouseDaily ? `${sHouseDaily.val.toFixed(2)} kWh` : '12,40 kWh';
+
+    // Subloads
+    let subloadsTotalKw = 0;
+    (c.load?.subloads || []).forEach((sub, idx) => {
+      const subVal = this.shadowRoot.getElementById(`subloadVal_${idx}`);
+      const sSub = this._getEntityState(sub.entity);
+      const formatted = this._formatPower(sSub, 2.0);
+      subloadsTotalKw += formatted.kw;
+      if (subVal) {
+        subVal.innerText = formatted.str;
+      }
+    });
 
     // Total battery capacity
     const batCount = c.battery?.parallel_batteries || (c.battery?.modules?.length || 2);
@@ -2171,7 +2241,7 @@ export class EnergyStationCard extends HTMLElement {
       isExport,
       isImport,
       totalSolarKw,
-      sEss ? (sEss.unit === 'W' ? sEss.val / 1000 : sEss.val) : 0,
+      essentialKw,
       absBatKw,
       isCharging,
       isDischarging,

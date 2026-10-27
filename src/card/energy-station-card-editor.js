@@ -419,6 +419,26 @@ export class EnergyStationCardEditor extends HTMLElement {
             <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">В інверторах Deye окремого датчика немає — залиште порожнім, щоб не показувати зайве значення.</div>
           </div>
           <div class="field-row">
+            <label>Власне споживання інвертора:</label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="invShowSelfConsumption" ${c.inverter?.show_self_consumption !== false ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #f97316;">
+              <span style="font-size: 11px;">Відображати «⚡ Власне споживання» всередині картки інвертора</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <label>Сенсор власного споживання (W або kW, опціонально):</label>
+            <input type="text" id="invSelfConsumptionEntity" value="${c.inverter?.self_consumption_entity || ''}" placeholder="Залиште порожнім для авторозрахунку за балансом">
+            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Якщо не вказано — розраховується автоматично за балансом енергії.</div>
+          </div>
+          <div class="field-row">
+            <label>Базове власне споживання / втрати інвертора (Вт):</label>
+            <div class="slider-row">
+              <input type="range" id="invStandbyPower" min="20" max="300" step="10" value="${c.inverter?.standby_power !== undefined ? c.inverter.standby_power : 100}">
+              <span id="invStandbyPowerVal" style="font-family: monospace; font-weight: bold; color: #fb923c; width: 48px;">${c.inverter?.standby_power !== undefined ? c.inverter.standby_power : 100}W</span>
+            </div>
+            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Власні втрати електроніки та охолодження (зазвичай 80–150 Вт для інверторів Deye 8–12 кВт).</div>
+          </div>
+          <div class="field-row">
             <label>Температура AC (°C):</label>
             <input type="text" id="invTempAc" value="${c.inverter?.ac_temperature_entity || ''}">
           </div>
@@ -711,8 +731,18 @@ export class EnergyStationCardEditor extends HTMLElement {
         <div class="field-group">
           <div class="field-group-title">🏠 Гарантоване навантаження (Дім)</div>
           <div class="field-row">
-            <label>Essential потужність будинку (сенсор):</label>
-            <input type="text" id="loadEssential" value="${c.load?.essential_power_entity || ''}">
+            <label>Автоматичний розрахунок навантаження за балансом:</label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="loadAutoCalculate" ${c.load?.auto_calculate !== false ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #06b6d4;">
+              <span style="font-size: 11px;">Розраховувати за балансом енергії: (Мережа + Сонце + Вітер) - Заряд АКБ - Власне інвертора</span>
+            </div>
+            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
+              Рекомендовано для Deye / Sunsynk. Запобігає від'ємним значенням під час заряду батареї з мережі.
+            </div>
+          </div>
+          <div class="field-row">
+            <label>Essential потужність будинку (сенсор, опціонально):</label>
+            <input type="text" id="loadEssential" value="${c.load?.essential_power_entity || ''}" placeholder="Залиште порожнім або вкажіть сенсор навантаження">
           </div>
           <div class="field-row">
             <label>Щоденне споживання будинку (kWh):</label>
@@ -880,6 +910,9 @@ export class EnergyStationCardEditor extends HTMLElement {
 
     bindInput('invModel', 'inverter.model_name');
     bindInput('invPower', 'inverter.power_entity');
+    bindCheckbox('invShowSelfConsumption', 'inverter.show_self_consumption');
+    bindInput('invSelfConsumptionEntity', 'inverter.self_consumption_entity');
+    bindNumber('invStandbyPower', 'inverter.standby_power', 'invStandbyPowerVal', 'W');
     bindInput('invTempAc', 'inverter.ac_temperature_entity');
     bindInput('invTempDc', 'inverter.dc_temperature_entity');
     bindInput('invVolt', 'inverter.voltage_entity');
@@ -1100,6 +1133,7 @@ export class EnergyStationCardEditor extends HTMLElement {
     bindInput('gridNonEssential', 'grid.non_essential_power_entity');
     bindInput('gridCarPower', 'grid.car_power_entity');
 
+    bindCheckbox('loadAutoCalculate', 'load.auto_calculate');
     bindInput('loadEssential', 'load.essential_power_entity');
     bindInput('loadDailyHouse', 'load.daily_house_entity');
 

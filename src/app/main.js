@@ -365,6 +365,8 @@ ${(c.solar?.strings || [
 
 inverter:
   model_name: "${c.inverter?.model_name || 'DEYE SUN-12K'}"
+  show_self_consumption: ${c.inverter?.show_self_consumption !== false}
+  standby_power: ${c.inverter?.standby_power !== undefined ? c.inverter?.standby_power : 100}
   power_entity: ${c.inverter?.power_entity || 'sensor.deye_12k_inverter_inverter_power'}
   ac_temperature_entity: ${c.inverter?.ac_temperature_entity || 'sensor.deye_12k_inverter_ac_temperature'}
   dc_temperature_entity: ${c.inverter?.dc_temperature_entity || 'sensor.deye_12k_inverter_dc_temperature'}
@@ -412,6 +414,7 @@ grid:
   car_power_entity: ${c.grid?.car_power_entity || 'sensor.ev_charger_power'}
 
 load:
+  auto_calculate: ${c.load?.auto_calculate !== false}
   essential_power_entity: ${c.load?.essential_power_entity || 'sensor.deye_12k_inverter_essential_load_power'}
   daily_house_entity: ${c.load?.daily_house_entity || 'sensor.deye_12k_inverter_daily_load_energy'}
   subloads:

@@ -57,6 +57,9 @@ export const DEFAULT_CONFIG = {
     voltage_entity: 'sensor.deye_12k_inverter_grid_voltage',
     current_entity: 'sensor.deye_12k_inverter_grid_current',
     frequency_entity: 'sensor.deye_12k_inverter_grid_frequency',
+    show_self_consumption: true,
+    self_consumption_entity: '',
+    standby_power: 100, // Watts: typical idle / conversion losses
     color: '#f97316'
   },
 
@@ -169,6 +172,7 @@ export const DEFAULT_CONFIG = {
   // 5. Essential House Loads & Sub-Loads
   load: {
     show: true,
+    auto_calculate: true, // Авторозрахунок споживання будинку за балансом енергії
     essential_power_entity: 'sensor.deye_12k_inverter_essential_load_power',
     daily_house_entity: 'sensor.deye_12k_inverter_daily_load_energy',
     subloads: [
