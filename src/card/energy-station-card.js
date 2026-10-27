@@ -1293,9 +1293,9 @@ export class EnergyStationCard extends HTMLElement {
     summaryBar.id = 'windStationSummaryBar';
     summaryBar.innerHTML = `
       <span>Вітер:</span>
-      <span style="color: #6ee7b7; font-weight: 700;">День: <span id="windTotalDailyVal">5.90</span> kWh</span>
+      <span style="color: #6ee7b7; font-weight: 700;">День: <span id="windTotalDailyVal">0.00</span> kWh</span>
       <span style="color: #64748b;">•</span>
-      <span style="color: #38bdf8; font-weight: 700;">Місяць: <span id="windTotalMonthlyVal">109.2</span> kWh</span>
+      <span style="color: #38bdf8; font-weight: 700;">Місяць: <span id="windTotalMonthlyVal">0.0</span> kWh</span>
     `;
     container.appendChild(summaryBar);
 
@@ -1309,11 +1309,14 @@ export class EnergyStationCard extends HTMLElement {
         id: `turbine_${i + 1}`,
         name: `Вітряк ${i + 1}`,
         power_entity: `sensor.wind_turbine_${i + 1}_power`,
-        rpm_entity: `sensor.wind_turbine_${i + 1}_rpm`,
-        daily_energy_entity: `sensor.wind_turbine_${i + 1}_daily_energy`,
-        monthly_energy_entity: `sensor.wind_turbine_${i + 1}_monthly_energy`,
+        rpm_entity: '',
+        speed_entity: '',
+        daily_energy_entity: '',
+        monthly_energy_entity: '',
         animation_threshold: c.wind?.animation_threshold || 50
       };
+
+      const hasEnergySensors = !!(t.daily_energy_entity || t.monthly_energy_entity);
 
       const card = document.createElement('div');
       card.className = 'es-turbine-card glow-wind clickable-node';
@@ -1327,22 +1330,22 @@ export class EnergyStationCard extends HTMLElement {
             <span>${t.name || `Вітряк ${i + 1}`}</span>
           </div>
           <span style="font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 6px; background: rgba(6, 182, 212, 0.15); color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.3);" id="turbineStatus_${i + 1}">
-            Генерація
+            Штиль
           </span>
         </div>
 
         <div style="display: flex; align-items: baseline; justify-content: space-between; width: 100%; margin: 2px 0;">
           <span class="es-mono" id="turbinePower_${i + 1}" style="font-size: 16px; font-weight: 900; color: #22d3ee;">
-            ${(i === 0 ? 1.56 : 0.22).toFixed(3)} кВт
+            0.000 кВт
           </span>
           <span class="es-mono" id="turbineRpmBox_${i + 1}" style="font-size: 11px; font-weight: 700; color: #67e8f9; display: none;">
             <span id="turbineRpmVal_${i + 1}">0</span> RPM
           </span>
         </div>
 
-        <div class="es-mono" style="width: 100%; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 4px; margin-top: 2px; display: flex; justify-content: space-between; font-size: 10px; color: #cbd5e1;">
-          <div><span style="color: #94a3b8;">День:</span> <span id="turbineDailyVal_${i + 1}" style="color: #6ee7b7; font-weight: 700;">${i === 0 ? '4.80' : '1.10'}</span> kWh</div>
-          <div><span style="color: #94a3b8;">Міс:</span> <span id="turbineMonthlyVal_${i + 1}" style="color: #38bdf8; font-weight: 700;">${i === 0 ? '86.4' : '22.8'}</span> kWh</div>
+        <div id="turbineEnergyFooter_${i + 1}" class="es-mono" style="width: 100%; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 4px; margin-top: 2px; display: ${hasEnergySensors ? 'flex' : 'none'}; justify-content: space-between; font-size: 10px; color: #cbd5e1;">
+          <div><span style="color: #94a3b8;">День:</span> <span id="turbineDailyVal_${i + 1}" style="color: #6ee7b7; font-weight: 700;">0.00</span> kWh</div>
+          <div><span style="color: #94a3b8;">Міс:</span> <span id="turbineMonthlyVal_${i + 1}" style="color: #38bdf8; font-weight: 700;">0.0</span> kWh</div>
         </div>
       `;
 
@@ -1622,13 +1625,19 @@ export class EnergyStationCard extends HTMLElement {
         const count = c.wind?.turbine_count || (c.wind?.turbines?.length || 2);
         const turbinesList = c.wind?.turbines || [];
 
+        let totalTurbinesDaily = 0;
+        let totalTurbinesMonthly = 0;
+        let hasAnyTurbineDaily = false;
+        let hasAnyTurbineMonthly = false;
+
         for (let i = 0; i < count; i++) {
           const t = turbinesList[i] || {
             name: `Вітряк ${i + 1}`,
             power_entity: `sensor.wind_turbine_${i + 1}_power`,
             rpm_entity: '',
-            daily_energy_entity: `sensor.wind_turbine_${i + 1}_daily_energy`,
-            monthly_energy_entity: `sensor.wind_turbine_${i + 1}_monthly_energy`,
+            speed_entity: '',
+            daily_energy_entity: '',
+            monthly_energy_entity: '',
             animation_threshold: c.wind?.animation_threshold || 50
           };
 
@@ -1639,9 +1648,10 @@ export class EnergyStationCard extends HTMLElement {
           const rpmVal = this.shadowRoot.getElementById(`turbineRpmVal_${i + 1}`);
           const dailyVal = this.shadowRoot.getElementById(`turbineDailyVal_${i + 1}`);
           const monthlyVal = this.shadowRoot.getElementById(`turbineMonthlyVal_${i + 1}`);
+          const energyFooter = this.shadowRoot.getElementById(`turbineEnergyFooter_${i + 1}`);
 
-          // Fallback realistic wattages (Turbine 1: 1.56 kW, Turbine 2: 0.22 kW matching screenshot)
-          const fallbackKw = i === 0 ? 1.56 : 0.22;
+          // In real HA, default to 0 if sensor is not available
+          const fallbackKw = this._hass ? 0 : (i === 0 ? 1.56 : 0.22);
           const sPower = this._getEntityState(t.power_entity);
           const formatted = this._formatPower(sPower, fallbackKw);
           if (powerEl) powerEl.innerText = formatted.str;
@@ -1684,8 +1694,8 @@ export class EnergyStationCard extends HTMLElement {
             }
           }
 
-          // RPM telemetry: ONLY show if valid RPM sensor entity exists and has a numeric state > 0
-          const rpmEntity = t.rpm_entity;
+          // RPM / Wind Speed telemetry: ONLY show if valid sensor entity exists and has a numeric state > 0
+          const rpmEntity = t.rpm_entity || t.speed_entity;
           const sRpm = (rpmEntity && this._hass?.states[rpmEntity]) ? this._getEntityState(rpmEntity) : null;
           const rpmBox = this.shadowRoot.getElementById(`turbineRpmBox_${i + 1}`);
           if (rpmBox) {
@@ -1703,39 +1713,59 @@ export class EnergyStationCard extends HTMLElement {
             }
           }
 
-          // Daily Yield (День)
+          // Individual Turbine Energy (День & Місяць)
           const sDaily = this._getEntityState(t.daily_energy_entity);
+          const sMonthly = this._getEntityState(t.monthly_energy_entity);
+
           if (dailyVal) {
-            dailyVal.innerText = sDaily ? sDaily.val.toFixed(2) : (i === 0 ? '4.80' : '1.10');
+            dailyVal.innerText = (sDaily && typeof sDaily.val === 'number' && !isNaN(sDaily.val)) ? sDaily.val.toFixed(2) : '0.00';
           }
 
-          // Monthly Yield (Місяць)
-          const sMonthly = this._getEntityState(t.monthly_energy_entity);
           if (monthlyVal) {
-            monthlyVal.innerText = sMonthly ? sMonthly.val.toFixed(1) : (i === 0 ? '86.4' : '22.8');
+            monthlyVal.innerText = (sMonthly && typeof sMonthly.val === 'number' && !isNaN(sMonthly.val)) ? sMonthly.val.toFixed(1) : '0.0';
+          }
+
+          // Toggle footer display: hide if neither daily nor monthly entity is configured
+          const hasTurbineEnergy = !!(t.daily_energy_entity || t.monthly_energy_entity);
+          if (energyFooter) {
+            energyFooter.style.display = hasTurbineEnergy ? 'flex' : 'none';
+          }
+
+          if (sDaily && typeof sDaily.val === 'number' && !isNaN(sDaily.val)) {
+            totalTurbinesDaily += sDaily.val;
+            hasAnyTurbineDaily = true;
+          }
+          if (sMonthly && typeof sMonthly.val === 'number' && !isNaN(sMonthly.val)) {
+            totalTurbinesMonthly += sMonthly.val;
+            hasAnyTurbineMonthly = true;
           }
         }
 
         // Total Wind Daily & Monthly calculation
-        let totalWindDaily = 0;
-        let totalWindMonthly = 0;
-        for (let i = 0; i < count; i++) {
-          const t = turbinesList[i] || {};
-          const sDaily = this._getEntityState(t.daily_energy_entity);
-          const sMonthly = this._getEntityState(t.monthly_energy_entity);
-          totalWindDaily += sDaily ? sDaily.val : (i === 0 ? 4.80 : 1.10);
-          totalWindMonthly += sMonthly ? sMonthly.val : (i === 0 ? 86.4 : 22.8);
-        }
-
         const windTotalDaily = this.shadowRoot.getElementById('windTotalDailyVal');
         const windTotalMonthly = this.shadowRoot.getElementById('windTotalMonthlyVal');
+
+        const sStationDaily = this._getEntityState(c.wind?.daily_energy_entity);
+        const sStationMonthly = this._getEntityState(c.wind?.monthly_energy_entity);
+
         if (windTotalDaily) {
-          const sStationDaily = this._getEntityState(c.wind?.daily_energy_entity);
-          windTotalDaily.innerText = sStationDaily ? sStationDaily.val.toFixed(2) : totalWindDaily.toFixed(2);
+          if (sStationDaily && typeof sStationDaily.val === 'number' && !isNaN(sStationDaily.val)) {
+            windTotalDaily.innerText = sStationDaily.val.toFixed(2);
+          } else if (hasAnyTurbineDaily) {
+            windTotalDaily.innerText = totalTurbinesDaily.toFixed(2);
+          } else {
+            windTotalDaily.innerText = '0.00';
+          }
         }
+
         if (windTotalMonthly) {
-          const sStationMonthly = this._getEntityState(c.wind?.monthly_energy_entity);
-          windTotalMonthly.innerText = sStationMonthly ? sStationMonthly.val.toFixed(1) : totalWindMonthly.toFixed(1);
+          if (sStationMonthly && typeof sStationMonthly.val === 'number' && !isNaN(sStationMonthly.val)) {
+            windTotalMonthly.innerText = sStationMonthly.val.toFixed(1);
+          } else if (hasAnyTurbineMonthly) {
+            windTotalMonthly.innerText = totalTurbinesMonthly.toFixed(1);
+          } else {
+            windTotalMonthly.innerText = '0.0';
+          }
         }
       }
     }
@@ -2781,7 +2811,7 @@ export class EnergyStationCard extends HTMLElement {
 
       if (i <= windCount && isWindActive) {
         const t = turbinesList[i - 1] || {};
-        const fallbackKw = i === 1 ? 1.45 : 0.85;
+        const fallbackKw = this._hass ? 0 : (i === 1 ? 1.45 : 0.85);
         const sPower = this._getEntityState(t.power_entity || `sensor.wind_turbine_${i}_power`);
         const formatted = this._formatPower(sPower, fallbackKw);
         let powerWatts = formatted.kw * 1000;

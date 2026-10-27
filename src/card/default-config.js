@@ -76,24 +76,27 @@ export const DEFAULT_CONFIG = {
     turbine_count: 2, // 1 to 4 wind turbines
     animation_threshold: 50, // Default Watts threshold to trigger rotor rotation
     max_power: 3000, // Watts: power for maximum rotor rotation speed
-    color: '#06b6d4',
+    daily_energy_entity: '',
+    monthly_energy_entity: '',
     turbines: [
       {
         id: 'turbine_1',
         name: 'Вітряк 1',
         power_entity: 'sensor.wind_turbine_1_power',
+        speed_entity: '',
         rpm_entity: '',
-        daily_energy_entity: 'sensor.wind_turbine_1_daily_energy',
-        monthly_energy_entity: 'sensor.wind_turbine_1_monthly_energy',
+        daily_energy_entity: '',
+        monthly_energy_entity: '',
         animation_threshold: 50
       },
       {
         id: 'turbine_2',
         name: 'Вітряк 2',
         power_entity: 'sensor.wind_turbine_2_power',
+        speed_entity: '',
         rpm_entity: '',
-        daily_energy_entity: 'sensor.wind_turbine_2_daily_energy',
-        monthly_energy_entity: 'sensor.wind_turbine_2_monthly_energy',
+        daily_energy_entity: '',
+        monthly_energy_entity: '',
         animation_threshold: 50
       }
     ]

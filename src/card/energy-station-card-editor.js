@@ -481,6 +481,23 @@ export class EnergyStationCardEditor extends HTMLElement {
             <span style="font-size: 10px; color: #94a3b8;">(Налаштування візуальної анімації): анімація обертання лопатей вітряка на картці вмикається ТІЛЬКИ коли генерація досягає цього значення. При нижчій потужності — анімація зупиняється (Штиль).</span>
           </div>
 
+          <!-- Station-wide Wind Energy Sensors -->
+          <div class="field-row">
+            <label>Загальний сенсор дня станції (kWh, опціонально):</label>
+            <input type="text" id="windDailyEnergy" value="${c.wind?.daily_energy_entity || ''}" placeholder="Залиште порожнім для автопідрахунку із суми вітряків">
+            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
+              Відображається у верхній панелі «Вітер: День». Якщо порожньо — автоматично підсумовує сенсори вітряків.
+            </div>
+          </div>
+
+          <div class="field-row">
+            <label>Загальний сенсор місяця станції (kWh, опціонально):</label>
+            <input type="text" id="windMonthlyEnergy" value="${c.wind?.monthly_energy_entity || ''}" placeholder="Залиште порожнім для автопідрахунку із суми вітряків">
+            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
+              Відображається у верхній панелі «Вітер: Місяць». Якщо порожньо — автоматично підсумовує сенсори вітряків.
+            </div>
+          </div>
+
           <!-- Individual Turbines Configuration -->
           <div style="margin-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 10px;">
             <div style="font-size: 11px; font-weight: 700; color: #67e8f9; margin-bottom: 8px;">Індивідуальні сенсори вітряків:</div>
@@ -494,8 +511,15 @@ export class EnergyStationCardEditor extends HTMLElement {
                   <div style="display: flex; flex-direction: column; gap: 4px;">
                     <label style="font-size: 10px; color: #94a3b8;">Сенсор потужності (kW/W):</label>
                     <input type="text" class="turbine-power-inp" data-idx="${idx}" value="${t.power_entity || `sensor.wind_turbine_${idx + 1}_power`}" placeholder="sensor.wind_turbine_${idx + 1}_power">
+                    
                     <label style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Сенсор швидкості вітру (м/с, опціонально):</label>
-                    <input type="text" class="turbine-speed-inp" data-idx="${idx}" value="${t.speed_entity || `sensor.wind_turbine_${idx + 1}_speed`}" placeholder="sensor.wind_turbine_${idx + 1}_speed">
+                    <input type="text" class="turbine-speed-inp" data-idx="${idx}" value="${t.speed_entity || t.rpm_entity || ''}" placeholder="sensor.wind_turbine_${idx + 1}_speed">
+                    
+                    <label style="font-size: 10px; color: #6ee7b7; margin-top: 2px;">Сенсор генерації за день (kWh, опціонально):</label>
+                    <input type="text" class="turbine-daily-inp" data-idx="${idx}" value="${t.daily_energy_entity || ''}" placeholder="sensor.wind_turbine_${idx + 1}_daily_energy">
+                    
+                    <label style="font-size: 10px; color: #38bdf8; margin-top: 2px;">Сенсор генерації за місяць (kWh, опціонально):</label>
+                    <input type="text" class="turbine-monthly-inp" data-idx="${idx}" value="${t.monthly_energy_entity || ''}" placeholder="sensor.wind_turbine_${idx + 1}_monthly_energy">
                   </div>
                 </div>
               `;
@@ -896,6 +920,8 @@ export class EnergyStationCardEditor extends HTMLElement {
           name: `Вітряк ${i}`,
           power_entity: `sensor.wind_turbine_${i}_power`,
           speed_entity: `sensor.wind_turbine_${i}_speed`,
+          daily_energy_entity: '',
+          monthly_energy_entity: '',
           animation_threshold: this._config.wind.animation_threshold || 50
         });
       }
@@ -908,6 +934,9 @@ export class EnergyStationCardEditor extends HTMLElement {
     root.getElementById('windThreshold')?.addEventListener('input', (e) => {
       this._valueChanged('aux.wind_animation_threshold', parseFloat(e.target.value));
     });
+
+    bindInput('windDailyEnergy', 'wind.daily_energy_entity');
+    bindInput('windMonthlyEnergy', 'wind.monthly_energy_entity');
 
     // Individual turbine field bindings
     root.querySelectorAll('.turbine-name-inp').forEach(inp => {
@@ -936,6 +965,26 @@ export class EnergyStationCardEditor extends HTMLElement {
         if (!this._config.wind.turbines) this._config.wind.turbines = [];
         if (!this._config.wind.turbines[idx]) this._config.wind.turbines[idx] = {};
         this._config.wind.turbines[idx].speed_entity = e.target.value;
+        this._valueChanged('wind.turbines', this._config.wind.turbines);
+      });
+    });
+
+    root.querySelectorAll('.turbine-daily-inp').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const idx = parseInt(e.target.dataset.idx);
+        if (!this._config.wind.turbines) this._config.wind.turbines = [];
+        if (!this._config.wind.turbines[idx]) this._config.wind.turbines[idx] = {};
+        this._config.wind.turbines[idx].daily_energy_entity = e.target.value;
+        this._valueChanged('wind.turbines', this._config.wind.turbines);
+      });
+    });
+
+    root.querySelectorAll('.turbine-monthly-inp').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const idx = parseInt(e.target.dataset.idx);
+        if (!this._config.wind.turbines) this._config.wind.turbines = [];
+        if (!this._config.wind.turbines[idx]) this._config.wind.turbines[idx] = {};
+        this._config.wind.turbines[idx].monthly_energy_entity = e.target.value;
         this._valueChanged('wind.turbines', this._config.wind.turbines);
       });
     });
