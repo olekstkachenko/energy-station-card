@@ -911,15 +911,29 @@ export class EnergyStationCard extends HTMLElement {
               <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); display: flex; align-items: center; justify-content: center; color: #fbbf24; margin: 4px 0 6px 0;">
                 <div style="width: 26px; height: 26px;">${ICONS.inverter}</div>
               </div>
-              <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #cbd5e1; font-weight: 600;">Гібридний інвертор</div>
-              <div class="es-mono" id="inverterPowerVal" style="font-size: 24px; font-weight: 900; color: #fbbf24; margin: 2px 0;">8,000 кВт</div>
-              <div class="es-inverter-status-badge" id="inverterStatusBadge">ПРАЦЮЄ</div>
+              <div style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: #cbd5e1; font-weight: 700; margin-bottom: 2px;">Гібридний інвертор</div>
+              <div class="es-inverter-status-badge" id="inverterStatusBadge" style="margin: 2px 0 6px 0;">ПРАЦЮЄ</div>
+              <div class="es-mono" id="inverterPowerVal" style="display: ${c.inverter?.power_entity ? 'block' : 'none'}; font-size: 20px; font-weight: 900; color: #fbbf24; margin: 2px 0 6px 0;">0,000 кВт</div>
               
-              <!-- Metrics grid -->
-              <div style="width: 100%; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 11px; color: #cbd5e1;" class="es-mono">
-                <div><span style="color: #94a3b8;">U:</span> <span id="inverterVolt">231,45</span> V</div>
-                <div><span style="color: #94a3b8;">I:</span> <span id="inverterCurrent">8,60</span> A</div>
-                <div style="grid-column: span 2; color: #fde047;"><span style="color: #94a3b8;">Freq:</span> <span id="inverterFreq">50,01</span> Hz</div>
+              <!-- Enlarged Metrics Panel: U, I, Freq -->
+              <div style="width: 100%; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 8px; margin-top: 2px; display: flex; flex-direction: column; gap: 6px;" class="es-mono">
+                <div style="display: flex; align-items: baseline; justify-content: space-around; width: 100%;">
+                  <div style="display: flex; align-items: baseline; gap: 3px;">
+                    <span style="color: #94a3b8; font-size: 13px; font-weight: 600;">U:</span>
+                    <span id="inverterVolt" style="font-size: 18px; font-weight: 800; color: #f8fafc;">231,45</span>
+                    <span style="font-size: 12px; font-weight: 600; color: #94a3b8;">V</span>
+                  </div>
+                  <div style="display: flex; align-items: baseline; gap: 3px;">
+                    <span style="color: #94a3b8; font-size: 13px; font-weight: 600;">I:</span>
+                    <span id="inverterCurrent" style="font-size: 18px; font-weight: 800; color: #38bdf8;">8,60</span>
+                    <span style="font-size: 12px; font-weight: 600; color: #94a3b8;">A</span>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: baseline; justify-content: center; gap: 4px;">
+                  <span style="color: #94a3b8; font-size: 13px; font-weight: 600;">Freq:</span>
+                  <span id="inverterFreq" style="font-size: 16px; font-weight: 800; color: #fde047;">50,01</span>
+                  <span style="font-size: 12px; font-weight: 600; color: #fde047;">Hz</span>
+                </div>
               </div>
             </div>
 
@@ -1406,7 +1420,14 @@ export class EnergyStationCard extends HTMLElement {
 
     // 2. Inverter
     const sInvPower = this._getEntityState(c.inverter?.power_entity);
-    this._nodes.inverterPowerVal.innerText = this._formatPower(sInvPower, 8.0).str;
+    if (this._nodes.inverterPowerVal) {
+      if (c.inverter?.power_entity && sInvPower) {
+        this._nodes.inverterPowerVal.style.display = 'block';
+        this._nodes.inverterPowerVal.innerText = this._formatPower(sInvPower, 0).str;
+      } else {
+        this._nodes.inverterPowerVal.style.display = 'none';
+      }
+    }
     
     const sAcTemp = this._getEntityState(c.inverter?.ac_temperature_entity);
     this._nodes.inverterAcTemp.innerText = sAcTemp ? sAcTemp.val.toFixed(2) : '41,20';
@@ -1589,34 +1610,85 @@ export class EnergyStationCard extends HTMLElement {
 
     // 3. Grid
     const sGridPower = this._getEntityState(c.grid?.power_entity);
-    const gridKw = sGridPower ? (sGridPower.unit === 'W' ? sGridPower.val / 1000 : sGridPower.val) : 2.0;
-    const isExport = gridKw >= 0;
-    this._nodes.gridPowerVal.innerText = `${Math.abs(gridKw).toFixed(3)} кВт`;
-    this._nodes.gridDirectionLabel.innerText = isExport ? '← Експорт' : '→ Імпорт';
+    const rawGridKw = sGridPower ? (sGridPower.unit === 'W' ? sGridPower.val / 1000 : sGridPower.val) : 0;
+    const powerSign = c.grid?.power_sign || (c.grid?.invert_power ? 'inverted' : 'deye');
+    const sellingEnabled = c.grid?.selling_enabled === true;
+    const thresholdKw = (c.grid?.min_power_threshold !== undefined ? c.grid.min_power_threshold : 50) / 1000;
+
+    let isExport = false;
+    let isImport = false;
+    const absGridKw = Math.abs(rawGridKw);
+
+    if (absGridKw >= thresholdKw) {
+      if (powerSign === 'deye') {
+        // Deye standard: Positive (+) = Import from grid, Negative (-) = Export to grid
+        if (rawGridKw < 0) {
+          isExport = true;
+        } else {
+          isImport = true;
+        }
+      } else {
+        // Inverted: Positive (+) = Export to grid, Negative (-) = Import from grid
+        if (rawGridKw > 0) {
+          isExport = true;
+        } else {
+          isImport = true;
+        }
+      }
+    }
+
+    // If station does not sell to the grid (selling_enabled === false), never animate or flag export!
+    if (isExport && !sellingEnabled) {
+      isExport = false;
+    }
+
+    if (this._nodes.gridPowerVal) {
+      this._nodes.gridPowerVal.innerText = `${absGridKw.toFixed(3)} кВт`;
+      if (isExport) {
+        this._nodes.gridPowerVal.style.color = '#34d399';
+      } else if (isImport) {
+        this._nodes.gridPowerVal.style.color = '#38bdf8';
+      } else {
+        this._nodes.gridPowerVal.style.color = '#94a3b8';
+      }
+    }
+
+    if (this._nodes.gridDirectionLabel) {
+      if (isExport) {
+        this._nodes.gridDirectionLabel.innerText = '← Експорт';
+        this._nodes.gridDirectionLabel.style.color = '#34d399';
+      } else if (isImport) {
+        this._nodes.gridDirectionLabel.innerText = '→ Імпорт';
+        this._nodes.gridDirectionLabel.style.color = '#38bdf8';
+      } else {
+        this._nodes.gridDirectionLabel.innerText = 'Мережа';
+        this._nodes.gridDirectionLabel.style.color = '#64748b';
+      }
+    }
 
     const sGridImport = this._getEntityState(c.grid?.import_daily_entity);
-    this._nodes.gridImportDaily.innerText = sGridImport ? `${sGridImport.val.toFixed(2)} kWh` : '3,10 kWh';
+    this._nodes.gridImportDaily.innerText = sGridImport ? `${sGridImport.val.toFixed(2)} kWh` : '0.00 kWh';
 
     const sGridExport = this._getEntityState(c.grid?.export_daily_entity);
-    this._nodes.gridExportDaily.innerText = sGridExport ? `${sGridExport.val.toFixed(2)} kWh` : '4,80 kWh';
+    this._nodes.gridExportDaily.innerText = sGridExport ? `${sGridExport.val.toFixed(2)} kWh` : '0.00 kWh';
 
     // Car
     const sCar = this._getEntityState(c.grid?.car_power_entity);
-    this._nodes.carPowerVal.innerText = this._formatPower(sCar, 1.0).str;
+    this._nodes.carPowerVal.innerText = this._formatPower(sCar, 0).str;
 
     // 4. House
     const sEss = this._getEntityState(c.load?.essential_power_entity);
-    this._nodes.essentialPowerVal.innerText = this._formatPower(sEss, 8.0).str;
+    this._nodes.essentialPowerVal.innerText = this._formatPower(sEss, 0).str;
 
     const sHouseDaily = this._getEntityState(c.load?.daily_house_entity);
-    this._nodes.dailyHouseKwh.innerText = sHouseDaily ? `${sHouseDaily.val.toFixed(2)} kWh` : '12,40 kWh';
+    this._nodes.dailyHouseKwh.innerText = sHouseDaily ? `${sHouseDaily.val.toFixed(2)} kWh` : '0.00 kWh';
 
     // Subloads
     (c.load?.subloads || []).forEach((sub, idx) => {
       const subVal = this.shadowRoot.getElementById(`subloadVal_${idx}`);
       if (subVal) {
         const sSub = this._getEntityState(sub.entity);
-        subVal.innerText = this._formatPower(sSub, 2.0 + idx).str;
+        subVal.innerText = this._formatPower(sSub, 0).str;
       }
     });
 
@@ -1626,14 +1698,58 @@ export class EnergyStationCard extends HTMLElement {
     this._nodes.masterBatterySoc.innerText = `${socVal.toFixed(1)}%`;
 
     const sBatPower = this._getEntityState(c.battery?.power_entity);
-    const batKw = sBatPower ? (sBatPower.unit === 'W' ? sBatPower.val / 1000 : sBatPower.val) : 3.0;
-    const isCharging = batKw >= 0;
-    this._nodes.masterBatteryFlowHint.innerHTML = `<span>${Math.abs(batKw).toFixed(3)} кВт</span> • <span style="color: ${isCharging ? '#34d399' : '#fbbf24'};">${isCharging ? 'Заряд ↓' : 'Розряд ↑'}</span>`;
+    const sBatCurr = this._getEntityState(c.battery?.current_entity);
+    const rawBatKw = sBatPower ? (sBatPower.unit === 'W' ? sBatPower.val / 1000 : sBatPower.val) : 0;
+    const batPowerSign = c.battery?.power_sign || (c.battery?.invert_power ? 'standard' : 'deye');
+
+    let isCharging = false;
+    let isDischarging = false;
+    const absBatKw = Math.abs(rawBatKw);
+    const batThresholdKw = 0.02; // 20 W
+
+    if (absBatKw >= batThresholdKw) {
+      if (batPowerSign === 'deye') {
+        // Deye standard: Negative (-) = Charging into battery, Positive (+) = Discharging
+        if (rawBatKw < 0) {
+          isCharging = true;
+        } else {
+          isDischarging = true;
+        }
+      } else {
+        // Standard: Positive (+) = Charging, Negative (-) = Discharging
+        if (rawBatKw > 0) {
+          isCharging = true;
+        } else {
+          isDischarging = true;
+        }
+      }
+    } else if (sBatCurr && Math.abs(sBatCurr.val) >= 0.3) {
+      // If power is 0 or not reported, check battery current sign
+      if (batPowerSign === 'deye') {
+        if (sBatCurr.val < 0) isCharging = true;
+        else isDischarging = true;
+      } else {
+        if (sBatCurr.val > 0) isCharging = true;
+        else isDischarging = true;
+      }
+    }
+
+    if (this._nodes.masterBatteryFlowHint) {
+      let stateText = 'Очікування';
+      let stateColor = '#94a3b8';
+      if (isCharging) {
+        stateText = 'Заряд ↓';
+        stateColor = '#34d399';
+      } else if (isDischarging) {
+        stateText = 'Розряд ↑';
+        stateColor = '#f87171';
+      }
+      this._nodes.masterBatteryFlowHint.innerHTML = `<span>${absBatKw.toFixed(3)} кВт</span> • <span style="color: ${stateColor}; font-weight: 700;">${stateText}</span>`;
+    }
 
     const sBatVolt = this._getEntityState(c.battery?.voltage_entity);
-    const sBatCurr = this._getEntityState(c.battery?.current_entity);
-    const vStr = sBatVolt ? sBatVolt.val.toFixed(2) : '53,24';
-    const cStr = sBatCurr ? sBatCurr.val.toFixed(2) : '-56,30';
+    const vStr = sBatVolt ? sBatVolt.val.toFixed(2) : '53.24';
+    const cStr = sBatCurr ? sBatCurr.val.toFixed(2) : '0.00';
     this._nodes.batVoltCurrent.innerText = `U: ${vStr} V / I: ${cStr} A`;
 
     // Total battery capacity: sum of all module capacities + inverter sensor reading in parentheses
@@ -1776,13 +1892,15 @@ export class EnergyStationCard extends HTMLElement {
     // Update live animated SVG energy flow paths and speed/direction
     this._updateFlowPaths();
     this._updateFlowAnimations(
-      gridKw,
+      rawGridKw,
       isExport,
+      isImport,
       totalSolarKw,
-      sEss ? (sEss.unit === 'W' ? sEss.val / 1000 : sEss.val) : 8.0,
-      batKw,
+      sEss ? (sEss.unit === 'W' ? sEss.val / 1000 : sEss.val) : 0,
+      absBatKw,
       isCharging,
-      sCar ? (sCar.unit === 'W' ? sCar.val / 1000 : sCar.val) : 1.0
+      isDischarging,
+      sCar ? (sCar.unit === 'W' ? sCar.val / 1000 : sCar.val) : 0
     );
   }
 
@@ -2070,7 +2188,7 @@ export class EnergyStationCard extends HTMLElement {
     el.style.animation = `${animName} ${speedStr} linear infinite`;
   }
 
-  _updateFlowAnimations(gridKw, isExport, solarKw, essentialKw, batKw, isCharging, carKw) {
+  _updateFlowAnimations(gridKw, isExport, isImport, solarKw, essentialKw, batKw, isCharging, isDischarging, carKw) {
     const c = this._config || DEFAULT_CONFIG;
     const animEnabled = c.animations?.enabled !== false;
     const baseSpeed = c.animations?.speed || 1.2;
@@ -2086,7 +2204,15 @@ export class EnergyStationCard extends HTMLElement {
     // 1. Grid <-> Inverter
     const fGrid = this.shadowRoot.getElementById('pathGridInvFlow');
     const pwrGrid = Math.abs(gridKw);
-    this._applyFlowAnimation(fGrid, 'flow-grid', isExport, calcSpeed(gridKw, 10.0), animEnabled && pwrGrid >= 0.05);
+    const thresholdKw = (c.grid?.min_power_threshold !== undefined ? c.grid.min_power_threshold : 50) / 1000;
+    const sellingEnabled = c.grid?.selling_enabled === true;
+
+    // Grid flow is active ONLY if:
+    // 1) animations globally enabled
+    // 2) power is at or above threshold
+    // 3) EITHER importing from grid (isImport) OR exporting with selling_enabled = true
+    const isGridFlowActive = animEnabled && pwrGrid >= thresholdKw && (isImport || (isExport && sellingEnabled));
+    this._applyFlowAnimation(fGrid, 'flow-grid', isExport, calcSpeed(gridKw, 10.0), isGridFlowActive);
 
     // 2. Solar -> Inverter
     const fSolar = this.shadowRoot.getElementById('pathSolarInvFlow');
@@ -2100,8 +2226,11 @@ export class EnergyStationCard extends HTMLElement {
     // 4. Inverter <-> Battery Hub
     const fBat = this.shadowRoot.getElementById('pathInvBatFlow');
     const pwrBat = Math.abs(batKw);
+    const isBatActive = animEnabled && pwrBat >= 0.02 && (isCharging || isDischarging);
     const batClass = isCharging ? 'flow-battery charging' : 'flow-battery discharging';
-    this._applyFlowAnimation(fBat, batClass, !isCharging, calcSpeed(batKw, 8.0), animEnabled && pwrBat >= 0.05);
+    // Forward flow (isReverse = false): Inverter -> Battery Hub (Charging)
+    // Reverse flow (isReverse = true): Battery Hub -> Inverter (Discharging)
+    this._applyFlowAnimation(fBat, batClass, isDischarging, calcSpeed(batKw, 8.0), isBatActive);
 
     // 5. Grid -> Car
     const fCar = this.shadowRoot.getElementById('pathGridCarFlow');
@@ -2111,7 +2240,7 @@ export class EnergyStationCard extends HTMLElement {
     // 6. Battery rack collector bus
     const batFlow = this.shadowRoot.getElementById('batteryFlowCollector');
     if (batFlow) {
-      if (!animEnabled || pwrBat < 0.05) {
+      if (!isBatActive) {
         batFlow.style.opacity = '0.2';
         batFlow.style.animation = 'none';
       } else {

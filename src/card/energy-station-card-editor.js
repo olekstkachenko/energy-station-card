@@ -414,8 +414,9 @@ export class EnergyStationCardEditor extends HTMLElement {
             <input type="text" id="invModel" value="${c.inverter?.model_name || 'DEYE SUN-12K'}">
           </div>
           <div class="field-row">
-            <label>Потужність інвертора (сенсор):</label>
-            <input type="text" id="invPower" value="${c.inverter?.power_entity || ''}">
+            <label>Потужність інвертора (сенсор, опціонально):</label>
+            <input type="text" id="invPower" value="${c.inverter?.power_entity || ''}" placeholder="Залиште порожнім, якщо немає">
+            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">В інверторах Deye окремого датчика немає — залиште порожнім, щоб не показувати зайве значення.</div>
           </div>
           <div class="field-row">
             <label>Температура AC (°C):</label>
@@ -521,6 +522,16 @@ export class EnergyStationCardEditor extends HTMLElement {
             <input type="text" id="batPower" value="${c.battery?.power_entity || ''}">
           </div>
           <div class="field-row">
+            <label>Знак потужності/струму батареї (Напрямок перетоку):</label>
+            <select id="batPowerSign">
+              <option value="deye" ${c.battery?.power_sign !== 'standard' ? 'selected' : ''}>Стандарт Deye / Sunsynk / Solarman (- Заряд, + Розряд)</option>
+              <option value="standard" ${c.battery?.power_sign === 'standard' ? 'selected' : ''}>Стандартний (+ Заряд, - Розряд)</option>
+            </select>
+            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
+              Більшість інверторів Deye передають заряд із мінусом (-), а розряд із плюсом (+).
+            </div>
+          </div>
+          <div class="field-row">
             <label>Напруга (V) та Струм (A):</label>
             <input type="text" id="batVolt" placeholder="Напруга батареї V" value="${c.battery?.voltage_entity || ''}" style="margin-bottom: 4px;">
             <input type="text" id="batCurrent" placeholder="Струм батареї A" value="${c.battery?.current_entity || ''}">
@@ -619,14 +630,47 @@ export class EnergyStationCardEditor extends HTMLElement {
       <div style="display: ${this._currentTab === 'grid' ? 'block' : 'none'};">
         <div class="field-group">
           <div class="field-group-title">🌐 Зовнішня електромережа</div>
+
+          <div class="field-row" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 10px; margin-bottom: 12px;">
+            <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 0;">
+              <div>
+                <span style="font-weight: 700; color: #38bdf8; font-size: 13px;">Дозволити продаж в мережу (Експорт)</span>
+                <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">
+                  Увімкніть, якщо станція продає надлишки («зелений тариф» / Net Billing). Якщо вимкнено (Zero Export) — анімація продажу ЗАВЖДИ вимкнена.
+                </div>
+              </div>
+              <input type="checkbox" id="gridSellingEnabled" ${c.grid?.selling_enabled ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer; accent-color: #0284c7; flex-shrink: 0; margin-left: 12px;">
+            </label>
+          </div>
+
           <div class="field-row">
             <label>Потужність мережі (+/- або імпорт/експорт):</label>
-            <input type="text" id="gridPower" value="${c.grid?.power_entity || ''}">
+            <input type="text" id="gridPower" value="${c.grid?.power_entity || ''}" placeholder="sensor.deye_12k_inverter_total_grid_power">
           </div>
+
+          <div class="field-row">
+            <label>Знак потужності (Напрямок перетоку за сенсором):</label>
+            <select id="gridPowerSign">
+              <option value="deye" ${c.grid?.power_sign !== 'inverted' ? 'selected' : ''}>Стандарт Deye / Sunsynk / Solarman (+ Імпорт, - Експорт)</option>
+              <option value="inverted" ${c.grid?.power_sign === 'inverted' ? 'selected' : ''}>Інвертований (+ Експорт, - Імпорт)</option>
+            </select>
+            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
+              Більшість інверторів Deye передають споживання з плюсом (+), а продаж з мінусом (-).
+            </div>
+          </div>
+
+          <div class="field-row">
+            <label>Поріг чутливості анімації мережі (Вт):</label>
+            <input type="number" id="gridMinThreshold" min="0" max="500" value="${c.grid?.min_power_threshold !== undefined ? c.grid.min_power_threshold : 50}">
+            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
+              Нижче цього значення (напр. 50 Вт) перетік вважається нульовим і анімація вимикається.
+            </div>
+          </div>
+
           <div class="field-row">
             <label>Щоденний імпорт (kWh) / Експорт (kWh):</label>
-            <input type="text" id="gridImportDaily" placeholder="Імпорт kWh" value="${c.grid?.import_daily_entity || ''}" style="margin-bottom: 4px;">
-            <input type="text" id="gridExportDaily" placeholder="Експорт kWh" value="${c.grid?.export_daily_entity || ''}">
+            <input type="text" id="gridImportDaily" placeholder="Імпорт kWh (напр. sensor.grid_import_daily)" value="${c.grid?.import_daily_entity || ''}" style="margin-bottom: 4px;">
+            <input type="text" id="gridExportDaily" placeholder="Експорт kWh (напр. sensor.grid_export_daily)" value="${c.grid?.export_daily_entity || ''}">
           </div>
         </div>
 
@@ -900,6 +944,7 @@ export class EnergyStationCardEditor extends HTMLElement {
 
     bindInput('batSoc', 'battery.soc_entity');
     bindInput('batPower', 'battery.power_entity');
+    bindInput('batPowerSign', 'battery.power_sign');
     bindInput('batVolt', 'battery.voltage_entity');
     bindInput('batCurrent', 'battery.current_entity');
     bindInput('batCapacity', 'battery.capacity_entity');
@@ -999,7 +1044,10 @@ export class EnergyStationCardEditor extends HTMLElement {
       });
     });
 
+    bindCheckbox('gridSellingEnabled', 'grid.selling_enabled');
     bindInput('gridPower', 'grid.power_entity');
+    bindInput('gridPowerSign', 'grid.power_sign');
+    bindNumber('gridMinThreshold', 'grid.min_power_threshold');
     bindInput('gridImportDaily', 'grid.import_daily_entity');
     bindInput('gridExportDaily', 'grid.export_daily_entity');
     bindInput('gridCarPower', 'grid.car_power_entity');

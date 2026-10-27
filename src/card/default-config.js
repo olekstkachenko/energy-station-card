@@ -49,7 +49,7 @@ export const DEFAULT_CONFIG = {
   // 2. Inverter & AUX Port
   inverter: {
     model_name: 'DEYE SUN-12K',
-    power_entity: 'sensor.deye_12k_inverter_inverter_power',
+    power_entity: '', // За замовчуванням порожньо (в інверторах Deye немає окремого датчика потужності)
     status_entity: 'sensor.deye_12k_inverter_inverter_status',
     status_text: 'ПРАЦЮЄ',
     ac_temperature_entity: 'sensor.deye_12k_inverter_ac_temperature',
@@ -112,6 +112,7 @@ export const DEFAULT_CONFIG = {
     charge_daily_entity: 'sensor.deye_12k_inverter_daily_battery_charge',
     discharge_daily_entity: 'sensor.deye_12k_inverter_daily_battery_discharge',
     reserve_soc: 20, // %
+    power_sign: 'deye', // 'deye' (- = Заряд, + = Розряд) | 'standard' (+ = Заряд, - = Розряд)
     invert_power: false, // if positive means charge or discharge
     parallel_batteries: 2, // 1 to 8 rack modules
     auto_calculate_modules: true,
@@ -150,7 +151,10 @@ export const DEFAULT_CONFIG = {
     power_entity: 'sensor.deye_12k_inverter_total_grid_power',
     import_daily_entity: 'sensor.deye_12k_inverter_daily_energy_bought',
     export_daily_entity: 'sensor.deye_12k_inverter_daily_energy_sold',
-    invert_power: false, // positive = export, negative = import
+    selling_enabled: false, // чи продає станція в мережу (Зелений тариф / Net billing). Якщо false — анімація продажу ЗАВЖДИ вимкнена!
+    power_sign: 'deye', // 'deye' (+ = Імпорт, - = Експорт) | 'inverted' (+ = Експорт, - = Імпорт)
+    min_power_threshold: 50, // Watts (нижче цього значення анімація вимикається)
+    invert_power: false,
     show_car: true,
     car_power_entity: 'sensor.ev_charger_power',
     car_title: 'Авто',
