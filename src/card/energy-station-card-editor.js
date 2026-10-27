@@ -25,6 +25,9 @@ export class EnergyStationCardEditor extends HTMLElement {
   _valueChanged(path, value) {
     if (!this._config) return;
     
+    // Always work on an unfrozen clean clone
+    this._config = JSON.parse(JSON.stringify(this._config));
+
     // Set nested value (e.g. "solar.pv_count")
     const parts = path.split('.');
     let curr = this._config;
@@ -34,9 +37,9 @@ export class EnergyStationCardEditor extends HTMLElement {
     }
     curr[parts[parts.length - 1]] = value;
 
-    // Fire Lovelace standard change event
+    // Fire Lovelace standard change event with a clone
     const event = new CustomEvent('config-changed', {
-      detail: { config: this._config },
+      detail: { config: JSON.parse(JSON.stringify(this._config)) },
       bubbles: true,
       composed: true
     });
@@ -49,6 +52,7 @@ export class EnergyStationCardEditor extends HTMLElement {
   }
 
   _applyPreset(presetName) {
+    this._config = JSON.parse(JSON.stringify(this._config || DEFAULT_CONFIG));
     if (presetName === 'deye_esphome') {
       this._config.inverter.model_name = 'DEYE SUN-12K';
       this._config.solar.pv_count = 3;
@@ -147,7 +151,7 @@ export class EnergyStationCardEditor extends HTMLElement {
     }
 
     const event = new CustomEvent('config-changed', {
-      detail: { config: this._config },
+      detail: { config: JSON.parse(JSON.stringify(this._config)) },
       bubbles: true,
       composed: true
     });

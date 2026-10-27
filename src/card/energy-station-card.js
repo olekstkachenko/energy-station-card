@@ -40,7 +40,10 @@ export class EnergyStationCard extends HTMLElement {
 
   setConfig(config) {
     if (!config) throw new Error('Invalid configuration');
-    this._config = this._deepMerge(JSON.parse(JSON.stringify(DEFAULT_CONFIG)), config);
+    // Ensure clean mutable clone to prevent Home Assistant frozen object / read-only property errors
+    const safeConfig = JSON.parse(JSON.stringify(config));
+    const defaultClone = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    this._config = this._deepMerge(defaultClone, safeConfig);
     this._renderCardSkeleton();
     if (this._hass) this._updateValues();
   }
@@ -54,13 +57,18 @@ export class EnergyStationCard extends HTMLElement {
   }
 
   _deepMerge(target, source) {
+    const out = Array.isArray(target) ? [...target] : Object.assign({}, target);
+    if (!source || typeof source !== 'object') return out;
     for (const key of Object.keys(source)) {
-      if (source[key] instanceof Object && !Array.isArray(source[key]) && key in target) {
-        Object.assign(source[key], this._deepMerge(target[key], source[key]));
+      const srcVal = source[key];
+      const tgtVal = target ? target[key] : undefined;
+      if (srcVal && typeof srcVal === 'object' && !Array.isArray(srcVal)) {
+        out[key] = this._deepMerge(tgtVal || {}, srcVal);
+      } else {
+        out[key] = srcVal;
       }
     }
-    Object.assign(target || {}, source);
-    return target;
+    return out;
   }
 
   _getEntityState(entityId) {
