@@ -989,11 +989,11 @@ export class EnergyStationCard extends HTMLElement {
               <div>Розряд: <span id="batDischargeDaily" style="color: #fbbf24; font-weight: 700;">6,10 kWh</span></div>
             </div>
 
-            <!-- Center SoC -->
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-              <div class="es-mono" id="masterBatterySoc" style="font-size: 30px; font-weight: 900; color: #34d399; margin: 0 0 2px 0;">80.0%</div>
-              <div class="es-mono" id="masterBatteryFlowHint" style="font-size: 11px; color: #94a3b8;">
-                <span>3,000 кВт</span> • <span style="color: #34d399;">Заряд ↓</span>
+            <!-- Center SoC & Power -->
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;">
+              <div class="es-mono" id="masterBatterySoc" style="font-size: 20px; font-weight: 800; color: #34d399; margin: 0;">80.0%</div>
+              <div class="es-mono" id="masterBatteryFlowHint" style="font-size: 16px; color: #f8fafc; display: flex; align-items: center; justify-content: center; margin-top: 1px;">
+                <span style="font-size: 16px; font-weight: 800; color: #f8fafc;">0,000 кВт</span> <span style="color: #64748b; margin: 0 4px;">•</span> <span style="color: #34d399; font-weight: 700; font-size: 14px;">Заряд ↓</span>
               </div>
             </div>
 
@@ -1696,6 +1696,8 @@ export class EnergyStationCard extends HTMLElement {
     const sSoc = this._getEntityState(c.battery?.soc_entity);
     const socVal = sSoc ? sSoc.val : 80.0;
     this._nodes.masterBatterySoc.innerText = `${socVal.toFixed(1)}%`;
+    this._nodes.masterBatterySoc.style.fontSize = '20px';
+    this._nodes.masterBatterySoc.style.fontWeight = '800';
 
     const sBatPower = this._getEntityState(c.battery?.power_entity);
     const sBatCurr = this._getEntityState(c.battery?.current_entity);
@@ -1744,7 +1746,7 @@ export class EnergyStationCard extends HTMLElement {
         stateText = 'Розряд ↑';
         stateColor = '#f87171';
       }
-      this._nodes.masterBatteryFlowHint.innerHTML = `<span>${absBatKw.toFixed(3)} кВт</span> • <span style="color: ${stateColor}; font-weight: 700;">${stateText}</span>`;
+      this._nodes.masterBatteryFlowHint.innerHTML = `<span style="font-size: 16px; font-weight: 800; color: #f8fafc;">${absBatKw.toFixed(3)} кВт</span> <span style="color: #64748b; margin: 0 4px;">•</span> <span style="color: ${stateColor}; font-weight: 700; font-size: 14px;">${stateText}</span>`;
     }
 
     const sBatVolt = this._getEntityState(c.battery?.voltage_entity);
