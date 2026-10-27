@@ -289,6 +289,7 @@ function setupSimulationLoop() {
     addState(c.grid?.import_daily_entity, mockTelemetry.gridImport, 'kWh');
     addState(c.grid?.export_daily_entity, mockTelemetry.gridExport, 'kWh');
     addState(c.grid?.car_power_entity, mockTelemetry.carPower, 'kW');
+    addState(c.grid?.non_essential_power_entity || 'sensor.non_essential_power', 1.0, 'kW');
 
     addState(c.load?.essential_power_entity, mockTelemetry.essentialPower, 'kW');
     addState(c.load?.daily_house_entity, mockTelemetry.houseDaily, 'kWh');

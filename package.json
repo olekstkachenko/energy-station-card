@@ -1,10 +1,11 @@
 {
   "name": "energy-station-ha",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Energy Station Dashboard & Custom Card for Home Assistant (Deye / SunSynk / Hybrid Inverter)",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "test": "node --test test/battery-flow.test.js",
     "build": "vite build && npm run build:card",
     "build:card": "vite build --config vite.card.config.js",
     "preview": "vite preview"

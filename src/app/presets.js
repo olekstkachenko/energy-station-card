@@ -265,6 +265,30 @@ export const PRESETS = {
         title: 'Мікроінвертор',
         subtitle: 'Джерело → GEN port',
         power_entity: 'mock.aux_power'
+      },
+      wind: {
+        show: true,
+        turbine_count: 2,
+        animation_threshold: 50,
+        max_power: 3000,
+        turbines: [
+          {
+            id: 'turbine_1',
+            name: 'Вітряк 1',
+            power_entity: 'mock.wind_turbine_1_power',
+            daily_energy_entity: 'mock.wind_turbine_1_daily_energy',
+            monthly_energy_entity: 'mock.wind_turbine_1_monthly_energy',
+            animation_threshold: 50
+          },
+          {
+            id: 'turbine_2',
+            name: 'Вітряк 2',
+            power_entity: 'mock.wind_turbine_2_power',
+            daily_energy_entity: 'mock.wind_turbine_2_daily_energy',
+            monthly_energy_entity: 'mock.wind_turbine_2_monthly_energy',
+            animation_threshold: 50
+          }
+        ]
       }
     }
   }

@@ -139,8 +139,13 @@ export class EnergyStationCard extends HTMLElement {
           border: 1px solid var(--es-border);
           position: relative;
           width: 100%;
-          padding: 14px 16px 20px 16px;
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 22px 28px 24px 28px;
           transition: all 0.3s ease;
+          container-type: inline-size;
+          container-name: es-card;
+          box-sizing: border-box;
         }
 
         .es-mono {
@@ -217,6 +222,11 @@ export class EnergyStationCard extends HTMLElement {
         .flow-pulse.flow-wind {
           stroke: #06b6d4;
           filter: drop-shadow(0 0 6px #0891b2) drop-shadow(0 0 2px #67e8f9);
+        }
+
+        .flow-pulse.flow-aux {
+          stroke: #c084fc;
+          filter: drop-shadow(0 0 6px #9333ea) drop-shadow(0 0 2px #d8b4fe);
         }
 
         .flow-pulse.inactive {
@@ -351,7 +361,7 @@ export class EnergyStationCard extends HTMLElement {
           align-items: center;
           justify-content: center;
           flex-wrap: wrap;
-          gap: 6px;
+          gap: 10px;
           width: 100%;
           padding: 4px 0;
         }
@@ -359,59 +369,38 @@ export class EnergyStationCard extends HTMLElement {
           display: flex;
           flex-direction: column;
           align-items: center;
-          padding: 6px 12px;
-          background: rgba(14, 23, 42, 0.85);
-          border: 1px solid rgba(245, 158, 11, 0.35);
+          padding: 6px 10px;
+          background: rgba(14, 23, 42, 0.65);
+          border: 1px solid rgba(245, 158, 11, 0.25);
           border-radius: 12px;
-          min-width: 84px;
+          min-width: 76px;
+          text-align: center;
           transition: all 0.2s ease;
         }
         .es-pv-top-row {
           display: flex;
           align-items: center;
-          gap: 5px;
+          justify-content: center;
           margin-bottom: 2px;
         }
         .es-pv-label {
-          font-size: 10px;
-          color: #94a3b8;
-          font-weight: 600;
+          font-size: 11px;
+          color: #fbbf24;
+          font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.04em;
+          margin-bottom: 1px;
         }
         .es-pv-val {
-          font-size: 13px;
+          font-size: 14px;
           font-weight: 800;
           color: #fbbf24;
-        }
-        .es-pv-metrics {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 10px;
-          margin-top: 3px;
-          padding-top: 3px;
-          border-top: 1px solid rgba(255, 255, 255, 0.06);
-          width: 100%;
-          justify-content: center;
-        }
-        .es-pv-metrics .volt {
-          color: #38bdf8;
-          font-weight: 600;
-        }
-        .es-pv-metrics .sep {
-          color: rgba(255, 255, 255, 0.25);
-          font-size: 8px;
-        }
-        .es-pv-metrics .curr {
-          color: #34d399;
-          font-weight: 600;
         }
 
         /* Bus */
         .es-bus-container {
           width: 100%;
-          max-width: 880px;
+          max-width: 1360px;
           height: 26px;
           position: relative;
           display: flex;
@@ -422,98 +411,303 @@ export class EnergyStationCard extends HTMLElement {
         /* Tri-col hub */
         .es-hub-grid {
           display: grid;
-          grid-template-columns: 1fr 1.35fr 1fr;
-          gap: 16px;
+          grid-template-columns: 1fr 1.6fr 1fr;
+          gap: 36px;
           align-items: center;
           width: 100%;
-          max-width: 1100px;
-          margin: 4px auto 14px auto;
+          max-width: 1360px;
+          margin: 8px auto 20px auto;
           position: relative;
-        }
-        @media (max-width: 820px) {
-          .es-hub-grid {
-            grid-template-columns: 1fr;
-            gap: 20px;
-          }
         }
 
         .es-wing-left {
           display: flex;
           flex-direction: column;
-          align-items: flex-end;
-          gap: 14px;
+          align-items: center;
+          gap: 26px;
+          width: 100%;
+        }
+        .es-center-col {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          position: relative;
+          width: 100%;
         }
         .es-wing-right {
           display: flex;
           flex-direction: column;
-          align-items: flex-start;
+          align-items: center;
           gap: 14px;
+          width: 100%;
         }
-        @media (max-width: 820px) {
-          .es-wing-left, .es-wing-right {
+
+        .es-schematic-node, .es-node-box {
+          background: rgba(10, 18, 32, 0.75);
+          border-radius: 14px;
+          padding: 8px 14px;
+          min-width: 130px;
+          max-width: 180px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          position: relative;
+          z-index: 2;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          box-sizing: border-box;
+          transition: all 0.25s ease;
+        }
+        .es-schematic-node:hover, .es-node-box:hover {
+          border-color: rgba(255, 255, 255, 0.25);
+          transform: translateY(-2px);
+        }
+        .es-node-icon {
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 2px;
+        }
+        .es-node-title {
+          font-size: 13px;
+          font-weight: 600;
+          color: #cbd5e1;
+        }
+        .es-node-power {
+          font-size: 20px;
+          font-weight: 800;
+          line-height: 1.2;
+          margin: 2px 0 1px 0;
+        }
+        .es-node-dir {
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          margin-top: 1px;
+        }
+
+        /* Responsive adaptations for mobile & narrow dashboard columns */
+        @container es-card (max-width: 820px) {
+          .energy-station-container {
+            padding: 12px 10px 18px 10px;
+          }
+
+          .es-hub-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-areas:
+              "grid  loads"
+              "inv   inv";
+            gap: 16px 12px;
+            margin: 4px 0 14px 0;
+            width: 100%;
+          }
+
+          .es-wing-left {
+            grid-area: grid;
             align-items: center;
+            width: 100%;
+            gap: 16px;
+          }
+
+          .es-wing-right {
+            grid-area: loads;
+            align-items: center;
+            width: 100%;
+          }
+
+          .es-center-col {
+            grid-area: inv;
+            align-items: center;
+            width: 100%;
+          }
+
+          .es-schematic-node, .es-node-box {
+            width: 100%;
+            max-width: 160px;
+            min-width: 0;
+            padding: 6px 8px;
+          }
+
+          .es-inverter-wings-row {
+            flex-direction: column !important;
+            gap: 8px !important;
+          }
+
+          .es-inverter-side-telemetry {
+            flex-direction: row !important;
+            justify-content: center !important;
+            gap: 16px !important;
+            text-align: center !important;
+          }
+
+          .es-aux-box {
+            position: static !important;
+            margin: 10px auto !important;
+          }
+
+          .es-master-battery-hub {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            grid-template-areas:
+              "soc   soc"
+              "left  right";
+            gap: 8px 12px;
+            padding: 10px 14px;
+            width: 100%;
+            box-sizing: border-box;
+          }
+
+          .es-bat-hub-soc-col {
+            grid-area: soc;
+            justify-self: center;
+          }
+
+          .es-bat-hub-left-col {
+            grid-area: left;
+            text-align: left;
+            align-self: center;
+          }
+
+          .es-bat-hub-right-col {
+            grid-area: right;
+            text-align: right;
+            align-self: center;
+          }
+
+          .es-subloads-row {
+            gap: 8px;
+            flex-wrap: wrap;
+          }
+
+          .es-subload-card {
+            min-width: 68px;
+            padding: 4px 6px;
+          }
+
+          .es-battery-pack-card {
+            min-width: 105px;
+            padding: 6px 8px;
           }
         }
 
-        .es-node-box {
-          background: rgba(11, 20, 37, 0.85);
-          border-radius: 14px;
-          padding: 10px 14px;
-          width: 195px;
+        .es-inverter-wings-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: center;
+          gap: 20px;
+          width: 100%;
+          position: relative;
+          z-index: 2;
+        }
+
+        .es-inverter-side-telemetry {
           display: flex;
           flex-direction: column;
+          gap: 4px;
+          font-size: 13px;
+          font-weight: 700;
+          color: #f59e0b;
+          min-width: 90px;
+          margin-top: 2px;
+          margin-bottom: 24px;
           position: relative;
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          z-index: 3;
+        }
+        .es-inverter-side-telemetry.left {
+          text-align: right;
+          align-items: flex-end;
+        }
+        .es-inverter-side-telemetry.right {
+          text-align: left;
+          align-items: flex-start;
+          position: relative;
         }
 
         .es-inverter-card {
-          width: 236px;
-          padding: 14px;
-          border-radius: 18px;
-          background: linear-gradient(180deg, #18233a 0%, #0d1628 100%);
-          border: 2px solid rgba(249, 115, 22, 0.7);
+          width: 205px;
+          padding: 12px 14px;
+          border-radius: 16px;
+          background: rgba(14, 22, 38, 0.9);
+          border: 2px solid rgba(249, 115, 22, 0.75);
           box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.7);
           display: flex;
           flex-direction: column;
           align-items: center;
           text-align: center;
           position: relative;
-          margin: 0 auto;
+          z-index: 2;
+          margin: 0;
         }
-        .es-inverter-model-tag {
-          position: absolute;
-          top: -11px;
-          padding: 2px 10px;
-          border-radius: 9999px;
-          background: #090e1a;
-          border: 1px solid rgba(249, 115, 22, 0.6);
-          color: #fdba74;
-          font-size: 10px;
+        .es-inverter-card-top-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          margin-bottom: 2px;
+        }
+        .es-inverter-icon-box {
+          width: 30px;
+          height: 30px;
+          color: #fbbf24;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .es-inverter-freq {
+          font-size: 12px;
           font-weight: 700;
-          letter-spacing: 0.05em;
+          color: #fbbf24;
+        }
+        .es-inverter-title {
+          font-size: 12px;
+          font-weight: 600;
+          color: #cbd5e1;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+        .es-inverter-power {
+          font-size: 20px;
+          font-weight: 900;
+          color: #fb923c;
+          margin: 2px 0;
         }
         .es-inverter-status-badge {
           padding: 2px 8px;
           border-radius: 6px;
-          background: rgba(16, 185, 129, 0.2);
+          background: rgba(16, 185, 129, 0.15);
           color: #34d399;
-          border: 1px solid rgba(16, 185, 129, 0.4);
+          border: 1px solid rgba(16, 185, 129, 0.35);
           font-size: 10px;
           font-weight: 700;
           letter-spacing: 0.05em;
-          margin: 4px 0 8px 0;
+          text-transform: uppercase;
         }
 
         .es-aux-box {
-          margin-top: 12px;
-          padding: 8px 14px;
-          border-radius: 12px;
-          background: rgba(88, 28, 135, 0.35);
-          border: 1px solid rgba(192, 132, 252, 0.45);
+          position: absolute;
+          bottom: calc(100% + 14px);
+          left: -10px;
+          padding: 6px 12px;
+          border-radius: 14px;
+          background: rgba(88, 28, 135, 0.45);
+          border: 1px solid rgba(192, 132, 252, 0.55);
           display: flex;
           flex-direction: column;
           align-items: center;
-          width: 180px;
+          text-align: center;
+          min-width: 125px;
+          max-width: 150px;
+          z-index: 5;
+          box-shadow: 0 4px 16px rgba(88, 28, 135, 0.3);
+          transition: all 0.25s ease;
+        }
+        .es-aux-box:hover {
+          border-color: rgba(216, 180, 254, 0.8);
+          transform: translateY(-2px);
         }
 
         .es-wind-station {
@@ -568,25 +762,36 @@ export class EnergyStationCard extends HTMLElement {
           transform: translateY(-2px);
         }
 
-        /* Sub-loads grid */
+        /* Sub-loads grid & bus */
+        .es-subloads-bus-container {
+          width: 100%;
+          max-width: 360px;
+          height: 26px;
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 2px 0;
+        }
         .es-subloads-row {
           display: flex;
           align-items: center;
-          justify-content: flex-start;
-          gap: 8px;
-          flex-wrap: wrap;
-          max-width: 280px;
+          justify-content: center;
+          gap: 16px;
+          flex-wrap: nowrap;
+          width: 100%;
+          max-width: 380px;
         }
 
         .es-subload-card {
           padding: 6px 10px;
-          background: rgba(15, 23, 42, 0.75);
+          background: rgba(15, 23, 42, 0.7);
           border: 1px solid rgba(6, 182, 212, 0.25);
-          border-radius: 10px;
+          border-radius: 12px;
           display: flex;
           flex-direction: column;
           align-items: center;
-          min-width: 72px;
+          min-width: 76px;
           text-align: center;
           transition: all 0.2s ease;
         }
@@ -607,173 +812,114 @@ export class EnergyStationCard extends HTMLElement {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 28px;
-          padding: 12px 24px;
+          gap: 40px;
+          padding: 12px 32px;
           border-radius: 16px;
-          background: linear-gradient(90deg, rgba(6, 78, 59, 0.25) 0%, rgba(15, 23, 42, 0.7) 50%, rgba(6, 78, 59, 0.25) 100%);
-          border: 1px solid rgba(16, 185, 129, 0.4);
-          margin-bottom: 6px;
+          background: linear-gradient(90deg, rgba(6, 78, 59, 0.2) 0%, rgba(15, 23, 42, 0.7) 50%, rgba(6, 78, 59, 0.2) 100%);
+          border: 1px solid rgba(16, 185, 129, 0.35);
+          margin-bottom: 0px;
           flex-wrap: wrap;
         }
+
+        /* Battery Branch Floating Power Badges */
+        .es-bat-branch-badges {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 10;
+          overflow: visible;
+        }
+        .es-bat-branch-badge {
+          position: absolute;
+          display: none;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          padding: 2px 10px;
+          border-radius: 9999px;
+          font-size: 11px;
+          font-weight: 800;
+          background: rgba(10, 15, 29, 0.95);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          transform: translate(-50%, -50%);
+          white-space: nowrap;
+          pointer-events: auto;
+          cursor: pointer;
+          transition: opacity 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+          z-index: 12;
+        }
+        .es-bat-branch-badge.charge {
+          border: 1.5px solid rgba(16, 185, 129, 0.7);
+          color: #34d399;
+          box-shadow: 0 0 12px rgba(16, 185, 129, 0.45);
+        }
+        .es-bat-branch-badge.discharge {
+          border: 1.5px solid rgba(239, 68, 68, 0.7);
+          color: #f87171;
+          box-shadow: 0 0 12px rgba(239, 68, 68, 0.45);
+        }
+        .es-bat-branch-badge.idle {
+          border: 1px solid rgba(100, 116, 139, 0.35);
+          color: #94a3b8;
+          box-shadow: none;
+        }
+
+        #batteryBusContainer {
+          width: 100%;
+          max-width: 1360px;
+          height: 48px;
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto;
+        }
+
         .es-battery-rack {
           display: flex;
           align-items: center;
           justify-content: center;
           flex-wrap: wrap;
-          gap: 12px;
+          gap: 16px;
           width: 100%;
         }
         .es-battery-pack-card {
-          padding: 8px 12px;
-          background: rgba(14, 23, 42, 0.85);
+          padding: 8px 14px;
+          background: rgba(14, 23, 42, 0.75);
           border: 1px solid rgba(16, 185, 129, 0.35);
           border-radius: 14px;
           display: flex;
           flex-direction: column;
           align-items: center;
-          min-width: 148px;
+          min-width: 125px;
+          text-align: center;
           transition: all 0.25s ease;
           position: relative;
+          z-index: 2;
         }
         .es-battery-pack-card:hover {
           border-color: #34d399;
           transform: translateY(-2px);
         }
-        .es-bat-temp {
-          font-size: 11px;
-          font-weight: 700;
-          color: #fb7185;
-          margin-bottom: 3px;
-          display: flex;
-          align-items: center;
-          gap: 3px;
-        }
-        .es-bat-main-row {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          width: 100%;
-        }
-        .es-bat-soc-col {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-        }
-        .es-bat-soc-val {
-          font-size: 22px;
-          font-weight: 900;
-          color: #f1f5f9;
-          line-height: 1;
-        }
         .es-bat-name {
-          font-size: 9px;
-          color: #94a3b8;
-          font-weight: 600;
-          text-transform: uppercase;
-          margin-top: 2px;
-        }
-        .es-battery-gauge {
-          width: 26px;
-          height: 46px;
-          border: 2px solid #fb7185;
-          border-radius: 5px;
-          padding: 2px;
-          display: flex;
-          flex-direction: column;
-          justify-content: flex-end;
-          gap: 2px;
-          position: relative;
-          background: rgba(0, 0, 0, 0.4);
-        }
-        .es-battery-gauge-nipple {
-          position: absolute;
-          top: -6px;
-          left: 6px;
-          width: 10px;
-          height: 4px;
-          background: #fb7185;
-          border-radius: 2px 2px 0 0;
-        }
-        .es-battery-gauge-body {
-          width: 100%;
-          height: 100%;
-          display: flex;
-          flex-direction: column-reverse;
-          gap: 2px;
-        }
-        .es-bat-bar {
-          width: 100%;
-          height: 8px;
-          border-radius: 1px;
-          background: rgba(255, 255, 255, 0.08);
-          transition: background 0.3s;
-        }
-        .es-bat-bar.active-red { background: #ef4444; }
-        .es-bat-bar.active-orange { background: #f97316; }
-        .es-bat-bar.active-yellow { background: #eab308; }
-        .es-bat-bar.active-green { background: #10b981; }
-
-        .es-bat-telemetry-badge {
-          background: rgba(8, 13, 25, 0.8);
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          border-radius: 8px;
-          padding: 4px 7px;
-          display: flex;
-          flex-direction: column;
-          gap: 1px;
-          font-size: 10px;
-          text-align: right;
-        }
-        .es-bat-telemetry-badge .volt {
-          color: #f1f5f9;
-          font-weight: 700;
-        }
-        .es-bat-telemetry-badge .curr {
-          color: #38bdf8;
-          font-weight: 700;
-        }
-        .es-bat-telemetry-badge .power {
-          color: #34d399;
-          font-weight: 800;
-        }
-        .es-bat-bottom-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          width: 100%;
-          margin-top: 6px;
-          padding-top: 4px;
-          border-top: 1px solid rgba(255, 255, 255, 0.06);
-          font-size: 10px;
-        }
-        .es-bat-state-tag {
-          font-size: 9px;
-          font-weight: 700;
-          padding: 1px 6px;
-          border-radius: 4px;
-          text-transform: uppercase;
-        }
-        .es-bat-state-tag.charge {
-          background: rgba(16, 185, 129, 0.15);
-          color: #34d399;
-          border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-        .es-bat-state-tag.discharge {
-          background: rgba(249, 115, 22, 0.15);
-          color: #fb923c;
-          border: 1px solid rgba(249, 115, 22, 0.3);
-        }
-        .es-bat-state-tag.idle {
-          background: rgba(148, 163, 184, 0.15);
-          color: #94a3b8;
-          border: 1px solid rgba(148, 163, 184, 0.3);
-        }
-        .es-bat-kwh {
+          font-size: 11px;
           color: #cbd5e1;
           font-weight: 600;
+          margin-bottom: 2px;
         }
-
+        .es-bat-soc-val {
+          font-size: 20px;
+          font-weight: 900;
+          color: #34d399;
+          line-height: 1.1;
+        }
+        .es-bat-volt {
+          font-size: 12px;
+          font-weight: 700;
+          color: #94a3b8;
+          margin-top: 2px;
+        }
         .hidden { display: none !important; }
       </style>
 
@@ -785,23 +931,39 @@ export class EnergyStationCard extends HTMLElement {
           <path id="pathGridInvBase" class="flow-track" />
           <path id="pathGridInvFlow" class="flow-pulse flow-grid" />
 
-          <!-- 2. Solar -> Inverter Path -->
+          <!-- 2. Grid -> Non-Essential Path -->
+          <path id="pathGridNonEssBase" class="flow-track" />
+          <path id="pathGridNonEssFlow" class="flow-pulse flow-grid" />
+
+          <!-- 3. Non-Essential -> Car Path -->
+          <path id="pathNonEssCarBase" class="flow-track" />
+          <path id="pathNonEssCarFlow" class="flow-pulse flow-car" />
+
+          <!-- 4. Solar -> Inverter Path -->
           <path id="pathSolarInvBase" class="flow-track" />
           <path id="pathSolarInvFlow" class="flow-pulse flow-solar" />
 
-          <!-- 3. Inverter -> Essential Loads Path -->
+          <!-- 5. Inverter -> Essential Loads Path -->
           <path id="pathInvLoadBase" class="flow-track" />
           <path id="pathInvLoadFlow" class="flow-pulse flow-load" />
 
-          <!-- 4. Inverter <-> Battery Hub Path -->
+          <!-- 6. Essential Loads -> Subloads Bus Stem Path -->
+          <path id="pathLoadSubloadsBase" class="flow-track" />
+          <path id="pathLoadSubloadsFlow" class="flow-pulse flow-load" />
+
+          <!-- 7. Inverter -> Aux/Microinverter Path -->
+          <path id="pathInvAuxBase" class="flow-track" />
+          <path id="pathInvAuxFlow" class="flow-pulse flow-aux" />
+
+          <!-- 8. Inverter <-> Battery Hub Path -->
           <path id="pathInvBatBase" class="flow-track" />
           <path id="pathInvBatFlow" class="flow-pulse flow-battery" />
 
-          <!-- 5. Grid -> Car Path -->
-          <path id="pathGridCarBase" class="flow-track" />
-          <path id="pathGridCarFlow" class="flow-pulse flow-car" />
+          <!-- 9. Battery Hub -> Battery Bus Stem Path -->
+          <path id="pathBatStemBase" class="flow-track" />
+          <path id="pathBatStemFlow" class="flow-pulse flow-battery" />
 
-          <!-- 6. Wind Turbines -> Inverter Paths -->
+          <!-- 10. Wind Turbines -> Hub Paths -->
           <path id="pathTurbine1Base" class="flow-track" />
           <path id="pathTurbine1Flow" class="flow-pulse flow-wind" />
           <path id="pathTurbine2Base" class="flow-track" />
@@ -810,6 +972,25 @@ export class EnergyStationCard extends HTMLElement {
           <path id="pathTurbine3Flow" class="flow-pulse flow-wind" />
           <path id="pathTurbine4Base" class="flow-track" />
           <path id="pathTurbine4Flow" class="flow-pulse flow-wind" />
+
+          <!-- 11. Battery Branch Conduits (Master Hub <-> Battery Packs 1..8) -->
+          <path id="pathBat1Base" class="flow-track" />
+          <path id="pathBat1Flow" class="flow-pulse flow-battery" />
+          <path id="pathBat2Base" class="flow-track" />
+          <path id="pathBat2Flow" class="flow-pulse flow-battery" />
+          <path id="pathBat3Base" class="flow-track" />
+          <path id="pathBat3Flow" class="flow-pulse flow-battery" />
+          <path id="pathBat4Base" class="flow-track" />
+          <path id="pathBat4Flow" class="flow-pulse flow-battery" />
+          <path id="pathBat5Base" class="flow-track" />
+          <path id="pathBat5Flow" class="flow-pulse flow-battery" />
+          <path id="pathBat6Base" class="flow-track" />
+          <path id="pathBat6Flow" class="flow-pulse flow-battery" />
+          <path id="pathBat7Base" class="flow-track" />
+          <path id="pathBat7Flow" class="flow-pulse flow-battery" />
+          <path id="pathBat8Base" class="flow-track" />
+          <path id="pathBat8Flow" class="flow-pulse flow-battery" />
+
         </svg>
 
         <!-- HEADER -->
@@ -827,11 +1008,12 @@ export class EnergyStationCard extends HTMLElement {
         <!-- SOLAR PV SECTION -->
         <div class="es-solar-section">
           <div class="es-sun-header clickable-node" id="solarHeaderNode">
-            <div class="es-mono" style="font-size: 16px; font-weight: 700; color: #fbbf24;">
+            <div style="width: 28px; height: 28px; color: #fbbf24; margin-bottom: 2px;">${ICONS.sun}</div>
+            <div class="es-mono" style="font-size: 17px; font-weight: 800; color: #fbbf24;">
               <span id="dailySolarYield">48,6</span> kWh <span style="color: #64748b;">/</span> <span id="targetSolarYield">${c.solar?.target_daily_yield || 55.0}</span> kWh
             </div>
             <!-- Progress Bar -->
-            <div style="width: 220px; height: 6px; background: #1e293b; border-radius: 9999px; margin-top: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.06);">
+            <div style="width: 220px; height: 5px; background: #1e293b; border-radius: 9999px; margin-top: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.06);">
               <div id="solarProgressBar" style="height: 100%; width: 88%; background: linear-gradient(90deg, #f59e0b, #fde047); border-radius: 9999px; transition: width 0.7s;"></div>
             </div>
           </div>
@@ -852,8 +1034,9 @@ export class EnergyStationCard extends HTMLElement {
 
           <!-- Total Solar Badge -->
           <div style="display: flex; flex-direction: column; align-items: center; margin-top: -2px;">
+            <div style="width: 20px; height: 20px; color: #fbbf24; margin-bottom: 1px;">${ICONS.sun}</div>
             <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(245, 158, 11, 0.85); font-weight: 600;">Сумарно PV</span>
-            <div class="es-mono glow-solar clickable-node" id="totalPvPowerBadge" style="font-size: 19px; font-weight: 800; color: #fbbf24;">
+            <div class="es-mono glow-solar clickable-node" id="totalPvPowerBadge" style="font-size: 20px; font-weight: 900; color: #fbbf24;">
               12,000 кВт
             </div>
           </div>
@@ -862,117 +1045,102 @@ export class EnergyStationCard extends HTMLElement {
         <!-- CENTER TRI-COL HUB -->
         <div class="es-hub-grid">
           
-          <!-- LEFT: GRID & CAR -->
+          <!-- LEFT: GRID, NON-ESSENTIAL & CAR -->
           <div class="es-wing-left">
-            <div class="es-mono" style="font-size: 12px; color: #cbd5e1; display: flex; flex-direction: column; gap: 2px;">
-              <div>Імпорт: <span id="gridImportDaily" style="color: #38bdf8; font-weight: 700;">3,10 kWh</span></div>
-              <div>Експорт: <span id="gridExportDaily" style="color: #34d399; font-weight: 700;">4,80 kWh</span></div>
+            <div class="es-mono" style="font-size: 13px; color: #cbd5e1; display: flex; flex-direction: column; gap: 3px; align-items: flex-end; margin-bottom: 2px;">
+              <div>Імпорт <span id="gridImportDaily" style="color: #38bdf8; font-weight: 700;">3,10 kWh</span></div>
+              <div>Експорт <span id="gridExportDaily" style="color: #34d399; font-weight: 700;">4,80 kWh</span></div>
             </div>
 
-            <!-- Grid Box -->
-            <div class="es-node-box glow-grid clickable-node" id="gridNode" style="border-color: rgba(56, 189, 248, 0.4);">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                <div style="width: 20px; height: 20px; color: #38bdf8;">${ICONS.grid_tower}</div>
-                <span style="font-weight: 700; font-size: 14px; color: #f8fafc;">Мережа</span>
-              </div>
-              <div class="es-mono" id="gridPowerVal" style="font-size: 20px; font-weight: 800; color: #38bdf8;">2,000 кВт</div>
-              <div class="es-mono" id="gridDirectionLabel" style="font-size: 11px; font-weight: 600; color: rgba(56, 189, 248, 0.85); text-transform: uppercase; margin-top: 2px;">
-                ← Експорт
-              </div>
+            <!-- 1. Grid Node (Мережа) -->
+            <div class="es-schematic-node glow-grid clickable-node" id="gridNode" style="border-color: rgba(56, 189, 248, 0.4);">
+              <div class="es-node-icon" style="color: #38bdf8;">${ICONS.grid_tower}</div>
+              <div class="es-node-title">Мережа</div>
+              <div class="es-mono es-node-power" id="gridPowerVal" style="color: #38bdf8;">2,000 кВт</div>
+              <div class="es-mono es-node-dir" id="gridDirectionLabel" style="color: #34d399;">← ЕКСПОРТ</div>
             </div>
 
-            <!-- Non-essential / Car -->
-            <div class="es-node-box clickable-node" id="carNode" style="width: 195px; padding: 8px 12px;">
-              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                <span style="font-size: 11px; color: #94a3b8; font-weight: 500;">Негарантоване</span>
-              </div>
-              <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 4px;">
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <div style="width: 18px; height: 18px; color: #34d399;">${ICONS.car}</div>
-                  <span style="font-size: 12px; color: #e2e8f0; font-weight: 600;">${c.grid?.car_title || 'Авто'}</span>
-                </div>
-                <span class="es-mono" id="carPowerVal" style="font-size: 13px; font-weight: 700; color: #38bdf8;">1,000 кВт</span>
-              </div>
+            <!-- 2. Non-essential Node (Негарантоване) -->
+            <div class="es-schematic-node clickable-node" id="nonEssentialNode" style="border-color: rgba(56, 189, 248, 0.25);">
+              <div class="es-node-icon" style="color: #38bdf8;">${ICONS.house_outline || ICONS.house}</div>
+              <div class="es-node-title">Негарантоване</div>
+              <div class="es-mono es-node-power" id="nonEssentialPowerVal" style="color: #38bdf8;">1,000 кВт</div>
+            </div>
+
+            <!-- 3. Car Node (Авто) -->
+            <div class="es-schematic-node clickable-node" id="carNode" style="border-color: rgba(56, 189, 248, 0.25);">
+              <div class="es-node-icon" style="color: #38bdf8;">${ICONS.car}</div>
+              <div class="es-node-title" id="carTitle">${c.grid?.car_title || 'Авто'}</div>
+              <div class="es-mono es-node-power" id="carPowerVal" style="color: #38bdf8;">1,000 кВт</div>
             </div>
           </div>
 
           <!-- CENTER: HYBRID INVERTER & AUX -->
-          <div style="display: flex; flex-direction: column; align-items: center; position: relative;">
-
-            <!-- Temperature row -->
-            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: #f59e0b;" class="es-mono">
-              <div><span style="color: #94a3b8;">AC</span> <span id="inverterAcTemp">41,20</span> °C</div>
-              <div><span style="color: #94a3b8;">DC</span> <span id="inverterDcTemp">38,40</span> °C</div>
-            </div>
-
-            <!-- Inverter Card -->
-            <div class="es-inverter-card glow-inverter clickable-node" id="inverterNode">
-              <div class="es-inverter-model-tag es-mono" id="inverterModelTag">${c.inverter?.model_name || 'DEYE SUN-12K'}</div>
-              <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); display: flex; align-items: center; justify-content: center; color: #fbbf24; margin: 4px 0 6px 0;">
-                <div style="width: 26px; height: 26px;">${ICONS.inverter}</div>
+          <div class="es-center-col">
+            <div class="es-inverter-wings-row">
+              <!-- Left Telemetry: AC & DC Temp -->
+              <div class="es-inverter-side-telemetry left es-mono" id="inverterLeftTelemetry">
+                <div>AC <span id="inverterAcTemp">41,20</span> °C</div>
+                <div>DC <span id="inverterDcTemp">38,40</span> °C</div>
               </div>
-              <div style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: #cbd5e1; font-weight: 700; margin-bottom: 2px;">Гібридний інвертор</div>
-              <div class="es-inverter-status-badge" id="inverterStatusBadge" style="margin: 2px 0 6px 0;">ПРАЦЮЄ</div>
-              <div class="es-mono" id="inverterPowerVal" style="display: ${c.inverter?.power_entity ? 'block' : 'none'}; font-size: 20px; font-weight: 900; color: #fbbf24; margin: 2px 0 6px 0;">0,000 кВт</div>
-              
-              <!-- Enlarged Metrics Panel: U, I, Freq -->
-              <div style="width: 100%; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 8px; margin-top: 2px; display: flex; flex-direction: column; gap: 6px;" class="es-mono">
-                <div style="display: flex; align-items: baseline; justify-content: space-around; width: 100%;">
-                  <div style="display: flex; align-items: baseline; gap: 3px;">
-                    <span style="color: #94a3b8; font-size: 13px; font-weight: 600;">U:</span>
-                    <span id="inverterVolt" style="font-size: 18px; font-weight: 800; color: #f8fafc;">231,45</span>
-                    <span style="font-size: 12px; font-weight: 600; color: #94a3b8;">V</span>
-                  </div>
-                  <div style="display: flex; align-items: baseline; gap: 3px;">
-                    <span style="color: #94a3b8; font-size: 13px; font-weight: 600;">I:</span>
-                    <span id="inverterCurrent" style="font-size: 18px; font-weight: 800; color: #38bdf8;">8,60</span>
-                    <span style="font-size: 12px; font-weight: 600; color: #94a3b8;">A</span>
-                  </div>
+
+              <!-- Center: Inverter Card -->
+              <div class="es-inverter-card glow-inverter clickable-node" id="inverterNode">
+                <div class="es-inverter-card-top-row">
+                  <div class="es-inverter-icon-box">${ICONS.inverter}</div>
+                  <div class="es-mono es-inverter-freq"><span id="inverterFreq">50,01</span> Hz</div>
                 </div>
-                <div style="display: flex; align-items: baseline; justify-content: center; gap: 4px;">
-                  <span style="color: #94a3b8; font-size: 13px; font-weight: 600;">Freq:</span>
-                  <span id="inverterFreq" style="font-size: 16px; font-weight: 800; color: #fde047;">50,01</span>
-                  <span style="font-size: 12px; font-weight: 600; color: #fde047;">Hz</span>
+                <div class="es-inverter-title">Гібридний інвертор</div>
+                <div class="es-mono es-inverter-power" id="inverterPowerVal">8,000 кВт</div>
+                <div class="es-inverter-status-badge" id="inverterStatusBadge">ПРАЦЮЄ</div>
+              </div>
+
+              <!-- Right Telemetry: Voltage & Current -->
+              <div class="es-inverter-side-telemetry right es-mono" id="inverterRightTelemetry">
+                <!-- AUX Node (Microinverter / Generator moved here above telemetry to avoid animation collisions) -->
+                <div class="es-aux-box glow-aux clickable-node ${c.aux?.type === 'none' || c.aux?.type === 'wind' ? 'hidden' : ''}" id="auxNode">
+                  <div style="width: 22px; height: 22px; color: #c084fc; margin-bottom: 2px;" id="auxIconBox">
+                    ${ICONS[c.aux?.type] || ICONS.microinverter}
+                  </div>
+                  <div style="font-size: 11px; font-weight: 700; color: #cbd5e1; text-transform: uppercase;" id="auxTitle">${(c.aux?.type === 'microinverter' && (!c.aux?.title || c.aux?.title === 'Вітрогенератор')) ? 'Мікроінвертор' : (c.aux?.title || 'Мікроінвертор')}</div>
+                  <div class="es-mono" id="auxPowerVal" style="font-size: 16px; font-weight: 800; color: #c084fc; margin: 2px 0;">2,000 кВт</div>
+                  <div class="es-mono" style="font-size: 10px; color: rgba(216, 180, 254, 0.85);" id="auxSubtitle">${c.aux?.subtitle || 'Джерело → GEN'}</div>
                 </div>
+
+                <div><span id="inverterVolt">231,45</span> V</div>
+                <div><span id="inverterCurrent">8,60</span> A</div>
               </div>
             </div>
 
             <!-- WIND TURBINES STATION (Symmetrical Dual/Multi Pods) -->
-            <div class="es-wind-station ${(!c.wind?.show && c.aux?.type !== 'wind') ? 'hidden' : ''}" id="windStationContainer"></div>
-
-            <!-- AUX Node (Microinverter / Generator when not in wind mode) -->
-            <div class="es-aux-box glow-aux clickable-node ${c.aux?.type === 'none' || c.aux?.type === 'wind' ? 'hidden' : ''}" id="auxNode">
-              <div style="display: flex; align-items: center; gap: 6px; color: #d8b4fe; font-size: 12px; font-weight: 600;" id="auxHeader">
-                <div style="width: 18px; height: 18px;" id="auxIconBox">
-                  ${ICONS[c.aux?.type] || ICONS.microinverter}
-                </div>
-                <span id="auxTitle">${(c.aux?.type === 'microinverter' && (!c.aux?.title || c.aux?.title === 'Вітрогенератор')) ? 'Мікроінвертор' : (c.aux?.title || 'Мікроінвертор')}</span>
-              </div>
-              <div class="es-mono" id="auxPowerVal" style="font-size: 16px; font-weight: 800; color: #e9d5ff; margin: 2px 0;">2,000 кВт</div>
-              <div style="font-size: 10px; color: rgba(216, 180, 254, 0.85);" id="auxSubtitle">${c.aux?.subtitle || 'Джерело → GEN port'}</div>
-            </div>
-
+            <div class="es-wind-station ${c.wind?.show === false && c.aux?.type !== 'wind' ? 'hidden' : ''}" id="windStationContainer"></div>
           </div>
 
-          <!-- RIGHT: ESSENTIAL HOUSE LOADS -->
+          <!-- RIGHT: ESSENTIAL HOUSE LOADS & SUBLOADS -->
           <div class="es-wing-right">
-            <div class="es-mono" style="font-size: 12px; color: #cbd5e1;">
-              Будинок (сьогодні): <span id="dailyHouseKwh" style="color: #2dd4bf; font-weight: 700;">12,40 kWh</span>
+            <div class="es-mono" style="font-size: 13px; color: #cbd5e1; align-self: center; margin-bottom: 2px;">
+              Будинок <span id="dailyHouseKwh" style="color: #22d3ee; font-weight: 700;">12,40 kWh</span>
             </div>
 
-            <!-- Essential Loads Box -->
-            <div class="es-node-box clickable-node" id="essentialNode" style="border-color: rgba(6, 182, 212, 0.4); filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.35));">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                <div style="width: 20px; height: 20px; color: #22d3ee;">${ICONS.house}</div>
-                <span style="font-weight: 700; font-size: 14px; color: #f8fafc;">Гарантоване</span>
-              </div>
-              <div class="es-mono" id="essentialPowerVal" style="font-size: 20px; font-weight: 800; color: #22d3ee;">8,000 кВт</div>
-              <div class="es-mono" style="font-size: 11px; font-weight: 600; color: rgba(34, 211, 238, 0.85); text-transform: uppercase; margin-top: 2px;">
-                Essential Loads
-              </div>
+            <!-- Essential Loads Node (Гарантоване) -->
+            <div class="es-schematic-node glow-load clickable-node" id="essentialNode" style="border-color: rgba(6, 182, 212, 0.4);">
+              <div class="es-node-icon" style="color: #22d3ee;">${ICONS.house}</div>
+              <div class="es-node-title">Гарантоване</div>
+              <div class="es-mono es-node-power" id="essentialPowerVal" style="color: #22d3ee;">8,000 кВт</div>
             </div>
 
-            <!-- Subloads -->
+            <!-- Subloads Bus Bar -->
+            <div class="es-subloads-bus-container" id="subloadsBusContainer">
+              <svg id="subloadsBusSvg" style="width: 100%; height: 100%; overflow: visible;" preserveAspectRatio="none">
+                <line id="subloadsBusBase" stroke="#0891b2" stroke-width="2" stroke-linecap="round" />
+                <line id="subloadsFlowCollector" class="flow-line" stroke="#22d3ee" stroke-width="2.5" />
+                <g id="subloadsBusFeeders"></g>
+                <line id="subloadsBusStemBase" stroke="#0891b2" stroke-width="2" />
+                <line id="subloadsBusStemFlow" class="flow-line" stroke="#22d3ee" stroke-width="2.5" />
+              </svg>
+            </div>
+
+            <!-- Subloads Row -->
             <div class="es-subloads-row" id="subloadsContainer"></div>
           </div>
 
@@ -984,40 +1152,47 @@ export class EnergyStationCard extends HTMLElement {
           <!-- Master Battery Hub -->
           <div class="es-master-battery-hub glow-battery clickable-node" id="masterBatteryHub">
             <!-- Left Counters -->
-            <div class="es-mono" style="font-size: 12px; display: flex; flex-direction: column; gap: 4px; text-align: right;">
-              <div>Заряд: <span id="batChargeDaily" style="color: #34d399; font-weight: 700;">4,30 kWh</span></div>
-              <div>Розряд: <span id="batDischargeDaily" style="color: #fbbf24; font-weight: 700;">6,10 kWh</span></div>
+            <div class="es-bat-hub-left-col es-mono" style="font-size: 12px; display: flex; flex-direction: column; gap: 3px; text-align: right;">
+              <div style="color: #94a3b8; font-size: 11px; text-transform: uppercase;">Заряд</div>
+              <div id="batChargeDaily" style="color: #34d399; font-weight: 700; font-size: 13px;">4,30 kWh</div>
+              <div style="color: #94a3b8; font-size: 11px; text-transform: uppercase; margin-top: 2px;">Розряд</div>
+              <div id="batDischargeDaily" style="color: #fbbf24; font-weight: 700; font-size: 13px;">6,10 kWh</div>
             </div>
 
-            <!-- Center SoC & Power -->
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;">
-              <div class="es-mono" id="masterBatterySoc" style="font-size: 20px; font-weight: 800; color: #34d399; margin: 0;">80.0%</div>
-              <div class="es-mono" id="masterBatteryFlowHint" style="font-size: 16px; color: #f8fafc; display: flex; align-items: center; justify-content: center; margin-top: 1px;">
-                <span style="font-size: 16px; font-weight: 800; color: #f8fafc;">0,000 кВт</span> <span style="color: #64748b; margin: 0 4px;">•</span> <span style="color: #34d399; font-weight: 700; font-size: 14px;">Заряд ↓</span>
+            <!-- Center SoC & Power (Icon and 'ГОЛОВНА БАТАРЕЯ' removed as requested) -->
+            <div class="es-bat-hub-soc-col" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;">
+              <div class="es-mono" id="masterBatterySoc" style="font-size: 15px; font-weight: 700; color: #34d399; margin: 0;">80.0%</div>
+              <div class="es-mono" id="masterBatteryFlowHint" style="display: flex; align-items: center; justify-content: center; margin-top: 2px;">
+                <span style="font-size: 20px; font-weight: 900; color: #f8fafc;">3,000 кВт</span> <span style="color: #64748b; margin: 0 4px;">•</span> <span style="color: #34d399; font-weight: 700; font-size: 14px;">Заряд ↓</span>
               </div>
             </div>
 
-            <!-- Right Telemetry -->
-            <div class="es-mono" style="font-size: 12px; display: flex; flex-direction: column; gap: 4px;">
-              <div id="batVoltCurrent" style="color: #6ee7b7; font-weight: 700;">U: 53,24 V / I: -56,30 A</div>
-              <div>Ємність: <span id="batCapacityVal" style="color: #f1f5f9; font-weight: 600;">13,00 kWh (12,80 kWh)</span></div>
+            <!-- Right Telemetry ('До резерву 20%' and progress bar removed as requested) -->
+            <div class="es-bat-hub-right-col es-mono" style="font-size: 12px; display: flex; flex-direction: column; gap: 3px;">
+              <div id="batVoltVal" style="color: #6ee7b7; font-weight: 700;">53,24 V</div>
+              <div id="batCurrentVal" style="color: #38bdf8; font-weight: 700;">-56,30 A</div>
+              <div id="batCapacityVal" style="color: #f1f5f9; font-weight: 600;">9,00 kWh</div>
             </div>
           </div>
 
-          <!-- Battery Bus (Dynamic width based on battery count) -->
-          <div class="es-bus-container" id="batteryBusContainer" style="width: 100%; max-width: 900px; height: 26px;">
-            <svg id="batteryBusSvg" style="width: 100%; height: 100%; overflow: visible;" preserveAspectRatio="none">
-              <line id="batteryBusBase" stroke="#059669" stroke-width="2" stroke-linecap="round" />
-              <line id="batteryFlowCollector" class="flow-line" stroke="#34d399" stroke-width="2.5" />
-              <g id="batteryBusFeeders"></g>
-              <line id="batteryBusStemBase" stroke="#059669" stroke-width="2" />
-              <line id="batteryBusStemFlow" class="flow-line" stroke="#34d399" stroke-width="2.5" />
-            </svg>
-          </div>
+          <!-- Battery Spacer (Conduits drawn on energyFlowCanvas) -->
+          <div class="es-bus-container" id="batteryBusContainer" style="height: 44px; width: 100%;"></div>
 
           <!-- Parallel Modules Rack -->
           <div class="es-battery-rack" id="batteryRackContainer"></div>
 
+        </div>
+
+        <!-- Floating Badges for Battery Branches (Rendered directly over energyFlowCanvas conduits) -->
+        <div class="es-bat-branch-badges" id="batBranchBadgesContainer">
+          <div class="es-bat-branch-badge es-mono" id="batBranchBadge_1"></div>
+          <div class="es-bat-branch-badge es-mono" id="batBranchBadge_2"></div>
+          <div class="es-bat-branch-badge es-mono" id="batBranchBadge_3"></div>
+          <div class="es-bat-branch-badge es-mono" id="batBranchBadge_4"></div>
+          <div class="es-bat-branch-badge es-mono" id="batBranchBadge_5"></div>
+          <div class="es-bat-branch-badge es-mono" id="batBranchBadge_6"></div>
+          <div class="es-bat-branch-badge es-mono" id="batBranchBadge_7"></div>
+          <div class="es-bat-branch-badge es-mono" id="batBranchBadge_8"></div>
         </div>
 
       </div>
@@ -1049,6 +1224,8 @@ export class EnergyStationCard extends HTMLElement {
       gridDirectionLabel: root.getElementById('gridDirectionLabel'),
       carPowerVal: root.getElementById('carPowerVal'),
       carNode: root.getElementById('carNode'),
+      nonEssentialNode: root.getElementById('nonEssentialNode'),
+      nonEssentialPowerVal: root.getElementById('nonEssentialPowerVal'),
 
       inverterAcTemp: root.getElementById('inverterAcTemp'),
       inverterDcTemp: root.getElementById('inverterDcTemp'),
@@ -1069,12 +1246,22 @@ export class EnergyStationCard extends HTMLElement {
 
       dailyHouseKwh: root.getElementById('dailyHouseKwh'),
       essentialPowerVal: root.getElementById('essentialPowerVal'),
+      subloadsBusContainer: root.getElementById('subloadsBusContainer'),
+      subloadsBusSvg: root.getElementById('subloadsBusSvg'),
+      subloadsFlowCollector: root.getElementById('subloadsFlowCollector'),
+      subloadsBusBase: root.getElementById('subloadsBusBase'),
+      subloadsBusStemBase: root.getElementById('subloadsBusStemBase'),
+      subloadsBusStemFlow: root.getElementById('subloadsBusStemFlow'),
+      subloadsBusFeeders: root.getElementById('subloadsBusFeeders'),
 
       batChargeDaily: root.getElementById('batChargeDaily'),
       batDischargeDaily: root.getElementById('batDischargeDaily'),
       masterBatterySoc: root.getElementById('masterBatterySoc'),
       masterBatteryFlowHint: root.getElementById('masterBatteryFlowHint'),
-      batVoltCurrent: root.getElementById('batVoltCurrent'),
+      batVoltVal: root.getElementById('batVoltVal'),
+      batCurrentVal: root.getElementById('batCurrentVal'),
+      batReserveSoc: root.getElementById('batReserveSoc'),
+      batReserveProgressBar: root.getElementById('batReserveProgressBar'),
       batCapacityVal: root.getElementById('batCapacityVal'),
       batteryFlowCollector: root.getElementById('batteryFlowCollector'),
 
@@ -1090,7 +1277,7 @@ export class EnergyStationCard extends HTMLElement {
     if (!container) return;
 
     container.innerHTML = '';
-    const isWindActive = c.wind?.show || c.aux?.type === 'wind';
+    const isWindActive = c.wind?.show !== false || c.aux?.type === 'wind';
     if (!isWindActive) {
       container.classList.add('hidden');
       return;
@@ -1148,8 +1335,8 @@ export class EnergyStationCard extends HTMLElement {
           <span class="es-mono" id="turbinePower_${i + 1}" style="font-size: 16px; font-weight: 900; color: #22d3ee;">
             ${(i === 0 ? 1.56 : 0.22).toFixed(3)} кВт
           </span>
-          <span class="es-mono" id="turbineRpmBox_${i + 1}" style="font-size: 11px; font-weight: 700; color: #67e8f9;">
-            <span id="turbineRpmVal_${i + 1}">${i === 0 ? '480' : '160'}</span> RPM
+          <span class="es-mono" id="turbineRpmBox_${i + 1}" style="font-size: 11px; font-weight: 700; color: #67e8f9; display: none;">
+            <span id="turbineRpmVal_${i + 1}">0</span> RPM
           </span>
         </div>
 
@@ -1185,15 +1372,10 @@ export class EnergyStationCard extends HTMLElement {
       div.id = `pvPanel_${i}`;
       div.innerHTML = `
         <div class="es-pv-top-row">
-          <div style="width: 18px; height: 18px; color: #fbbf24;">${ICONS.pv_panel}</div>
-          <span class="es-pv-label es-mono">${strName}</span>
+          <div style="width: 22px; height: 22px; color: #fbbf24;">${ICONS.pv_panel}</div>
         </div>
+        <span class="es-pv-label es-mono">${strName}</span>
         <span class="es-pv-val es-mono" id="pvVal_${i}">1,200 кВт</span>
-        <div class="es-pv-metrics es-mono" id="pvMetrics_${i}">
-          <span class="volt" id="pvVolt_${i}">385.0 V</span>
-          <span class="sep">•</span>
-          <span class="curr" id="pvCurr_${i}">3.12 A</span>
-        </div>
       `;
       div.addEventListener('click', () => {
         const ent = strConfig.power_entity || strConfig.voltage_entity || strConfig.current_entity || c.solar?.total_power_entity;
@@ -1213,10 +1395,11 @@ export class EnergyStationCard extends HTMLElement {
     subloads.forEach((sub, idx) => {
       const div = document.createElement('div');
       div.className = 'es-subload-card clickable-node';
+      div.id = `subloadCard_${idx}`;
       div.innerHTML = `
-        <div style="width: 18px; height: 18px; color: #22d3ee; margin-bottom: 2px;">${ICONS[sub.icon] || ICONS.other}</div>
-        <span style="font-size: 10px; color: #94a3b8; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 72px;">${sub.name}</span>
-        <span class="es-mono" id="subloadVal_${idx}" style="font-size: 11px; font-weight: 700; color: #22d3ee;">2,000 кВт</span>
+        <div style="width: 22px; height: 22px; color: #22d3ee; margin-bottom: 2px;">${ICONS[sub.icon] || ICONS.other}</div>
+        <span style="font-size: 11px; color: #cbd5e1; font-weight: 600; white-space: nowrap;">${sub.name}</span>
+        <span class="es-mono" id="subloadVal_${idx}" style="font-size: 13px; font-weight: 800; color: #22d3ee; margin-top: 2px;">2,000 кВт</span>
       `;
       div.addEventListener('click', () => {
         this._fireMoreInfo(sub.entity);
@@ -1232,55 +1415,24 @@ export class EnergyStationCard extends HTMLElement {
 
     container.innerHTML = '';
     const count = c.battery?.parallel_batteries || (c.battery?.modules?.length || 2);
-    const defaultSocs = [42, 43, 76, 85, 90, 68, 72, 80];
-    const defaultTemps = [25.0, 18.0, 22.5, 21.0, 24.0, 20.0, 19.5, 23.0];
+    const defaultSocs = [82, 76, 91, 68, 85, 90, 72, 80];
+    const defaultVolts = [52.40, 52.40, 52.40, 52.40, 52.40, 52.40];
 
     for (let i = 1; i <= count; i++) {
       const mod = c.battery?.modules?.[i - 1] || c.battery?.module_entities?.[i - 1] || {};
       const modName = mod.name || `Батарея ${i}`;
       const soc = defaultSocs[(i - 1) % defaultSocs.length];
-      const temp = defaultTemps[(i - 1) % defaultTemps.length];
+      const volt = defaultVolts[(i - 1) % defaultVolts.length];
 
       const div = document.createElement('div');
       div.className = 'es-battery-pack-card glow-battery clickable-node';
       div.id = `batPackCard_${i}`;
       div.innerHTML = `
-        <!-- Temperature above the battery -->
-        <div class="es-bat-temp es-mono" id="batPackTemp_${i}">
-          <span>🌡️</span> <span id="batPackTempVal_${i}">${temp.toFixed(1)}</span>°C
-        </div>
-        
-        <div class="es-bat-main-row">
-          <!-- Big SOC percentage & label -->
-          <div class="es-bat-soc-col">
-            <span class="es-bat-soc-val es-mono" id="batPackSoc_${i}">${soc}%</span>
-            <span class="es-bat-name">${modName}</span>
-          </div>
-
-          <!-- Battery graphic with level bars -->
-          <div class="es-battery-gauge">
-            <div class="es-battery-gauge-nipple"></div>
-            <div class="es-battery-gauge-body">
-              <div class="es-bat-bar" id="batPackBar1_${i}"></div>
-              <div class="es-bat-bar" id="batPackBar2_${i}"></div>
-              <div class="es-bat-bar" id="batPackBar3_${i}"></div>
-              <div class="es-bat-bar" id="batPackBar4_${i}"></div>
-            </div>
-          </div>
-
-          <!-- Rounded Telemetry Badge (Voltage, Current, Power) -->
-          <div class="es-bat-telemetry-badge es-mono">
-            <div class="volt" id="batPackVolt_${i}">51.6 V</div>
-            <div class="curr" id="batPackCurr_${i}">4.4 A</div>
-            <div class="power" id="batPackPower_${i}">2.27 kW</div>
-          </div>
-        </div>
-
-        <!-- Bottom energy / status tag -->
-        <div class="es-bat-bottom-row es-mono">
-          <span class="es-bat-state-tag charge" id="batPackStateTag_${i}">Заряд</span>
-          <span class="es-bat-kwh" id="batPackKwh_${i}">7.88 kWh</span>
-        </div>
+        <div style="width: 24px; height: 24px; color: #34d399; margin-bottom: 2px;">${ICONS.battery_vertical}</div>
+        <span class="es-bat-name">${modName}</span>
+        <span class="es-bat-soc-val es-mono" id="batPackSoc_${i}">${soc}%</span>
+        <div class="es-mono es-bat-volt" id="batPackVolt_${i}">${volt.toFixed(2).replace('.', ',')} V</div>
+        <div class="es-mono es-bat-power" id="batPackPower_${i}" style="font-size: 12px; font-weight: 800; color: #34d399; margin-top: 2px;">0.00 кВт</div>
       `;
 
       div.addEventListener('click', () => {
@@ -1304,6 +1456,9 @@ export class EnergyStationCard extends HTMLElement {
     root.getElementById('gridNode')?.addEventListener('click', () => {
       this._fireMoreInfo(c.grid?.power_entity);
     });
+    root.getElementById('nonEssentialNode')?.addEventListener('click', () => {
+      this._fireMoreInfo(c.grid?.non_essential_power_entity);
+    });
     root.getElementById('carNode')?.addEventListener('click', () => {
       this._fireMoreInfo(c.grid?.car_power_entity);
     });
@@ -1319,6 +1474,15 @@ export class EnergyStationCard extends HTMLElement {
     root.getElementById('masterBatteryHub')?.addEventListener('click', () => {
       this._fireMoreInfo(c.battery?.soc_entity);
     });
+
+    for (let i = 1; i <= 8; i++) {
+      const badge = root.getElementById(`batBranchBadge_${i}`);
+      const mod = c.battery?.modules?.[i - 1] || c.battery?.module_entities?.[i - 1] || {};
+      badge?.addEventListener('click', () => {
+        const ent = mod.power_entity || mod.current_entity || mod.soc_entity || c.battery?.soc_entity;
+        this._fireMoreInfo(ent);
+      });
+    }
   }
 
   _updateValues() {
@@ -1445,7 +1609,7 @@ export class EnergyStationCard extends HTMLElement {
     this._nodes.inverterFreq.innerText = sFreq ? sFreq.val.toFixed(2) : '50,01';
 
     // AUX & Wind Turbines System (Supports Multiple Turbines)
-    const isWindActive = c.wind?.show || c.aux?.type === 'wind';
+    const isWindActive = c.wind?.show !== false || c.aux?.type === 'wind';
     const windStationContainer = this.shadowRoot.getElementById('windStationContainer');
     const auxNode = this._nodes.auxNode;
 
@@ -1462,7 +1626,7 @@ export class EnergyStationCard extends HTMLElement {
           const t = turbinesList[i] || {
             name: `Вітряк ${i + 1}`,
             power_entity: `sensor.wind_turbine_${i + 1}_power`,
-            rpm_entity: `sensor.wind_turbine_${i + 1}_rpm`,
+            rpm_entity: '',
             daily_energy_entity: `sensor.wind_turbine_${i + 1}_daily_energy`,
             monthly_energy_entity: `sensor.wind_turbine_${i + 1}_monthly_energy`,
             animation_threshold: c.wind?.animation_threshold || 50
@@ -1520,14 +1684,22 @@ export class EnergyStationCard extends HTMLElement {
             }
           }
 
-          // RPM telemetry
-          const sRpm = this._getEntityState(t.rpm_entity || t.speed_entity);
-          if (rpmVal) {
-            if (sRpm) {
-              rpmVal.innerText = Math.round(sRpm.val);
+          // RPM telemetry: ONLY show if valid RPM sensor entity exists and has a numeric state > 0
+          const rpmEntity = t.rpm_entity;
+          const sRpm = (rpmEntity && this._hass?.states[rpmEntity]) ? this._getEntityState(rpmEntity) : null;
+          const rpmBox = this.shadowRoot.getElementById(`turbineRpmBox_${i + 1}`);
+          if (rpmBox) {
+            const hasValidRpm = sRpm &&
+              sRpm.raw !== 'unavailable' &&
+              sRpm.raw !== 'unknown' &&
+              typeof sRpm.val === 'number' &&
+              !isNaN(sRpm.val) &&
+              sRpm.val > 0;
+            if (hasValidRpm) {
+              rpmBox.style.display = 'inline';
+              if (rpmVal) rpmVal.innerText = Math.round(sRpm.val);
             } else {
-              const fallbackRpm = i === 0 ? 480 : 160;
-              rpmVal.innerText = powerWatts >= threshold ? fallbackRpm : 0;
+              rpmBox.style.display = 'none';
             }
           }
 
@@ -1569,6 +1741,7 @@ export class EnergyStationCard extends HTMLElement {
     }
 
     // 2. Auxiliary Port (when not used as wind turbine)
+    let auxKw = 0;
     if (auxNode) {
       if (c.aux?.type === 'none' || c.aux?.type === 'wind') {
         auxNode.classList.add('hidden');
@@ -1576,6 +1749,7 @@ export class EnergyStationCard extends HTMLElement {
         auxNode.classList.remove('hidden');
         const sAux = this._getEntityState(c.aux?.power_entity);
         const auxFormatted = this._formatPower(sAux, 2.0);
+        auxKw = auxFormatted.kw;
         if (this._nodes.auxPowerVal) this._nodes.auxPowerVal.innerText = auxFormatted.str;
         
         const typeTitles = {
@@ -1672,23 +1846,33 @@ export class EnergyStationCard extends HTMLElement {
     const sGridExport = this._getEntityState(c.grid?.export_daily_entity);
     this._nodes.gridExportDaily.innerText = sGridExport ? `${sGridExport.val.toFixed(2)} kWh` : '0.00 kWh';
 
-    // Car
+    // Non-essential & Car
+    const sNonEss = this._getEntityState(c.grid?.non_essential_power_entity);
+    if (this._nodes.nonEssentialPowerVal) {
+      this._nodes.nonEssentialPowerVal.innerText = sNonEss ? this._formatPower(sNonEss, 0).str : '1,000 кВт';
+    }
+
     const sCar = this._getEntityState(c.grid?.car_power_entity);
-    this._nodes.carPowerVal.innerText = this._formatPower(sCar, 0).str;
+    if (this._nodes.carPowerVal) {
+      this._nodes.carPowerVal.innerText = sCar ? this._formatPower(sCar, 0).str : '1,000 кВт';
+    }
 
     // 4. House
     const sEss = this._getEntityState(c.load?.essential_power_entity);
     this._nodes.essentialPowerVal.innerText = this._formatPower(sEss, 0).str;
 
     const sHouseDaily = this._getEntityState(c.load?.daily_house_entity);
-    this._nodes.dailyHouseKwh.innerText = sHouseDaily ? `${sHouseDaily.val.toFixed(2)} kWh` : '0.00 kWh';
+    this._nodes.dailyHouseKwh.innerText = sHouseDaily ? `${sHouseDaily.val.toFixed(2)} kWh` : '12,40 kWh';
 
     // Subloads
+    let subloadsTotalKw = 0;
     (c.load?.subloads || []).forEach((sub, idx) => {
       const subVal = this.shadowRoot.getElementById(`subloadVal_${idx}`);
+      const sSub = this._getEntityState(sub.entity);
+      const formatted = this._formatPower(sSub, 2.0);
+      subloadsTotalKw += formatted.kw;
       if (subVal) {
-        const sSub = this._getEntityState(sub.entity);
-        subVal.innerText = this._formatPower(sSub, 0).str;
+        subVal.innerText = formatted.str;
       }
     });
 
@@ -1696,8 +1880,8 @@ export class EnergyStationCard extends HTMLElement {
     const sSoc = this._getEntityState(c.battery?.soc_entity);
     const socVal = sSoc ? sSoc.val : 80.0;
     this._nodes.masterBatterySoc.innerText = `${socVal.toFixed(1)}%`;
-    this._nodes.masterBatterySoc.style.fontSize = '20px';
-    this._nodes.masterBatterySoc.style.fontWeight = '800';
+    this._nodes.masterBatterySoc.style.fontSize = '15px';
+    this._nodes.masterBatterySoc.style.fontWeight = '700';
 
     const sBatPower = this._getEntityState(c.battery?.power_entity);
     const sBatCurr = this._getEntityState(c.battery?.current_entity);
@@ -1736,6 +1920,9 @@ export class EnergyStationCard extends HTMLElement {
       }
     }
 
+    this._isCharging = isCharging;
+    this._isDischarging = isDischarging;
+
     if (this._nodes.masterBatteryFlowHint) {
       let stateText = 'Очікування';
       let stateColor = '#94a3b8';
@@ -1746,15 +1933,21 @@ export class EnergyStationCard extends HTMLElement {
         stateText = 'Розряд ↑';
         stateColor = '#f87171';
       }
-      this._nodes.masterBatteryFlowHint.innerHTML = `<span style="font-size: 16px; font-weight: 800; color: #f8fafc;">${absBatKw.toFixed(3)} кВт</span> <span style="color: #64748b; margin: 0 4px;">•</span> <span style="color: ${stateColor}; font-weight: 700; font-size: 14px;">${stateText}</span>`;
+      this._nodes.masterBatteryFlowHint.innerHTML = `<span style="font-size: 20px; font-weight: 900; color: #f8fafc;">${absBatKw.toFixed(3)} кВт</span> <span style="color: #64748b; margin: 0 4px;">•</span> <span style="color: ${stateColor}; font-weight: 700; font-size: 14px;">${stateText}</span>`;
     }
 
     const sBatVolt = this._getEntityState(c.battery?.voltage_entity);
     const vStr = sBatVolt ? sBatVolt.val.toFixed(2) : '53.24';
-    const cStr = sBatCurr ? sBatCurr.val.toFixed(2) : '0.00';
-    this._nodes.batVoltCurrent.innerText = `U: ${vStr} V / I: ${cStr} A`;
+    const cStr = sBatCurr ? sBatCurr.val.toFixed(2) : '-56.30';
+    if (this._nodes.batVoltVal) this._nodes.batVoltVal.innerText = `${vStr.replace('.', ',')} V`;
+    if (this._nodes.batCurrentVal) this._nodes.batCurrentVal.innerText = `${cStr.replace('.', ',')} A`;
+    if (this._nodes.batReserveSoc) this._nodes.batReserveSoc.innerText = c.battery?.reserve_soc !== undefined ? c.battery.reserve_soc : 20;
+    if (this._nodes.batReserveProgressBar) {
+      const rSoc = c.battery?.reserve_soc !== undefined ? c.battery.reserve_soc : 20;
+      this._nodes.batReserveProgressBar.style.width = `${rSoc}%`;
+    }
 
-    // Total battery capacity: sum of all module capacities + inverter sensor reading in parentheses
+    // Total battery capacity
     const batCount = c.battery?.parallel_batteries || (c.battery?.modules?.length || 2);
     let totalModulesCapacity = 0;
     for (let i = 0; i < batCount; i++) {
@@ -1772,11 +1965,8 @@ export class EnergyStationCard extends HTMLElement {
     const invCapVal = (sCap && !isNaN(sCap.val)) ? sCap.val : null;
 
     if (this._nodes.batCapacityVal) {
-      if (invCapVal !== null) {
-        this._nodes.batCapacityVal.innerText = `${totalModulesCapacity.toFixed(2)} kWh (${invCapVal.toFixed(2)} kWh)`;
-      } else {
-        this._nodes.batCapacityVal.innerText = `${totalModulesCapacity.toFixed(2)} kWh`;
-      }
+      const capVal = invCapVal !== null ? invCapVal : totalModulesCapacity;
+      this._nodes.batCapacityVal.innerText = `${capVal.toFixed(2).replace('.', ',')} kWh`;
     }
 
     const sBatChg = this._getEntityState(c.battery?.charge_daily_entity);
@@ -1786,6 +1976,7 @@ export class EnergyStationCard extends HTMLElement {
     this._nodes.batDischargeDaily.innerText = sBatDis ? `${sBatDis.val.toFixed(2)} kWh` : '6,10 kWh';
 
     // Battery modules (SOC, Current, Voltage, Power, Temperature)
+    const batModulesData = [];
     for (let i = 1; i <= batCount; i++) {
       const packSoc = this.shadowRoot.getElementById(`batPackSoc_${i}`);
       const packVolt = this.shadowRoot.getElementById(`batPackVolt_${i}`);
@@ -1813,15 +2004,15 @@ export class EnergyStationCard extends HTMLElement {
       const sModPwr = this._getEntityState(pwrEnt);
       const sModTemp = this._getEntityState(tempEnt);
 
-      // Values with realistic fallbacks matching user screenshot (42% / 43%, 51.6V / 51.8V, 4.4A / 19.6A, 25.0° / 18.0°)
-      const socNum = sModSoc ? sModSoc.val : (i === 1 ? 42 : (i === 2 ? 43 : 75));
-      const voltNum = sModVolt ? sModVolt.val : (i === 1 ? 51.6 : (i === 2 ? 51.8 : 52.4));
-      const currNum = sModCurr ? sModCurr.val : (i === 1 ? 4.4 : (i === 2 ? 19.6 : 8.2));
-      const tempNum = sModTemp ? sModTemp.val : (i === 1 ? 25.0 : (i === 2 ? 18.0 : 21.5));
+      // Values with realistic fallbacks matching user setup (82% / 85%, 54.1V / 54.0V, 18.4A / 25.2A, 38.2° / 21.0°)
+      const socNum = sModSoc ? sModSoc.val : (i === 1 ? 82 : (i === 2 ? 85 : 75));
+      const voltNum = sModVolt ? sModVolt.val : (i === 1 ? 54.1 : (i === 2 ? 54.0 : 52.4));
+      const currNum = sModCurr ? sModCurr.val : (i === 1 ? 18.4 : (i === 2 ? 25.2 : 8.2));
+      const tempNum = sModTemp ? sModTemp.val : (i === 1 ? 38.2 : (i === 2 ? 21.0 : 21.5));
 
       let kwNum = 0;
       if (sModPwr) {
-        kwNum = this._formatPower(sModPwr).kw;
+        kwNum = Math.abs(this._formatPower(sModPwr).kw);
       } else {
         // Calculate P = U * I in kW
         kwNum = (voltNum * Math.abs(currNum)) / 1000.0;
@@ -1830,11 +2021,37 @@ export class EnergyStationCard extends HTMLElement {
       if (packSoc) packSoc.innerText = `${socNum.toFixed(0)}%`;
       if (packVolt) packVolt.innerText = `${voltNum.toFixed(1)} V`;
       if (packCurr) packCurr.innerText = `${Math.abs(currNum).toFixed(1)} A`;
-      if (packPower) packPower.innerText = `${kwNum.toFixed(2)} kW`;
+      if (packPower) packPower.innerText = `${kwNum.toFixed(2)} кВт`;
       if (packTempVal) packTempVal.innerText = `${tempNum.toFixed(1)}`;
 
-      // State: ONLY Charge (GREEN) or Discharge (RED). No "Очікування" / waiting state!
-      const isChg = currNum >= 0;
+      // State: Charge (GREEN) or Discharge (RED).
+      let isChg = false;
+      if (isDischarging) {
+        isChg = false;
+      } else if (isCharging) {
+        isChg = true;
+      } else if (sModCurr) {
+        const sign = c.battery?.power_sign || 'deye';
+        isChg = sign === 'deye' ? currNum < 0 : currNum > 0;
+      } else {
+        isChg = currNum < 0;
+      }
+
+      // Live Battery Branch Power Badge
+      const branchBadge = this.shadowRoot.getElementById(`batBranchBadge_${i}`);
+      if (branchBadge) {
+        const isIdle = kwNum < 0.02;
+        if (isIdle) {
+          branchBadge.className = 'es-bat-branch-badge es-mono idle';
+          branchBadge.innerHTML = `<span>0.00 кВт</span>`;
+        } else if (isChg) {
+          branchBadge.className = 'es-bat-branch-badge es-mono charge';
+          branchBadge.innerHTML = `<span>${kwNum.toFixed(2)} кВт</span> <span style="font-weight: 800;">↓</span>`;
+        } else {
+          branchBadge.className = 'es-bat-branch-badge es-mono discharge';
+          branchBadge.innerHTML = `<span>${kwNum.toFixed(2)} кВт</span> <span style="font-weight: 800;">↑</span>`;
+        }
+      }
 
       const cardEl = this.shadowRoot.getElementById(`batPackCard_${i}`);
       const gaugeEl = cardEl?.querySelector('.es-battery-gauge');
@@ -1889,9 +2106,12 @@ export class EnergyStationCard extends HTMLElement {
         bar3.className = `es-bat-bar ${socNum >= 65 ? barClass : ''}`;
         bar4.className = `es-bat-bar ${socNum >= 85 ? barClass : ''}`;
       }
+
+      batModulesData.push({ kwNum, isChg });
     }
 
     // Update live animated SVG energy flow paths and speed/direction
+    const nonEssKw = sNonEss ? (sNonEss.unit === 'W' ? sNonEss.val / 1000 : sNonEss.val) : 1.0;
     this._updateFlowPaths();
     this._updateFlowAnimations(
       rawGridKw,
@@ -1902,7 +2122,11 @@ export class EnergyStationCard extends HTMLElement {
       absBatKw,
       isCharging,
       isDischarging,
-      sCar ? (sCar.unit === 'W' ? sCar.val / 1000 : sCar.val) : 0
+      sCar ? (sCar.unit === 'W' ? sCar.val / 1000 : sCar.val) : 0,
+      batModulesData,
+      nonEssKw,
+      subloadsTotalKw,
+      auxKw
     );
   }
 
@@ -1927,6 +2151,7 @@ export class EnergyStationCard extends HTMLElement {
       if (!container) return;
       const cRect = container.getBoundingClientRect();
       if (cRect.width === 0 || cRect.height === 0) return;
+      const c = this._config || DEFAULT_CONFIG;
 
       const getPt = (el, xFrac = 0.5, yFrac = 0.5) => {
         if (!el) return null;
@@ -1951,24 +2176,70 @@ export class EnergyStationCard extends HTMLElement {
       const batHub = this.shadowRoot.getElementById('masterBatteryHub');
       const carNode = this.shadowRoot.getElementById('carNode');
 
-      // 1. Grid <-> Inverter Path (Horizontal bridge)
+      // 1. Grid <-> Inverter Path
       if (gridNode && inverterNode) {
-        const p1 = getPt(gridNode, 1.0, 0.45);
-        const p2 = getPt(inverterNode, 0.0, 0.35);
-        if (p1 && p2) {
-          const midX = Math.round((p1.x + p2.x) / 2);
-          const d = `M ${p1.x} ${p1.y} C ${midX} ${p1.y}, ${midX} ${p2.y}, ${p2.x} ${p2.y}`;
+        const rGrid = gridNode.getBoundingClientRect();
+        const rInv = inverterNode.getBoundingClientRect();
+        const isMobileStacked = rGrid.bottom < rInv.top + 30;
+
+        if (isMobileStacked) {
+          // Mobile 2-row layout: Grid is above Inverter
+          const p1 = getPt(gridNode, 0.70, 1.0);
+          const p2 = getPt(inverterNode, 0.20, 0.0);
+          if (p1 && p2) {
+            const midY = Math.round((p1.y + p2.y) / 2);
+            const d = `M ${p1.x} ${p1.y} C ${p1.x} ${midY}, ${p2.x} ${midY}, ${p2.x} ${p2.y}`;
+            setPathD('pathGridInvBase', 'pathGridInvFlow', d);
+          }
+        } else {
+          // Desktop 3-column layout: line connects from right edge of gridNode into left edge of inverterNode
+          // passing strictly below the AC/DC telemetry text
+          const lineY = Math.round(rInv.top - cRect.top + rInv.height * 0.55);
+          const p1X = Math.round(rGrid.right - cRect.left);
+          const p2X = Math.round(rInv.left - cRect.left);
+          const p1Y = Math.round(rGrid.top - cRect.top + rGrid.height * 0.50);
+
+          let d = '';
+          if (Math.abs(p1Y - lineY) <= 8) {
+            d = `M ${p1X} ${lineY} L ${p2X} ${lineY}`;
+          } else {
+            const midX = Math.round(p1X + 24);
+            d = `M ${p1X} ${p1Y} C ${midX} ${p1Y}, ${midX} ${lineY}, ${p2X} ${lineY}`;
+          }
           setPathD('pathGridInvBase', 'pathGridInvFlow', d);
         }
       }
 
       // 2. Inverter -> Essential Loads Path
       if (inverterNode && essentialNode) {
-        const p1 = getPt(inverterNode, 1.0, 0.35);
-        const p2 = getPt(essentialNode, 0.0, 0.45);
-        if (p1 && p2) {
-          const midX = Math.round((p1.x + p2.x) / 2);
-          const d = `M ${p1.x} ${p1.y} C ${midX} ${p1.y}, ${midX} ${p2.y}, ${p2.x} ${p2.y}`;
+        const rLoad = essentialNode.getBoundingClientRect();
+        const rInv = inverterNode.getBoundingClientRect();
+        const isMobileStacked = rLoad.bottom < rInv.top + 30;
+
+        if (isMobileStacked) {
+          // Mobile 2-row layout: Loads is above Inverter
+          const p1 = getPt(inverterNode, 0.80, 0.0);
+          const p2 = getPt(essentialNode, 0.30, 1.0);
+          if (p1 && p2) {
+            const midY = Math.round((p1.y + p2.y) / 2);
+            const d = `M ${p1.x} ${p1.y} C ${p1.x} ${midY}, ${p2.x} ${midY}, ${p2.x} ${p2.y}`;
+            setPathD('pathInvLoadBase', 'pathInvLoadFlow', d);
+          }
+        } else {
+          // Desktop 3-column layout: line connects from right edge of inverterNode into left edge of essentialNode
+          // passing strictly below the Voltage/Current telemetry text
+          const lineY = Math.round(rInv.top - cRect.top + rInv.height * 0.55);
+          const p1X = Math.round(rInv.right - cRect.left);
+          const p2X = Math.round(rLoad.left - cRect.left);
+          const p2Y = Math.round(rLoad.top - cRect.top + rLoad.height * 0.50);
+
+          let d = '';
+          if (Math.abs(p2Y - lineY) <= 8) {
+            d = `M ${p1X} ${lineY} L ${p2X} ${lineY}`;
+          } else {
+            const midX = Math.round(p2X - 24);
+            d = `M ${p1X} ${lineY} C ${midX} ${lineY}, ${midX} ${p2Y}, ${p2X} ${p2Y}`;
+          }
           setPathD('pathInvLoadBase', 'pathInvLoadFlow', d);
         }
       }
@@ -1993,19 +2264,63 @@ export class EnergyStationCard extends HTMLElement {
         }
       }
 
-      // 5. Grid -> Car Path
-      if (gridNode && carNode && carNode.offsetHeight > 0) {
+      // 5. Grid -> Non-Essential & Car Vertical Conduits
+      const nonEssNode = this.shadowRoot.getElementById('nonEssentialNode');
+      if (gridNode && nonEssNode && nonEssNode.offsetHeight > 0) {
         const p1 = getPt(gridNode, 0.5, 1.0);
+        const p2 = getPt(nonEssNode, 0.5, 0.0);
+        if (p1 && p2) {
+          const d = `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`;
+          setPathD('pathGridNonEssBase', 'pathGridNonEssFlow', d);
+        }
+      } else {
+        setPathD('pathGridNonEssBase', 'pathGridNonEssFlow', '');
+      }
+
+      if (nonEssNode && carNode && carNode.offsetHeight > 0) {
+        const p1 = getPt(nonEssNode, 0.5, 1.0);
         const p2 = getPt(carNode, 0.5, 0.0);
         if (p1 && p2) {
           const d = `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`;
-          setPathD('pathGridCarBase', 'pathGridCarFlow', d);
+          setPathD('pathNonEssCarBase', 'pathNonEssCarFlow', d);
         }
+      } else {
+        setPathD('pathNonEssCarBase', 'pathNonEssCarFlow', '');
       }
 
-      // 6. Wind Turbines -> Battery Hub Paths (Direct DC charging into batteries)
+      // 6. Essential Loads -> Subloads Bus Stem Conduit
+      const subloadsBusContainer = this.shadowRoot.getElementById('subloadsBusContainer');
+      if (essentialNode && subloadsBusContainer) {
+        const p1 = getPt(essentialNode, 0.5, 1.0);
+        const p2 = getPt(subloadsBusContainer, 0.5, 0.0);
+        if (p1 && p2) {
+          const d = `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`;
+          setPathD('pathLoadSubloadsBase', 'pathLoadSubloadsFlow', d);
+        }
+      } else {
+        setPathD('pathLoadSubloadsBase', 'pathLoadSubloadsFlow', '');
+      }
+
+      // 7. Inverter -> Aux/Microinverter Conduit (From auxNode into Inverter GEN port)
+      const auxNode = this.shadowRoot.getElementById('auxNode');
+      if (inverterNode && auxNode && !auxNode.classList.contains('hidden') && auxNode.offsetHeight > 0) {
+        const p1 = getPt(auxNode, 0.35, 1.0); // bottom of auxNode
+        const p2 = getPt(inverterNode, 0.90, 0.0); // top right of inverter (GEN port)
+        if (p1 && p2) {
+          const midY = Math.round((p1.y + p2.y) / 2);
+          const d = `M ${p1.x} ${p1.y} C ${p1.x} ${midY}, ${p2.x} ${midY}, ${p2.x} ${p2.y}`;
+          setPathD('pathInvAuxBase', 'pathInvAuxFlow', d);
+        }
+      } else {
+        setPathD('pathInvAuxBase', 'pathInvAuxFlow', '');
+      }
+
+      // 8. Battery Hub -> Battery Bus Stem Conduit is rendered directly inside batteryBusSvg
+      setPathD('pathBatStemBase', 'pathBatStemFlow', '');
+
+      // 9. Wind Turbines -> Battery Hub Paths (Direct DC charging into batteries)
       const windContainer = this.shadowRoot.getElementById('windStationContainer');
-      const isWindActive = c.wind?.show || c.aux?.type === 'wind';
+      const isWindActive = c.wind?.show !== false || c.aux?.type === 'wind';
       const windCount = isWindActive ? (c.wind?.turbine_count || (c.wind?.turbines?.length || 2)) : 0;
 
       for (let i = 1; i <= 4; i++) {
@@ -2027,7 +2342,44 @@ export class EnergyStationCard extends HTMLElement {
         }
       }
 
-      // Update dynamic bus bar lengths for Solar & Batteries
+      // 10. Battery Hub -> Individual Battery Packs (Master Hub <-> Bat 1..8)
+      const batCount = c.battery?.parallel_batteries || (c.battery?.modules?.length || 2);
+      for (let i = 1; i <= 8; i++) {
+        const card = this.shadowRoot.getElementById(`batPackCard_${i}`);
+        const badge = this.shadowRoot.getElementById(`batBranchBadge_${i}`);
+
+        if (i <= batCount && batHub && card) {
+          const p1 = getPt(batHub, 0.5, 1.0); // bottom center of master hub
+          const p2 = getPt(card, 0.5, 0.0);   // top center of battery pack card
+
+          if (p1 && p2) {
+            const midY = Math.round(p1.y + (p2.y - p1.y) * 0.45);
+            let d = '';
+
+            if (Math.abs(p1.x - p2.x) <= 4) {
+              d = `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`;
+            } else {
+              d = `M ${p1.x} ${p1.y} C ${p1.x} ${midY}, ${p2.x} ${midY}, ${p2.x} ${p2.y}`;
+            }
+
+            setPathD(`pathBat${i}Base`, `pathBat${i}Flow`, d);
+
+            if (badge) {
+              badge.style.left = `${p2.x}px`;
+              badge.style.top = `${midY}px`;
+              badge.style.display = 'flex';
+            }
+          } else {
+            setPathD(`pathBat${i}Base`, `pathBat${i}Flow`, '');
+            if (badge) badge.style.display = 'none';
+          }
+        } else {
+          setPathD(`pathBat${i}Base`, `pathBat${i}Flow`, '');
+          if (badge) badge.style.display = 'none';
+        }
+      }
+
+      // Update dynamic bus bar lengths for Solar, Subloads & Batteries
       this._updateBusBars();
     } catch (e) {
       // Quiet fail if DOM not ready
@@ -2104,64 +2456,73 @@ export class EnergyStationCard extends HTMLElement {
         }
       }
 
-      // 2. Battery Bus: dynamically adjust horizontal line length to span from first to last battery module
-      const batSvg = this.shadowRoot.getElementById('batteryBusSvg');
-      const batCount = c.battery?.parallel_batteries || (c.battery?.modules?.length || 2);
-      if (batSvg && batCount > 0) {
-        const svgRect = batSvg.getBoundingClientRect();
-        const firstBat = this.shadowRoot.getElementById('batPackCard_1');
-        const lastBat = this.shadowRoot.getElementById(`batPackCard_${batCount}`);
-        const baseLine = this.shadowRoot.getElementById('batteryBusBase');
-        const flowLine = this.shadowRoot.getElementById('batteryFlowCollector');
-        const stemBase = this.shadowRoot.getElementById('batteryBusStemBase');
-        const stemFlow = this.shadowRoot.getElementById('batteryBusStemFlow');
-        const feedersGroup = this.shadowRoot.getElementById('batteryBusFeeders');
+      // 2. Subloads Bus: dynamically adjust horizontal line length to span from first to last subload
+      const subloadsSvg = this.shadowRoot.getElementById('subloadsBusSvg');
+      const subloadsCount = c.load?.subloads?.length || 3;
+      if (subloadsSvg && subloadsCount > 0) {
+        const svgRect = subloadsSvg.getBoundingClientRect();
+        const firstSub = this.shadowRoot.getElementById('subloadCard_0');
+        const lastSub = this.shadowRoot.getElementById(`subloadCard_${subloadsCount - 1}`);
+        const essNode = this.shadowRoot.getElementById('essentialNode');
+        const baseLine = this.shadowRoot.getElementById('subloadsBusBase');
+        const flowLine = this.shadowRoot.getElementById('subloadsFlowCollector');
+        const stemBase = this.shadowRoot.getElementById('subloadsBusStemBase');
+        const stemFlow = this.shadowRoot.getElementById('subloadsBusStemFlow');
+        const feedersGroup = this.shadowRoot.getElementById('subloadsBusFeeders');
 
-        if (firstBat && lastBat && svgRect.width > 0) {
-          const rFirst = firstBat.getBoundingClientRect();
-          const rLast = lastBat.getBoundingClientRect();
+        if (firstSub && lastSub && svgRect.width > 0) {
+          const rFirst = firstSub.getBoundingClientRect();
+          const rLast = lastSub.getBoundingClientRect();
 
           const x1 = Math.round(rFirst.left - svgRect.left + rFirst.width / 2);
           const x2 = Math.round(rLast.left - svgRect.left + rLast.width / 2);
           const y = 13;
-          const midX = Math.round((x1 + x2) / 2);
+
+          let stemX = Math.round((x1 + x2) / 2);
+          if (essNode) {
+            const rEss = essNode.getBoundingClientRect();
+            stemX = Math.round(rEss.left - svgRect.left + rEss.width / 2);
+          }
+
+          const minBusX = Math.min(x1, stemX);
+          const maxBusX = Math.max(x2, stemX);
 
           if (baseLine) {
-            baseLine.setAttribute('x1', x1);
+            baseLine.setAttribute('x1', minBusX);
             baseLine.setAttribute('y1', y);
-            baseLine.setAttribute('x2', x2);
+            baseLine.setAttribute('x2', maxBusX);
             baseLine.setAttribute('y2', y);
           }
           if (flowLine) {
-            flowLine.setAttribute('x1', x1);
+            flowLine.setAttribute('x1', minBusX);
             flowLine.setAttribute('y1', y);
-            flowLine.setAttribute('x2', x2);
+            flowLine.setAttribute('x2', maxBusX);
             flowLine.setAttribute('y2', y);
           }
 
           if (stemBase) {
-            stemBase.setAttribute('x1', midX);
+            stemBase.setAttribute('x1', stemX);
             stemBase.setAttribute('y1', 0);
-            stemBase.setAttribute('x2', midX);
+            stemBase.setAttribute('x2', stemX);
             stemBase.setAttribute('y2', y);
           }
           if (stemFlow) {
-            stemFlow.setAttribute('x1', midX);
+            stemFlow.setAttribute('x1', stemX);
             stemFlow.setAttribute('y1', 0);
-            stemFlow.setAttribute('x2', midX);
+            stemFlow.setAttribute('x2', stemX);
             stemFlow.setAttribute('y2', y);
           }
 
           if (feedersGroup) {
             let feedersHtml = '';
-            for (let i = 1; i <= batCount; i++) {
-              const card = this.shadowRoot.getElementById(`batPackCard_${i}`);
+            for (let i = 0; i < subloadsCount; i++) {
+              const card = this.shadowRoot.getElementById(`subloadCard_${i}`);
               if (card) {
                 const cr = card.getBoundingClientRect();
                 const cx = Math.round(cr.left - svgRect.left + cr.width / 2);
                 feedersHtml += `
-                  <line x1="${cx}" y1="${y}" x2="${cx}" y2="26" stroke="#059669" stroke-width="2" />
-                  <line class="flow-line" x1="${cx}" y1="${y}" x2="${cx}" y2="26" stroke="#34d399" stroke-width="2.5" />
+                  <line x1="${cx}" y1="${y}" x2="${cx}" y2="26" stroke="#0891b2" stroke-width="2" />
+                  <line class="flow-line" x1="${cx}" y1="${y}" x2="${cx}" y2="26" stroke="#22d3ee" stroke-width="2.5" />
                 `;
               }
             }
@@ -2190,7 +2551,7 @@ export class EnergyStationCard extends HTMLElement {
     el.style.animation = `${animName} ${speedStr} linear infinite`;
   }
 
-  _updateFlowAnimations(gridKw, isExport, isImport, solarKw, essentialKw, batKw, isCharging, isDischarging, carKw) {
+  _updateFlowAnimations(gridKw, isExport, isImport, solarKw, essentialKw, batKw, isCharging, isDischarging, carKw, batModulesData = [], nonEssKw = 0, subloadsKw = 0, auxKw = 0) {
     const c = this._config || DEFAULT_CONFIG;
     const animEnabled = c.animations?.enabled !== false;
     const baseSpeed = c.animations?.speed || 1.2;
@@ -2208,11 +2569,6 @@ export class EnergyStationCard extends HTMLElement {
     const pwrGrid = Math.abs(gridKw);
     const thresholdKw = (c.grid?.min_power_threshold !== undefined ? c.grid.min_power_threshold : 50) / 1000;
     const sellingEnabled = c.grid?.selling_enabled === true;
-
-    // Grid flow is active ONLY if:
-    // 1) animations globally enabled
-    // 2) power is at or above threshold
-    // 3) EITHER importing from grid (isImport) OR exporting with selling_enabled = true
     const isGridFlowActive = animEnabled && pwrGrid >= thresholdKw && (isImport || (isExport && sellingEnabled));
     this._applyFlowAnimation(fGrid, 'flow-grid', isExport, calcSpeed(gridKw, 10.0), isGridFlowActive);
 
@@ -2234,41 +2590,157 @@ export class EnergyStationCard extends HTMLElement {
     // Reverse flow (isReverse = true): Battery Hub -> Inverter (Discharging)
     this._applyFlowAnimation(fBat, batClass, isDischarging, calcSpeed(batKw, 8.0), isBatActive);
 
-    // 5. Grid -> Car
-    const fCar = this.shadowRoot.getElementById('pathGridCarFlow');
+    // 5. Grid -> Non-Essential Loads
+    const fGridNonEss = this.shadowRoot.getElementById('pathGridNonEssFlow');
+    const pwrNonEss = Math.abs(nonEssKw);
+    this._applyFlowAnimation(fGridNonEss, 'flow-grid', false, calcSpeed(nonEssKw, 5.0), animEnabled && pwrNonEss >= 0.05);
+
+    // 6. Non-Essential -> Car
+    const fCar = this.shadowRoot.getElementById('pathNonEssCarFlow') || this.shadowRoot.getElementById('pathGridCarFlow');
     const pwrCar = Math.abs(carKw);
     this._applyFlowAnimation(fCar, 'flow-car', false, calcSpeed(carKw, 7.0), animEnabled && pwrCar >= 0.05);
 
-    // 6. Battery rack collector bus
-    const batFlow = this.shadowRoot.getElementById('batteryFlowCollector');
-    if (batFlow) {
-      if (!isBatActive) {
-        batFlow.style.opacity = '0.2';
-        batFlow.style.animation = 'none';
-      } else {
-        batFlow.style.opacity = '1';
-        const animName = isCharging ? 'esDashflow' : 'esDashflowRev';
-        batFlow.setAttribute('class', isCharging ? 'flow-line' : 'flow-line-reverse');
-        batFlow.style.stroke = isCharging ? '#34d399' : '#f87171';
-        batFlow.style.animation = `${animName} ${calcSpeed(batKw, 8.0)} linear infinite`;
-      }
-    }
+    // 7. Essential Loads -> Subloads Bus Stem
+    const fLoadSubloads = this.shadowRoot.getElementById('pathLoadSubloadsFlow');
+    const pwrSub = Math.abs(subloadsKw || essentialKw);
+    this._applyFlowAnimation(fLoadSubloads, 'flow-load', false, calcSpeed(pwrSub, 8.0), animEnabled && pwrSub >= 0.05);
 
-    // 7. Solar collector bus
+    // 8. Inverter <-> Aux/Microinverter
+    const fInvAux = this.shadowRoot.getElementById('pathInvAuxFlow');
+    const pwrAux = Math.abs(auxKw);
+    // Microinverter feeds into Inverter (isReverse = true)
+    this._applyFlowAnimation(fInvAux, 'flow-aux', true, calcSpeed(auxKw, 5.0), animEnabled && pwrAux >= 0.05);
+
+    // 9. Battery Hub -> Battery Bus Stem
+    const fBatStem = this.shadowRoot.getElementById('pathBatStemFlow');
+    this._applyFlowAnimation(fBatStem, batClass, isDischarging, calcSpeed(batKw, 8.0), isBatActive);
+
+    // 10. Solar collector bus
     const solarFlow = this.shadowRoot.getElementById('solarFlowCollector');
+    const solarStemFlow = this.shadowRoot.getElementById('solarBusStemFlow');
     if (solarFlow) {
       if (!animEnabled || solarKw < 0.05) {
         solarFlow.style.opacity = '0.2';
         solarFlow.style.animation = 'none';
+        if (solarStemFlow) {
+          solarStemFlow.style.opacity = '0.2';
+          solarStemFlow.style.animation = 'none';
+        }
       } else {
+        const speed = calcSpeed(solarKw, 12.0);
         solarFlow.style.opacity = '1';
         solarFlow.setAttribute('class', 'flow-line');
-        solarFlow.style.animation = `esDashflow ${calcSpeed(solarKw, 12.0)} linear infinite`;
+        solarFlow.style.animation = `esDashflow ${speed} linear infinite`;
+        if (solarStemFlow) {
+          solarStemFlow.style.opacity = '1';
+          solarStemFlow.setAttribute('class', 'flow-line');
+          solarStemFlow.style.animation = `esDashflow ${speed} linear infinite`;
+        }
       }
     }
 
-    // 8. Wind Turbines -> Inverter Energy Flow Animations
-    const isWindActive = c.wind?.show || c.aux?.type === 'wind';
+    // 11. Subloads bus collector
+    const subloadsFlow = this.shadowRoot.getElementById('subloadsFlowCollector');
+    const subloadsStemFlow = this.shadowRoot.getElementById('subloadsBusStemFlow');
+    if (subloadsFlow) {
+      if (!animEnabled || pwrSub < 0.05) {
+        subloadsFlow.style.opacity = '0.2';
+        subloadsFlow.style.animation = 'none';
+        if (subloadsStemFlow) {
+          subloadsStemFlow.style.opacity = '0.2';
+          subloadsStemFlow.style.animation = 'none';
+        }
+      } else {
+        const speed = calcSpeed(pwrSub, 8.0);
+        subloadsFlow.style.opacity = '1';
+        subloadsFlow.setAttribute('class', 'flow-line');
+        subloadsFlow.style.animation = `esDashflow ${speed} linear infinite`;
+        if (subloadsStemFlow) {
+          subloadsStemFlow.style.opacity = '1';
+          subloadsStemFlow.setAttribute('class', 'flow-line');
+          subloadsStemFlow.style.animation = `esDashflow ${speed} linear infinite`;
+        }
+      }
+    }
+
+    // 12. Battery bus collector & feeder branches
+    const batFlow = this.shadowRoot.getElementById('batteryFlowCollector');
+    const batStemFlow = this.shadowRoot.getElementById('batteryBusStemFlow');
+    const feedersGroup = this.shadowRoot.getElementById('batteryBusFeeders');
+    const strokeFlow = isDischarging ? '#f87171' : '#34d399';
+    const flowFilter = isDischarging 
+      ? 'drop-shadow(0 0 6px #dc2626) drop-shadow(0 0 2px #fca5a5)'
+      : 'drop-shadow(0 0 6px #059669) drop-shadow(0 0 2px #6ee7b7)';
+
+    if (batFlow) {
+      batFlow.style.stroke = strokeFlow;
+      batFlow.style.filter = flowFilter;
+      if (batStemFlow) {
+        batStemFlow.style.stroke = strokeFlow;
+        batStemFlow.style.filter = flowFilter;
+      }
+
+      if (!animEnabled || !isBatActive) {
+        batFlow.style.opacity = '0.2';
+        batFlow.style.animation = 'none';
+        if (batStemFlow) {
+          batStemFlow.style.opacity = '0.2';
+          batStemFlow.style.animation = 'none';
+        }
+      } else {
+        const speed = calcSpeed(batKw, 8.0);
+        const animName = isDischarging ? 'esDashflowRev' : 'esDashflow';
+        batFlow.style.opacity = '1';
+        batFlow.setAttribute('class', isDischarging ? 'flow-line-reverse' : 'flow-line');
+        batFlow.style.animation = `${animName} ${speed} linear infinite`;
+        if (batStemFlow) {
+          batStemFlow.style.opacity = '1';
+          batStemFlow.setAttribute('class', isDischarging ? 'flow-line-reverse' : 'flow-line');
+          batStemFlow.style.animation = `${animName} ${speed} linear infinite`;
+        }
+      }
+    }
+
+    if (feedersGroup) {
+      feedersGroup.querySelectorAll('line').forEach(line => {
+        line.style.stroke = strokeFlow;
+        line.style.filter = flowFilter;
+        if (!animEnabled || !isBatActive) {
+          line.style.opacity = '0.2';
+          line.style.animation = 'none';
+        } else {
+          const speed = calcSpeed(batKw, 8.0);
+          const animName = isDischarging ? 'esDashflowRev' : 'esDashflow';
+          line.style.opacity = '1';
+          line.setAttribute('class', isDischarging ? 'flow-line-reverse' : 'flow-line');
+          line.style.animation = `${animName} ${speed} linear infinite`;
+        }
+      });
+    }
+
+    // 13. Individual Battery Packs (Master Hub <-> Bat 1..8)
+    for (let i = 1; i <= 8; i++) {
+      const fPack = this.shadowRoot.getElementById(`pathBat${i}Flow`);
+      if (!fPack) continue;
+      const modData = batModulesData[i - 1];
+      const pwrMod = modData ? modData.kwNum : 0;
+      const isPackActive = animEnabled && (pwrMod >= 0.02 || isBatActive);
+      const isReverse = isDischarging; // On discharge, flows from pack UP to hub
+      this._applyFlowAnimation(fPack, batClass, isReverse, calcSpeed(pwrMod || batKw, 8.0), isPackActive);
+    }
+
+    // 14. Individual Subloads (0..5)
+    for (let i = 0; i < 6; i++) {
+      const fSub = this.shadowRoot.getElementById(`pathSubload${i}Flow`);
+      if (!fSub) continue;
+      const subConfig = c.load?.subloads?.[i];
+      const sSub = subConfig ? this._getEntityState(subConfig.entity) : null;
+      const pwrSubItem = sSub ? this._formatPower(sSub, 2.0).kw : (i === 0 ? 2.0 : (i === 1 ? 3.0 : 4.0));
+      this._applyFlowAnimation(fSub, 'flow-load', false, calcSpeed(pwrSubItem, 8.0), animEnabled && pwrSubItem >= 0.05);
+    }
+
+    // 15. Wind Turbines -> Inverter Energy Flow Animations
+    const isWindActive = c.wind?.show !== false || c.aux?.type === 'wind';
     const windCount = isWindActive ? (c.wind?.turbine_count || (c.wind?.turbines?.length || 2)) : 0;
     const turbinesList = c.wind?.turbines || [];
 
