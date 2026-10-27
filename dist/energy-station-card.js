@@ -668,12 +668,12 @@ class At extends HTMLElement {
           </div>
 
           <div class="field-row">
-            <label>⚡ Загальний поріг початку обертання вітряків (Вт):</label>
+            <label>⚡ Поріг запуску анімації обертання вітряків (Вт):</label>
             <div class="slider-row">
               <input type="range" id="windThreshold" min="10" max="500" step="10" value="${((ae = e.wind) == null ? void 0 : ae.animation_threshold) || ((ge = e.aux) == null ? void 0 : ge.wind_animation_threshold) || 50}">
               <span id="windThresholdVal" style="font-family: monospace; font-weight: bold; color: #22d3ee; width: 48px;">${((ue = e.wind) == null ? void 0 : ue.animation_threshold) || ((M = e.aux) == null ? void 0 : M.wind_animation_threshold) || 50}W</span>
             </div>
-            <span style="font-size: 10px; color: #94a3b8;">Лопаті вітряка починають крутитися ТІЛЬКИ коли генерація досягає цього значення. При нижчій потужності — вітряк зупиняється (Штиль).</span>
+            <span style="font-size: 10px; color: #94a3b8;">(Налаштування візуальної анімації): анімація обертання лопатей вітряка на картці вмикається ТІЛЬКИ коли генерація досягає цього значення. При нижчій потужності — анімація зупиняється (Штиль).</span>
           </div>
 
           <!-- Individual Turbines Configuration -->
