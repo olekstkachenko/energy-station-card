@@ -155,10 +155,10 @@ export const DEFAULT_CONFIG = {
     power_sign: 'deye', // 'deye' (+ = Імпорт, - = Експорт) | 'inverted' (+ = Експорт, - = Імпорт)
     min_power_threshold: 50, // Watts (нижче цього значення анімація вимикається)
     invert_power: false,
-    show_car: true,
-    car_power_entity: 'sensor.ev_charger_power',
+    show_car: false,
+    car_power_entity: '',
     car_title: 'Авто',
-    show_non_essential: true,
+    show_non_essential: false,
     non_essential_power_entity: '',
     color: '#38bdf8'
   },

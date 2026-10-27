@@ -501,11 +501,6 @@ export class EnergyStationCardEditor extends HTMLElement {
               `;
             }).join('')}
           </div>
-
-          <div class="field-row" style="margin-top: 6px;">
-            <label>Максимальна потужність для розрахунку швидкості (Вт):</label>
-            <input type="number" id="windMaxPower" value="${c.wind?.max_power || 3000}">
-          </div>
         </div>
       </div>
 
@@ -675,10 +670,14 @@ export class EnergyStationCardEditor extends HTMLElement {
         </div>
 
         <div class="field-group">
-          <div class="field-group-title">🚗 Негарантоване навантаження (Авто / EV)</div>
+          <div class="field-group-title">🚗 Негарантоване навантаження & Авто (Опціонально)</div>
           <div class="field-row">
-            <label>Потужність зарядки авто / зовнішніх приладів:</label>
-            <input type="text" id="gridCarPower" value="${c.grid?.car_power_entity || ''}">
+            <label>Сенсор негарантованого навантаження (порожньо = приховати):</label>
+            <input type="text" id="gridNonEssential" value="${c.grid?.non_essential_power_entity || ''}" placeholder="Залишіть порожнім, якщо немає">
+          </div>
+          <div class="field-row">
+            <label>Сенсор зарядки авто / EV (порожньо = приховати):</label>
+            <input type="text" id="gridCarPower" value="${c.grid?.car_power_entity || ''}" placeholder="Залишіть порожнім, якщо немає">
           </div>
         </div>
       </div>
@@ -909,7 +908,6 @@ export class EnergyStationCardEditor extends HTMLElement {
     root.getElementById('windThreshold')?.addEventListener('input', (e) => {
       this._valueChanged('aux.wind_animation_threshold', parseFloat(e.target.value));
     });
-    bindNumber('windMaxPower', 'wind.max_power');
 
     // Individual turbine field bindings
     root.querySelectorAll('.turbine-name-inp').forEach(inp => {
@@ -1050,6 +1048,7 @@ export class EnergyStationCardEditor extends HTMLElement {
     bindNumber('gridMinThreshold', 'grid.min_power_threshold');
     bindInput('gridImportDaily', 'grid.import_daily_entity');
     bindInput('gridExportDaily', 'grid.export_daily_entity');
+    bindInput('gridNonEssential', 'grid.non_essential_power_entity');
     bindInput('gridCarPower', 'grid.car_power_entity');
 
     bindInput('loadEssential', 'load.essential_power_entity');

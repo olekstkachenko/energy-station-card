@@ -1061,17 +1061,17 @@ export class EnergyStationCard extends HTMLElement {
             </div>
 
             <!-- 2. Non-essential Node (Негарантоване) -->
-            <div class="es-schematic-node clickable-node" id="nonEssentialNode" style="border-color: rgba(56, 189, 248, 0.25);">
+            <div class="es-schematic-node clickable-node ${(c.grid?.show_non_essential && c.grid?.non_essential_power_entity) ? '' : 'hidden'}" id="nonEssentialNode" style="border-color: rgba(56, 189, 248, 0.25);">
               <div class="es-node-icon" style="color: #38bdf8;">${ICONS.house_outline || ICONS.house}</div>
               <div class="es-node-title">Негарантоване</div>
-              <div class="es-mono es-node-power" id="nonEssentialPowerVal" style="color: #38bdf8;">1,000 кВт</div>
+              <div class="es-mono es-node-power" id="nonEssentialPowerVal" style="color: #38bdf8;">0.000 кВт</div>
             </div>
 
             <!-- 3. Car Node (Авто) -->
-            <div class="es-schematic-node clickable-node" id="carNode" style="border-color: rgba(56, 189, 248, 0.25);">
+            <div class="es-schematic-node clickable-node ${(c.grid?.show_car && c.grid?.car_power_entity) ? '' : 'hidden'}" id="carNode" style="border-color: rgba(56, 189, 248, 0.25);">
               <div class="es-node-icon" style="color: #38bdf8;">${ICONS.car}</div>
               <div class="es-node-title" id="carTitle">${c.grid?.car_title || 'Авто'}</div>
-              <div class="es-mono es-node-power" id="carPowerVal" style="color: #38bdf8;">1,000 кВт</div>
+              <div class="es-mono es-node-power" id="carPowerVal" style="color: #38bdf8;">0.000 кВт</div>
             </div>
           </div>
 
@@ -1846,15 +1846,39 @@ export class EnergyStationCard extends HTMLElement {
     const sGridExport = this._getEntityState(c.grid?.export_daily_entity);
     this._nodes.gridExportDaily.innerText = sGridExport ? `${sGridExport.val.toFixed(2)} kWh` : '0.00 kWh';
 
-    // Non-essential & Car
-    const sNonEss = this._getEntityState(c.grid?.non_essential_power_entity);
-    if (this._nodes.nonEssentialPowerVal) {
-      this._nodes.nonEssentialPowerVal.innerText = sNonEss ? this._formatPower(sNonEss, 0).str : '1,000 кВт';
+    // Non-essential & Car (Hidden by default unless entity configured or show explicitly enabled)
+    const nonEssNode = this.shadowRoot.getElementById('nonEssentialNode');
+    const showNonEss = Boolean(c.grid?.show_non_essential && c.grid?.non_essential_power_entity) || (c.grid?.show_non_essential !== false && Boolean(c.grid?.non_essential_power_entity));
+    let nonEssKw = 0;
+    if (nonEssNode) {
+      if (showNonEss) {
+        nonEssNode.classList.remove('hidden');
+        const sNonEss = this._getEntityState(c.grid.non_essential_power_entity);
+        const nonEssFormatted = this._formatPower(sNonEss, 0);
+        nonEssKw = nonEssFormatted.kw;
+        if (this._nodes.nonEssentialPowerVal) {
+          this._nodes.nonEssentialPowerVal.innerText = nonEssFormatted.str;
+        }
+      } else {
+        nonEssNode.classList.add('hidden');
+      }
     }
 
-    const sCar = this._getEntityState(c.grid?.car_power_entity);
-    if (this._nodes.carPowerVal) {
-      this._nodes.carPowerVal.innerText = sCar ? this._formatPower(sCar, 0).str : '1,000 кВт';
+    const carNode = this.shadowRoot.getElementById('carNode');
+    const showCar = Boolean(c.grid?.show_car && c.grid?.car_power_entity) || (c.grid?.show_car !== false && Boolean(c.grid?.car_power_entity));
+    let carKw = 0;
+    if (carNode) {
+      if (showCar) {
+        carNode.classList.remove('hidden');
+        const sCar = this._getEntityState(c.grid.car_power_entity);
+        const carFormatted = this._formatPower(sCar, 0);
+        carKw = carFormatted.kw;
+        if (this._nodes.carPowerVal) {
+          this._nodes.carPowerVal.innerText = carFormatted.str;
+        }
+      } else {
+        carNode.classList.add('hidden');
+      }
     }
 
     // 4. House
@@ -2111,7 +2135,6 @@ export class EnergyStationCard extends HTMLElement {
     }
 
     // Update live animated SVG energy flow paths and speed/direction
-    const nonEssKw = sNonEss ? (sNonEss.unit === 'W' ? sNonEss.val / 1000 : sNonEss.val) : 1.0;
     this._updateFlowPaths();
     this._updateFlowAnimations(
       rawGridKw,
@@ -2122,7 +2145,7 @@ export class EnergyStationCard extends HTMLElement {
       absBatKw,
       isCharging,
       isDischarging,
-      sCar ? (sCar.unit === 'W' ? sCar.val / 1000 : sCar.val) : 0,
+      carKw,
       batModulesData,
       nonEssKw,
       subloadsTotalKw,
@@ -2266,7 +2289,10 @@ export class EnergyStationCard extends HTMLElement {
 
       // 5. Grid -> Non-Essential & Car Vertical Conduits
       const nonEssNode = this.shadowRoot.getElementById('nonEssentialNode');
-      if (gridNode && nonEssNode && nonEssNode.offsetHeight > 0) {
+      const isNonEssVisible = nonEssNode && !nonEssNode.classList.contains('hidden') && nonEssNode.offsetHeight > 0;
+      const isCarVisible = carNode && !carNode.classList.contains('hidden') && carNode.offsetHeight > 0;
+
+      if (gridNode && isNonEssVisible) {
         const p1 = getPt(gridNode, 0.5, 1.0);
         const p2 = getPt(nonEssNode, 0.5, 0.0);
         if (p1 && p2) {
@@ -2277,12 +2303,17 @@ export class EnergyStationCard extends HTMLElement {
         setPathD('pathGridNonEssBase', 'pathGridNonEssFlow', '');
       }
 
-      if (nonEssNode && carNode && carNode.offsetHeight > 0) {
-        const p1 = getPt(nonEssNode, 0.5, 1.0);
-        const p2 = getPt(carNode, 0.5, 0.0);
-        if (p1 && p2) {
-          const d = `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`;
-          setPathD('pathNonEssCarBase', 'pathNonEssCarFlow', d);
+      if (isCarVisible) {
+        const fromNode = isNonEssVisible ? nonEssNode : gridNode;
+        if (fromNode) {
+          const p1 = getPt(fromNode, 0.5, 1.0);
+          const p2 = getPt(carNode, 0.5, 0.0);
+          if (p1 && p2) {
+            const d = `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`;
+            setPathD('pathNonEssCarBase', 'pathNonEssCarFlow', d);
+          }
+        } else {
+          setPathD('pathNonEssCarBase', 'pathNonEssCarFlow', '');
         }
       } else {
         setPathD('pathNonEssCarBase', 'pathNonEssCarFlow', '');
