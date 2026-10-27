@@ -16,7 +16,7 @@ export const DEFAULT_CONFIG = {
   solar: {
     show: true,
     pv_count: 3, // 1 to 16 strings/trackers
-    total_power_entity: 'sensor.deye_12k_inverter_total_pv_power',
+    total_power_entity: '', // Порожньо за замовчуванням — картка автоматично сумує потужність усіх стрінгів
     daily_yield_entity: 'sensor.deye_12k_inverter_daily_solar_energy',
     target_daily_yield: 55.0, // kWh
     auto_distribute_power: true,

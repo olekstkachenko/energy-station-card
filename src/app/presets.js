@@ -15,7 +15,7 @@ export const PRESETS = {
       },
       solar: {
         pv_count: 3,
-        total_power_entity: 'sensor.deye_12k_inverter_total_pv_power',
+        total_power_entity: '', // Автоматично розраховується як сума стрінгів PV
         daily_yield_entity: 'sensor.deye_12k_inverter_daily_solar_energy',
         target_daily_yield: 55.0,
         strings: [

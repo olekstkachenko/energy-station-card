@@ -1312,38 +1312,39 @@ export class EnergyStationCard extends HTMLElement {
     const c = this._config || DEFAULT_CONFIG;
 
     // 1. Solar
-    const sPvTotal = this._getEntityState(c.solar?.total_power_entity);
-    const pvPower = this._formatPower(sPvTotal, 12.0);
-    this._nodes.totalPvPowerBadge.innerText = pvPower.str;
-
-    const sPvDaily = this._getEntityState(c.solar?.daily_yield_entity);
-    const dailyKwh = sPvDaily ? sPvDaily.val : 48.6;
-    this._nodes.dailySolarYield.innerText = dailyKwh.toFixed(1);
-    
-    const targetKwh = c.solar?.target_daily_yield || 55.0;
-    this._nodes.targetSolarYield.innerText = targetKwh.toFixed(1);
-    const progress = Math.min(100, Math.round((dailyKwh / targetKwh) * 100));
-    this._nodes.solarProgressBar.style.width = `${progress}%`;
-
-    // Individual PV panels & strings (Current, Voltage, Power)
     const pvCount = c.solar?.pv_count || (c.solar?.strings?.length || 3);
-    const perPanelKw = (pvPower.kw / pvCount).toFixed(3);
+    let calculatedTotalPvKw = 0;
+    let hasConfiguredPvEntities = false;
+
+    // Check if any real entities are present in Home Assistant
+    for (let i = 1; i <= pvCount; i++) {
+      const strConfig = c.solar?.strings?.[i - 1];
+      const voltEnt = strConfig?.voltage_entity || (i <= 3 ? `sensor.deye_12k_inverter_pv${i}_voltage` : '');
+      const currEnt = strConfig?.current_entity || (i <= 3 ? `sensor.deye_12k_inverter_pv${i}_current` : '');
+      const pwrEnt = strConfig?.power_entity || (i <= 3 ? `sensor.deye_12k_inverter_pv${i}_power` : '');
+      if (this._getEntityState(pwrEnt) || this._getEntityState(voltEnt) || this._getEntityState(currEnt)) {
+        hasConfiguredPvEntities = true;
+        break;
+      }
+    }
+
+    // Calculate each PV panel / string
     for (let i = 1; i <= pvCount; i++) {
       const panelVal = this.shadowRoot.getElementById(`pvVal_${i}`);
       const panelVolt = this.shadowRoot.getElementById(`pvVolt_${i}`);
       const panelCurr = this.shadowRoot.getElementById(`pvCurr_${i}`);
 
       const strConfig = c.solar?.strings?.[i - 1];
-      const voltEnt = strConfig?.voltage_entity || `sensor.deye_12k_inverter_pv${i}_voltage`;
-      const currEnt = strConfig?.current_entity || `sensor.deye_12k_inverter_pv${i}_current`;
-      const pwrEnt = strConfig?.power_entity || `sensor.deye_12k_inverter_pv${i}_power`;
+      const voltEnt = strConfig?.voltage_entity || (i <= 3 ? `sensor.deye_12k_inverter_pv${i}_voltage` : '');
+      const currEnt = strConfig?.current_entity || (i <= 3 ? `sensor.deye_12k_inverter_pv${i}_current` : '');
+      const pwrEnt = strConfig?.power_entity || (i <= 3 ? `sensor.deye_12k_inverter_pv${i}_power` : '');
 
       const sVolt = this._getEntityState(voltEnt);
       const sCurr = this._getEntityState(currEnt);
       const sPwr = this._getEntityState(pwrEnt);
 
-      let voltNum = sVolt ? sVolt.val : (380 + (i * 4.5));
-      let currNum = sCurr ? sCurr.val : (3.12 + (i * 0.28));
+      let voltNum = 0;
+      let currNum = 0;
       let kwNum = 0;
 
       if (sPwr) {
@@ -1351,9 +1352,27 @@ export class EnergyStationCard extends HTMLElement {
       } else if (sVolt && sCurr) {
         // Calculate P = V * I in kW
         kwNum = (sVolt.val * sCurr.val) / 1000.0;
+      } else if (sVolt) {
+        kwNum = 0;
       } else {
-        kwNum = parseFloat(perPanelKw);
+        kwNum = hasConfiguredPvEntities ? 0 : 4.0;
       }
+
+      if (sVolt) {
+        voltNum = sVolt.val;
+      } else {
+        voltNum = hasConfiguredPvEntities ? 0 : (380 + (i * 4.5));
+      }
+
+      if (sCurr) {
+        currNum = sCurr.val;
+      } else if (sPwr && voltNum > 0) {
+        currNum = (kwNum * 1000) / voltNum;
+      } else {
+        currNum = hasConfiguredPvEntities ? 0 : (3.12 + (i * 0.28));
+      }
+
+      calculatedTotalPvKw += kwNum;
 
       if (panelVal) {
         panelVal.innerText = `${kwNum.toFixed(3)} кВт`;
@@ -1365,6 +1384,25 @@ export class EnergyStationCard extends HTMLElement {
         panelCurr.innerText = `${currNum.toFixed(2)} A`;
       }
     }
+
+    // Total PV power: use sensor if available, otherwise automatically use sum of all strings
+    const sPvTotal = this._getEntityState(c.solar?.total_power_entity);
+    let totalSolarKw = 0;
+    if (sPvTotal) {
+      totalSolarKw = this._formatPower(sPvTotal).kw;
+    } else {
+      totalSolarKw = calculatedTotalPvKw;
+    }
+    this._nodes.totalPvPowerBadge.innerText = `${totalSolarKw.toFixed(3)} кВт`;
+
+    const sPvDaily = this._getEntityState(c.solar?.daily_yield_entity);
+    const dailyKwh = sPvDaily ? sPvDaily.val : (hasConfiguredPvEntities ? 0 : 48.6);
+    this._nodes.dailySolarYield.innerText = dailyKwh.toFixed(1);
+    
+    const targetKwh = c.solar?.target_daily_yield || 55.0;
+    this._nodes.targetSolarYield.innerText = targetKwh.toFixed(1);
+    const progress = Math.min(100, Math.round((dailyKwh / targetKwh) * 100));
+    this._nodes.solarProgressBar.style.width = `${progress}%`;
 
     // 2. Inverter
     const sInvPower = this._getEntityState(c.inverter?.power_entity);
@@ -1740,7 +1778,7 @@ export class EnergyStationCard extends HTMLElement {
     this._updateFlowAnimations(
       gridKw,
       isExport,
-      pvPower.kw,
+      totalSolarKw,
       sEss ? (sEss.unit === 'W' ? sEss.val / 1000 : sEss.val) : 8.0,
       batKw,
       isCharging,

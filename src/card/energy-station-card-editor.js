@@ -56,7 +56,7 @@ export class EnergyStationCardEditor extends HTMLElement {
     if (presetName === 'deye_esphome') {
       this._config.inverter.model_name = 'DEYE SUN-12K';
       this._config.solar.pv_count = 3;
-      this._config.solar.total_power_entity = 'sensor.deye_12k_inverter_total_pv_power';
+      this._config.solar.total_power_entity = ''; // Розраховується автоматично як сума стрінгів PV
       this._config.solar.daily_yield_entity = 'sensor.deye_12k_inverter_daily_solar_energy';
       this._config.solar.strings = [
         {
@@ -343,8 +343,9 @@ export class EnergyStationCardEditor extends HTMLElement {
             </div>
           </div>
           <div class="field-row">
-            <label>Сумарна сонячна потужність (сенсор):</label>
-            <input type="text" id="solarTotalPower" value="${c.solar?.total_power_entity || ''}">
+            <label>Сумарна сонячна потужність (сенсор, необов'язково):</label>
+            <input type="text" id="solarTotalPower" value="${c.solar?.total_power_entity || ''}" placeholder="Залиште порожнім для авторозрахунку як суми стрінгів">
+            <span style="font-size: 10px; color: #94a3b8;">Якщо не вказано або сенсор відсутній — картка автоматично сумує потужність усіх стрінгів (PV1 + PV2 + PV3...).</span>
           </div>
           <div class="field-row">
             <label>Щоденна сонячна генерація (kWh):</label>
