@@ -155,9 +155,12 @@ export const DEFAULT_CONFIG = {
   grid: {
     show: true,
     power_entity: 'sensor.deye_12k_inverter_total_grid_power',
+    voltage_entity: '', // сенсор напруги мережі (якщо порожньо — береться з inverter.voltage_entity)
+    status_entity: '', // бінарний сенсор наявності мережі (опціонально)
+    voltage_threshold: 90, // поріг напруги (В), нижче якого мережа вважається вимкненою (блекаут)
     import_daily_entity: 'sensor.deye_12k_inverter_daily_energy_bought',
     export_daily_entity: 'sensor.deye_12k_inverter_daily_energy_sold',
-    selling_enabled: false, // чи продає станція в мережу (Зелений тариф / Net billing). Якщо false — анімація продажу ЗАВЖДИ вимкнена!
+    selling_enabled: false, // чи продає станція в мережу (Зелений тариф / Net billing). Якщо false — анімація та розрахунок продажу ЗАВЖДИ вимкнені!
     power_sign: 'deye', // 'deye' (+ = Імпорт, - = Експорт) | 'inverted' (+ = Експорт, - = Імпорт)
     min_power_threshold: 50, // Watts (нижче цього значення анімація вимикається)
     invert_power: false,

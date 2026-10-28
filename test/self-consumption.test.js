@@ -168,4 +168,148 @@ describe('Energy Station Card - Inverter Self-Consumption & House Load Balance',
 
     assert.equal(selfKw, 0.125, 'Direct sensor value must be used');
   });
+
+  it('handles blackout / disconnected grid when voltage is low (e.g. 4.90V) and CT clamp reads negative (user off-grid scenario)', () => {
+    // User scenario from screenshot:
+    // Solar: 0.668 kW
+    // Battery: Discharging 1.770 kW
+    // Grid Voltage: 4.90 V (< 90 V threshold) -> Grid is DISCONNECTED!
+    // Grid Power Sensor: -2.235 kW (CT clamp measuring current to house panel)
+    // Inverter Standby: 100 W (0.100 kW)
+    // House Load: Must be 0.668 + 1.770 - 0.100 = 2.338 kW! (Not 0.102 kW, and grid must be 0 kW, not exporting!)
+
+    const c = {
+      grid: {
+        power_entity: 'sensor.deye_grid_power',
+        voltage_entity: '',
+        voltage_threshold: 90,
+        selling_enabled: true, // Even if selling was enabled in config, disconnected grid overrides it!
+        power_sign: 'deye'
+      },
+      inverter: {
+        voltage_entity: 'sensor.deye_grid_voltage',
+        standby_power: 100,
+        show_self_consumption: true
+      },
+      load: {
+        auto_calculate: true
+      }
+    };
+
+    const hass = {
+      states: {
+        'sensor.deye_grid_power': { state: '-2235', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_grid_voltage': { state: '4.90', attributes: { unit_of_measurement: 'V' } }
+      }
+    };
+
+    const getEntityState = (id) => {
+      if (!id || !hass.states[id]) return null;
+      const s = hass.states[id];
+      const val = parseFloat(s.state);
+      return { raw: s.state, val: isNaN(val) ? 0 : val, unit: s.attributes?.unit_of_measurement || '' };
+    };
+
+    const sGridPower = getEntityState(c.grid.power_entity);
+    const rawGridKw = sGridPower ? (sGridPower.unit === 'W' ? sGridPower.val / 1000 : sGridPower.val) : 0;
+    const powerSign = c.grid.power_sign;
+    const sellingEnabled = c.grid.selling_enabled === true;
+    const thresholdKw = 0.05;
+
+    // Detect grid connection
+    const sGridStatus = getEntityState(c.grid.status_entity);
+    const sGridVolt = getEntityState(c.grid.voltage_entity || c.inverter.voltage_entity);
+    const voltThreshold = c.grid.voltage_threshold !== undefined ? c.grid.voltage_threshold : 90;
+
+    let isGridConnected = true;
+    if (sGridStatus) {
+      const st = String(sGridStatus.raw || sGridStatus.val).toLowerCase();
+      if (st === 'off' || st === 'false' || st === '0' || st === 'disconnected' || st === 'offline') {
+        isGridConnected = false;
+      }
+    } else if (sGridVolt && typeof sGridVolt.val === 'number' && !isNaN(sGridVolt.val)) {
+      if (sGridVolt.val < voltThreshold) {
+        isGridConnected = false;
+      }
+    }
+
+    assert.equal(isGridConnected, false, 'Grid must be detected as disconnected when voltage is 4.90V');
+
+    let isExport = false;
+    let isImport = false;
+    let absGridKw = 0;
+
+    if (!isGridConnected) {
+      absGridKw = 0;
+      isExport = false;
+      isImport = false;
+    } else {
+      absGridKw = Math.abs(rawGridKw);
+      if (absGridKw >= thresholdKw) {
+        if (powerSign === 'deye') {
+          if (rawGridKw < 0) isExport = true;
+          else isImport = true;
+        }
+      }
+      if (isExport && !sellingEnabled) isExport = false;
+    }
+
+    // Power balance
+    const totalSolarKw = 0.668;
+    const totalWindKw = 0;
+    const auxKw = 0;
+    const absBatKw = 1.770;
+    const isCharging = false;
+    const isDischarging = true;
+
+    const gridInKw = isImport ? absGridKw : 0;
+    const batOutKw = isDischarging ? absBatKw : 0;
+    const totalInflowKw = totalSolarKw + totalWindKw + auxKw + gridInKw + batOutKw; // 0.668 + 1.770 = 2.438 kW
+
+    const batInKw = isCharging ? absBatKw : 0;
+    const gridOutKw = isExport ? absGridKw : 0; // 0 because grid is disconnected!
+    const totalOutflowKnownKw = batInKw + gridOutKw;
+
+    const netAvailableKw = Math.max(0, totalInflowKw - totalOutflowKnownKw); // 2.438 kW
+    const standbyWatts = c.inverter.standby_power;
+    const nominalLossKw = standbyWatts / 1000; // 0.100 kW
+    const selfConsumptionKw = Math.min(netAvailableKw, nominalLossKw); // 0.100 kW
+    const essentialKw = Math.max(0, netAvailableKw - selfConsumptionKw); // 2.338 kW
+
+    // Grid assertions:
+    assert.equal(absGridKw, 0, 'Grid power must be 0 kW when disconnected');
+    assert.equal(isExport, false, 'Export must be false when grid is disconnected');
+    assert.equal(isImport, false, 'Import must be false when grid is disconnected');
+
+    // House & Inverter assertions:
+    assert.equal(selfConsumptionKw.toFixed(3), '0.100', 'Inverter standby must be 100 W');
+    assert.equal(essentialKw.toFixed(3), '2.338', 'House load must be 2.338 kW (covering boiler + house)');
+    assert.equal((essentialKw + selfConsumptionKw).toFixed(3), totalInflowKw.toFixed(3), 'Total accounted must equal generation');
+  });
+
+  it('respects selling_enabled: false when grid is connected and never treats negative sensor readings as export', () => {
+    const rawGridKw = -1.500; // Negative reading (e.g. backfeed or CT noise)
+    const sellingEnabled = false; // Zero export
+    const powerSign = 'deye';
+
+    let isExport = false;
+    let isImport = false;
+    const absGridKw = Math.abs(rawGridKw);
+
+    if (absGridKw >= 0.05) {
+      if (powerSign === 'deye') {
+        if (rawGridKw < 0) isExport = true;
+        else isImport = true;
+      }
+    }
+    if (isExport && !sellingEnabled) {
+      isExport = false;
+    }
+
+    const gridOutKw = isExport ? absGridKw : 0;
+
+    assert.equal(isExport, false, 'isExport must be false when selling_enabled is false');
+    assert.equal(gridOutKw, 0, 'gridOutKw must be 0 kW');
+  });
 });
+

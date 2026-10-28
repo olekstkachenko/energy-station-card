@@ -707,6 +707,24 @@ export class EnergyStationCardEditor extends HTMLElement {
           </div>
 
           <div class="field-row">
+            <label>Сенсор напруги мережі (Grid Voltage, опціонально):</label>
+            <input type="text" id="gridVoltage" value="${c.grid?.voltage_entity || ''}" placeholder="За замовчуванням береться з інвертора (напр. sensor.deye_12k_inverter_grid_voltage)">
+          </div>
+
+          <div class="field-row">
+            <label>Сенсор наявності мережі (опціонально, binary_sensor):</label>
+            <input type="text" id="gridStatus" value="${c.grid?.status_entity || ''}" placeholder="binary_sensor.grid_connected">
+          </div>
+
+          <div class="field-row">
+            <label>Поріг напруги вимкнення мережі / блекаут (В):</label>
+            <input type="number" id="gridVoltageThreshold" min="20" max="200" value="${c.grid?.voltage_threshold !== undefined ? c.grid.voltage_threshold : 90}">
+            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
+              Якщо напруга нижче цього значення (за замовчуванням 90 В) — мережа вважається знеструмленою. Експорт та імпорт блокуються, а вся енергія від АКБ і Сонця зараховується в дім.
+            </div>
+          </div>
+
+          <div class="field-row">
             <label>Щоденний імпорт (kWh) / Експорт (kWh):</label>
             <input type="text" id="gridImportDaily" placeholder="Імпорт kWh (напр. sensor.grid_import_daily)" value="${c.grid?.import_daily_entity || ''}" style="margin-bottom: 4px;">
             <input type="text" id="gridExportDaily" placeholder="Експорт kWh (напр. sensor.grid_export_daily)" value="${c.grid?.export_daily_entity || ''}">
@@ -1126,6 +1144,9 @@ export class EnergyStationCardEditor extends HTMLElement {
 
     bindCheckbox('gridSellingEnabled', 'grid.selling_enabled');
     bindInput('gridPower', 'grid.power_entity');
+    bindInput('gridVoltage', 'grid.voltage_entity');
+    bindInput('gridStatus', 'grid.status_entity');
+    bindNumber('gridVoltageThreshold', 'grid.voltage_threshold');
     bindInput('gridPowerSign', 'grid.power_sign');
     bindNumber('gridMinThreshold', 'grid.min_power_threshold');
     bindInput('gridImportDaily', 'grid.import_daily_entity');

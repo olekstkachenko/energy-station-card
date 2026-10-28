@@ -1833,46 +1833,80 @@ export class EnergyStationCard extends HTMLElement {
     const sellingEnabled = c.grid?.selling_enabled === true;
     const thresholdKw = (c.grid?.min_power_threshold !== undefined ? c.grid.min_power_threshold : 50) / 1000;
 
-    let isExport = false;
-    let isImport = false;
-    const absGridKw = Math.abs(rawGridKw);
+    // Detect if Grid is Connected (Mains voltage or status)
+    const sGridStatus = this._getEntityState(c.grid?.status_entity);
+    const sGridVolt = this._getEntityState(c.grid?.voltage_entity || c.inverter?.voltage_entity);
+    const voltThreshold = c.grid?.voltage_threshold !== undefined ? c.grid.voltage_threshold : 90;
 
-    if (absGridKw >= thresholdKw) {
-      if (powerSign === 'deye') {
-        // Deye standard: Positive (+) = Import from grid, Negative (-) = Export to grid
-        if (rawGridKw < 0) {
-          isExport = true;
-        } else {
-          isImport = true;
-        }
-      } else {
-        // Inverted: Positive (+) = Export to grid, Negative (-) = Import from grid
-        if (rawGridKw > 0) {
-          isExport = true;
-        } else {
-          isImport = true;
-        }
+    let isGridConnected = true;
+    if (sGridStatus) {
+      const st = String(sGridStatus.raw || sGridStatus.val).toLowerCase();
+      if (st === 'off' || st === 'false' || st === '0' || st === 'disconnected' || st === 'offline' || st === 'unavailable' || st === 'unknown') {
+        isGridConnected = false;
+      }
+    } else if (sGridVolt && typeof sGridVolt.val === 'number' && !isNaN(sGridVolt.val)) {
+      if (sGridVolt.val < voltThreshold) {
+        isGridConnected = false;
       }
     }
 
-    // If station does not sell to the grid (selling_enabled === false), never animate or flag export!
-    if (isExport && !sellingEnabled) {
+    let isExport = false;
+    let isImport = false;
+    let absGridKw = 0;
+
+    if (!isGridConnected) {
+      // Grid is physically disconnected / blackout / off-grid
+      absGridKw = 0;
       isExport = false;
+      isImport = false;
+    } else {
+      absGridKw = Math.abs(rawGridKw);
+      if (absGridKw >= thresholdKw) {
+        if (powerSign === 'deye') {
+          // Deye standard: Positive (+) = Import from grid, Negative (-) = Export to grid
+          if (rawGridKw < 0) {
+            isExport = true;
+          } else {
+            isImport = true;
+          }
+        } else {
+          // Inverted: Positive (+) = Export to grid, Negative (-) = Import from grid
+          if (rawGridKw > 0) {
+            isExport = true;
+          } else {
+            isImport = true;
+          }
+        }
+      }
+
+      // If station does not sell to the grid (selling_enabled === false), never animate or flag export!
+      if (isExport && !sellingEnabled) {
+        isExport = false;
+      }
     }
 
+    const gridNode = this.shadowRoot.getElementById('gridNode');
     if (this._nodes.gridPowerVal) {
-      this._nodes.gridPowerVal.innerText = `${absGridKw.toFixed(3)} кВт`;
-      if (isExport) {
-        this._nodes.gridPowerVal.style.color = '#34d399';
-      } else if (isImport) {
-        this._nodes.gridPowerVal.style.color = '#38bdf8';
+      if (!isGridConnected) {
+        this._nodes.gridPowerVal.innerText = '0.000 кВт';
+        this._nodes.gridPowerVal.style.color = '#64748b';
       } else {
-        this._nodes.gridPowerVal.style.color = '#94a3b8';
+        this._nodes.gridPowerVal.innerText = `${absGridKw.toFixed(3)} кВт`;
+        if (isExport) {
+          this._nodes.gridPowerVal.style.color = '#34d399';
+        } else if (isImport) {
+          this._nodes.gridPowerVal.style.color = '#38bdf8';
+        } else {
+          this._nodes.gridPowerVal.style.color = '#94a3b8';
+        }
       }
     }
 
     if (this._nodes.gridDirectionLabel) {
-      if (isExport) {
+      if (!isGridConnected) {
+        this._nodes.gridDirectionLabel.innerText = 'Вимкнено';
+        this._nodes.gridDirectionLabel.style.color = '#ef4444';
+      } else if (isExport) {
         this._nodes.gridDirectionLabel.innerText = '← Експорт';
         this._nodes.gridDirectionLabel.style.color = '#34d399';
       } else if (isImport) {
@@ -1881,6 +1915,16 @@ export class EnergyStationCard extends HTMLElement {
       } else {
         this._nodes.gridDirectionLabel.innerText = 'Мережа';
         this._nodes.gridDirectionLabel.style.color = '#64748b';
+      }
+    }
+
+    if (gridNode) {
+      if (!isGridConnected) {
+        gridNode.classList.remove('glow-grid');
+        gridNode.style.borderColor = 'rgba(239, 68, 68, 0.45)';
+      } else {
+        gridNode.classList.add('glow-grid');
+        gridNode.style.borderColor = 'rgba(56, 189, 248, 0.4)';
       }
     }
 
@@ -2237,7 +2281,7 @@ export class EnergyStationCard extends HTMLElement {
     // Update live animated SVG energy flow paths and speed/direction
     this._updateFlowPaths();
     this._updateFlowAnimations(
-      rawGridKw,
+      isGridConnected ? rawGridKw : 0,
       isExport,
       isImport,
       totalSolarKw,
