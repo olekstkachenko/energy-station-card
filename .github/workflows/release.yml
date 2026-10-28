@@ -31,9 +31,10 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          name: ${{ github.ref_name }}
           files: |
-            energy-station-card.js
             dist/energy-station-card.js
+            dist/energy-station-card.umd.js
           generate_release_notes: true
           draft: false
           prerelease: false
