@@ -329,6 +329,22 @@ export class EnergyStationCardEditor extends HTMLElement {
             </select>
           </div>
           <div class="field-row">
+            <label>Масштаб картки (Zoom / Scale):</label>
+            <div class="slider-row">
+              <input type="range" id="cardScale" min="0.7" max="1.8" step="0.05" value="${c.card_scale || 1.0}">
+              <span id="cardScaleVal" style="font-family: monospace; font-weight: bold; width: 45px; color: #38bdf8;">${Math.round((c.card_scale || 1.0) * 100)}%</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <label>Максимальна ширина картки (Max Width):</label>
+            <select id="cardMaxWidth">
+              <option value="1400px" ${c.max_width === '1400px' || !c.max_width ? 'selected' : ''}>1400px (Стандартна)</option>
+              <option value="1600px" ${c.max_width === '1600px' ? 'selected' : ''}>1600px (Широка)</option>
+              <option value="1800px" ${c.max_width === '1800px' ? 'selected' : ''}>1800px (Дуже широка / 2K)</option>
+              <option value="100%" ${c.max_width === '100%' ? 'selected' : ''}>100% (На всю ширину панелі)</option>
+            </select>
+          </div>
+          <div class="field-row">
             <label>Панель перемикачів на картці:</label>
             <div style="display: flex; align-items: center; gap: 8px;">
               <input type="checkbox" id="showQuickSettings" ${c.show_quick_settings !== false ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #0284c7;">
@@ -892,6 +908,13 @@ export class EnergyStationCardEditor extends HTMLElement {
     bindInput('title', 'title');
     bindInput('themeMode', 'theme_mode');
     bindInput('cardLanguage', 'language');
+    root.getElementById('cardScale')?.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      const disp = root.getElementById('cardScaleVal');
+      if (disp) disp.innerText = `${Math.round(val * 100)}%`;
+      this._valueChanged('card_scale', val);
+    });
+    bindInput('cardMaxWidth', 'max_width');
     bindCheckbox('showQuickSettings', 'show_quick_settings');
     bindInput('ctrlSolarCharge', 'controls.solar_charge_entity');
     bindInput('ctrlSellPower', 'controls.sell_power_entity');

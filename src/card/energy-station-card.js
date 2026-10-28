@@ -114,6 +114,7 @@ export class EnergyStationCard extends HTMLElement {
     this._initialized = false;
     this._themeMode = 'dark';
     this._language = 'uk';
+    this._scale = 1.0;
     
     // Cached DOM nodes for high performance live updates
     this._nodes = {};
@@ -153,8 +154,39 @@ export class EnergyStationCard extends HTMLElement {
     this._themeMode = storedTheme || this._config.theme_mode || 'dark';
     const storedLang = (typeof localStorage !== 'undefined') ? localStorage.getItem('energy_station_lang') : null;
     this._language = storedLang || this._config.language || 'uk';
+    const storedScale = (typeof localStorage !== 'undefined') ? localStorage.getItem('energy_station_scale') : null;
+    this._scale = storedScale ? parseFloat(storedScale) : (this._config.card_scale || this._config.scale || 1.0);
     this._renderCardSkeleton();
     if (this._hass) this._updateValues();
+  }
+
+  _rAF(cb) {
+    if (typeof requestAnimationFrame !== 'undefined') {
+      return requestAnimationFrame(cb);
+    }
+    return setTimeout(cb, 0);
+  }
+
+  _changeScale(targetScale) {
+    let s = typeof targetScale === 'number' ? targetScale : (this._scale + (targetScale || 0.1));
+    s = Math.max(0.7, Math.min(2.0, Math.round(s * 100) / 100));
+    this._scale = s;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('energy_station_scale', s.toString());
+    }
+    const container = this.shadowRoot?.querySelector('.energy-station-container');
+    if (container) {
+      container.style.setProperty('--es-card-scale', s.toString());
+      container.style.zoom = s.toString();
+    }
+    const zoomVal = this.shadowRoot?.getElementById('headerZoomVal');
+    if (zoomVal) {
+      zoomVal.innerText = `${Math.round(s * 100)}%`;
+    }
+    this._rAF(() => {
+      this._updateFlowPaths();
+      setTimeout(() => this._updateFlowPaths(), 80);
+    });
   }
 
   set hass(hass) {
@@ -295,13 +327,14 @@ export class EnergyStationCard extends HTMLElement {
           border: 1px solid var(--es-border);
           position: relative;
           width: 100%;
-          max-width: 1400px;
+          max-width: var(--es-card-max-width, ${c.max_width || '1400px'});
           margin: 0 auto;
           padding: 22px 28px 24px 28px;
           transition: all 0.3s ease;
           container-type: inline-size;
           container-name: es-card;
           box-sizing: border-box;
+          zoom: var(--es-card-scale, ${this._scale || 1.0});
         }
 
         .es-mono {
@@ -1605,6 +1638,11 @@ export class EnergyStationCard extends HTMLElement {
             <span class="es-header-badge">PRO FLOW</span>
           </div>
           <div class="es-header-controls">
+            <div class="es-zoom-control" style="display: flex; align-items: center; background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 20px; padding: 1px 4px; gap: 2px;">
+              <button class="es-header-pill-btn" id="headerZoomOut" title="Зменшити масштаб" style="border: none; background: transparent; padding: 2px 6px; font-weight: 800; font-size: 13px; line-height: 1;">−</button>
+              <span class="es-mono" id="headerZoomVal" style="font-size: 11px; min-width: 36px; text-align: center; color: #38bdf8; font-weight: 700; cursor: pointer; user-select: none;" title="Скинути до 100%">${Math.round(this._scale * 100)}%</span>
+              <button class="es-header-pill-btn" id="headerZoomIn" title="Збільшити масштаб" style="border: none; background: transparent; padding: 2px 6px; font-weight: 800; font-size: 13px; line-height: 1;">+</button>
+            </div>
             <button class="es-header-pill-btn" id="headerThemeToggle" title="${this._t('theme_label')}">
               ${this._themeMode === 'light' ? '☀️' : '🌙'}
             </button>
@@ -1825,7 +1863,7 @@ export class EnergyStationCard extends HTMLElement {
     this._renderDynamicBatteryRack();
     this._bindInteractions();
     this._setupResizeObserver();
-    requestAnimationFrame(() => this._updateFlowPaths());
+    this._rAF(() => this._updateFlowPaths());
   }
 
   _cacheDomNodes() {
@@ -2288,6 +2326,18 @@ export class EnergyStationCard extends HTMLElement {
     root.getElementById('headerLangToggle')?.addEventListener('click', (e) => {
       e.stopPropagation();
       this._toggleLanguage();
+    });
+    root.getElementById('headerZoomIn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._changeScale(this._scale + 0.1);
+    });
+    root.getElementById('headerZoomOut')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._changeScale(this._scale - 0.1);
+    });
+    root.getElementById('headerZoomVal')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._changeScale(1.0);
     });
 
     root.getElementById('solarHeaderNode')?.addEventListener('click', () => {
@@ -3194,7 +3244,7 @@ export class EnergyStationCard extends HTMLElement {
       });
       this._resizeObserver.observe(container);
     }
-    requestAnimationFrame(() => this._updateFlowPaths());
+    this._rAF(() => this._updateFlowPaths());
     setTimeout(() => this._updateFlowPaths(), 150);
   }
 
@@ -3205,13 +3255,14 @@ export class EnergyStationCard extends HTMLElement {
       const cRect = container.getBoundingClientRect();
       if (cRect.width === 0 || cRect.height === 0) return;
       const c = this._config || DEFAULT_CONFIG;
+      const scale = this._scale || 1.0;
 
       const getPt = (el, xFrac = 0.5, yFrac = 0.5) => {
         if (!el) return null;
         const r = el.getBoundingClientRect();
         return {
-          x: Math.round(r.left - cRect.left + r.width * xFrac),
-          y: Math.round(r.top - cRect.top + r.height * yFrac)
+          x: Math.round((r.left - cRect.left + r.width * xFrac) / scale),
+          y: Math.round((r.top - cRect.top + r.height * yFrac) / scale)
         };
       };
 
@@ -3247,10 +3298,10 @@ export class EnergyStationCard extends HTMLElement {
         } else {
           // Desktop 3-column layout: line connects from right edge of gridNode into left edge of inverterNode
           // passing strictly below the AC/DC telemetry text
-          const lineY = Math.round(rInv.top - cRect.top + rInv.height * 0.55);
-          const p1X = Math.round(rGrid.right - cRect.left);
-          const p2X = Math.round(rInv.left - cRect.left);
-          const p1Y = Math.round(rGrid.top - cRect.top + rGrid.height * 0.50);
+          const lineY = Math.round((rInv.top - cRect.top + rInv.height * 0.55) / scale);
+          const p1X = Math.round((rGrid.right - cRect.left) / scale);
+          const p2X = Math.round((rInv.left - cRect.left) / scale);
+          const p1Y = Math.round((rGrid.top - cRect.top + rGrid.height * 0.50) / scale);
 
           let d = '';
           if (Math.abs(p1Y - lineY) <= 8) {
@@ -3281,10 +3332,10 @@ export class EnergyStationCard extends HTMLElement {
         } else {
           // Desktop 3-column layout: line connects from right edge of inverterNode into left edge of essentialNode
           // passing strictly below the Voltage/Current telemetry text
-          const lineY = Math.round(rInv.top - cRect.top + rInv.height * 0.55);
-          const p1X = Math.round(rInv.right - cRect.left);
-          const p2X = Math.round(rLoad.left - cRect.left);
-          const p2Y = Math.round(rLoad.top - cRect.top + rLoad.height * 0.50);
+          const lineY = Math.round((rInv.top - cRect.top + rInv.height * 0.55) / scale);
+          const p1X = Math.round((rInv.right - cRect.left) / scale);
+          const p2X = Math.round((rLoad.left - cRect.left) / scale);
+          const p2Y = Math.round((rLoad.top - cRect.top + rLoad.height * 0.50) / scale);
 
           let d = '';
           if (Math.abs(p2Y - lineY) <= 8) {
@@ -3450,6 +3501,7 @@ export class EnergyStationCard extends HTMLElement {
   _updateBusBars() {
     try {
       const c = this._config || DEFAULT_CONFIG;
+      const scale = this._scale || 1.0;
 
       // 1. Solar Bus: dynamically adjust horizontal line length to span from first to last PV panel
       const solarSvg = this.shadowRoot.getElementById('solarBusSvg');
@@ -3468,8 +3520,8 @@ export class EnergyStationCard extends HTMLElement {
           const rFirst = firstPv.getBoundingClientRect();
           const rLast = lastPv.getBoundingClientRect();
 
-          const x1 = Math.round(rFirst.left - svgRect.left + rFirst.width / 2);
-          const x2 = Math.round(rLast.left - svgRect.left + rLast.width / 2);
+          const x1 = Math.round((rFirst.left - svgRect.left + rFirst.width / 2) / scale);
+          const x2 = Math.round((rLast.left - svgRect.left + rLast.width / 2) / scale);
           const y = 13;
           const midX = Math.round((x1 + x2) / 2);
 
@@ -3505,7 +3557,7 @@ export class EnergyStationCard extends HTMLElement {
               const card = this.shadowRoot.getElementById(`pvPanel_${i}`);
               if (card) {
                 const cr = card.getBoundingClientRect();
-                const cx = Math.round(cr.left - svgRect.left + cr.width / 2);
+                const cx = Math.round((cr.left - svgRect.left + cr.width / 2) / scale);
                 feedersHtml += `
                   <line x1="${cx}" y1="0" x2="${cx}" y2="${y}" stroke="#d97706" stroke-width="2" />
                   <line class="flow-line" x1="${cx}" y1="0" x2="${cx}" y2="${y}" stroke="#fbbf24" stroke-width="2.5" />
@@ -3535,14 +3587,14 @@ export class EnergyStationCard extends HTMLElement {
           const rFirst = firstSub.getBoundingClientRect();
           const rLast = lastSub.getBoundingClientRect();
 
-          const x1 = Math.round(rFirst.left - svgRect.left + rFirst.width / 2);
-          const x2 = Math.round(rLast.left - svgRect.left + rLast.width / 2);
+          const x1 = Math.round((rFirst.left - svgRect.left + rFirst.width / 2) / scale);
+          const x2 = Math.round((rLast.left - svgRect.left + rLast.width / 2) / scale);
           const y = 13;
 
           let stemX = Math.round((x1 + x2) / 2);
           if (essNode) {
             const rEss = essNode.getBoundingClientRect();
-            stemX = Math.round(rEss.left - svgRect.left + rEss.width / 2);
+            stemX = Math.round((rEss.left - svgRect.left + rEss.width / 2) / scale);
           }
 
           const minBusX = Math.min(x1, stemX);
@@ -3580,7 +3632,7 @@ export class EnergyStationCard extends HTMLElement {
               const card = this.shadowRoot.getElementById(`subloadCard_${i}`);
               if (card) {
                 const cr = card.getBoundingClientRect();
-                const cx = Math.round(cr.left - svgRect.left + cr.width / 2);
+                const cx = Math.round((cr.left - svgRect.left + cr.width / 2) / scale);
                 feedersHtml += `
                   <line x1="${cx}" y1="${y}" x2="${cx}" y2="26" stroke="#0891b2" stroke-width="2" />
                   <line class="flow-line" x1="${cx}" y1="${y}" x2="${cx}" y2="26" stroke="#22d3ee" stroke-width="2.5" />

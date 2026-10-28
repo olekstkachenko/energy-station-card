@@ -6,6 +6,8 @@ export const DEFAULT_CONFIG = {
   card_style: 'full', // 'full' | 'compact'
   theme_mode: 'dark', // 'dark' | 'light'
   language: 'uk', // 'uk' | 'en'
+  card_scale: 1.0, // Масштаб картки: 0.7 - 2.0
+  max_width: '1400px', // '1400px' | '1600px' | '1800px' | '100%'
   show_quick_settings: true, // Показувати панель швидких перемикачів на картці
   controls: {
     show: true,

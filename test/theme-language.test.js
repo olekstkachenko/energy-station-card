@@ -35,6 +35,9 @@ if (typeof globalThis.localStorage === 'undefined') {
     removeItem: (k) => { delete store[k]; }
   };
 }
+if (typeof globalThis.requestAnimationFrame === 'undefined') {
+  globalThis.requestAnimationFrame = (cb) => setTimeout(cb, 0);
+}
 
 const { DEFAULT_CONFIG } = await import('../src/card/default-config.js');
 const { I18N, EnergyStationCard } = await import('../src/card/energy-station-card.js');
@@ -121,6 +124,27 @@ test('Energy Station Card - Theme & Language Customization', async (t) => {
     assert.strictEqual(card._t('ctrl_solar_charge'), 'Solar Charge Current');
     assert.strictEqual(card._t('ctrl_sell_power'), 'Sell Power Limit');
     assert.strictEqual(card._t('ctrl_grid_charge'), 'Grid Charge Current');
+  });
+
+  await t.test('supports card_scale and max_width configuration and _changeScale bounds', () => {
+    assert.strictEqual(DEFAULT_CONFIG.card_scale, 1.0);
+    assert.strictEqual(DEFAULT_CONFIG.max_width, '1400px');
+
+    const card = new EnergyStationCard();
+    card._config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    card.setConfig({ ...DEFAULT_CONFIG, card_scale: 1.2, max_width: '100%' });
+    assert.strictEqual(card._scale, 1.2);
+    assert.strictEqual(card._config.max_width, '100%');
+
+    card._changeScale(1.5);
+    assert.strictEqual(card._scale, 1.5);
+
+    // Clamps within [0.7, 2.0]
+    card._changeScale(3.0);
+    assert.strictEqual(card._scale, 2.0);
+
+    card._changeScale(0.2);
+    assert.strictEqual(card._scale, 0.7);
   });
 
 });
