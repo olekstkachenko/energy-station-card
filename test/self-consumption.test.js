@@ -311,5 +311,64 @@ describe('Energy Station Card - Inverter Self-Consumption & House Load Balance',
     assert.equal(isExport, false, 'isExport must be false when selling_enabled is false');
     assert.equal(gridOutKw, 0, 'gridOutKw must be 0 kW');
   });
+
+  it('correctly calculates dynamic inverter loss and house load from physical Deye sensor at 0:32', () => {
+    // User scenario at 00:32:24 from Deye Solarman app screenshot:
+    // Grid Import: 4.810 kW
+    // Battery Charge: 3.410 kW
+    // UPS Load: 1.030 kW (sensor.deye_12k_inverter_load_power)
+    // Dynamic Inverter Loss: 4.810 - 3.410 - 1.030 = 0.370 kW (370 W)
+    const gridInKw = 4.810;
+    const batInKw = 3.410;
+    const totalInflowKw = gridInKw;
+    const totalOutflowKnownKw = batInKw;
+    const netAvailableKw = Math.max(0, totalInflowKw - totalOutflowKnownKw); // 1.400 kW
+
+    const c = {
+      inverter: {
+        show_self_consumption: true,
+        self_consumption_entity: '',
+        standby_power: 100
+      },
+      load: {
+        auto_calculate: true,
+        essential_power_entity: 'sensor.deye_12k_inverter_load_power'
+      }
+    };
+
+    const hass = {
+      states: {
+        'sensor.deye_12k_inverter_load_power': { state: '1030', attributes: { unit_of_measurement: 'W' } }
+      }
+    };
+
+    const getEntityState = (id) => {
+      if (!id || !hass.states[id]) return null;
+      const s = hass.states[id];
+      const val = parseFloat(s.state);
+      return { raw: s.state, val: isNaN(val) ? 0 : val, unit: s.attributes?.unit_of_measurement || '' };
+    };
+
+    let sEss = getEntityState(c.load?.essential_power_entity);
+    if (!sEss && (!c.load?.essential_power_entity || c.load?.essential_power_entity === 'sensor.deye_12k_inverter_essential_load_power' || c.load?.essential_power_entity === 'sensor.deye_12k_inverter_load_power')) {
+      sEss = getEntityState('sensor.deye_12k_inverter_load_power') ||
+             getEntityState('sensor.deye_12k_inverter_essential_load_power') ||
+             getEntityState('sensor.load_power') ||
+             getEntityState('sensor.solarman_essential_load');
+    }
+
+    const hasValidPositiveSensor = Boolean(sEss && typeof sEss.val === 'number' && !isNaN(sEss.val) && sEss.val > 0);
+    let essentialKw = 0;
+    let selfConsumptionKw = 0;
+
+    if (hasValidPositiveSensor) {
+      essentialKw = Math.max(0, sEss.unit === 'W' ? sEss.val / 1000 : sEss.val);
+      selfConsumptionKw = Math.max(0, netAvailableKw - essentialKw);
+    }
+
+    assert.equal(essentialKw.toFixed(3), '1.030', 'Essential load matches 1.03 kW');
+    assert.equal(selfConsumptionKw.toFixed(3), '0.370', 'Dynamic inverter loss during 3.41 kW charging is 370 W');
+    assert.equal((essentialKw + selfConsumptionKw + batInKw).toFixed(3), gridInKw.toFixed(3), 'Full energy balance preserved');
+  });
 });
 

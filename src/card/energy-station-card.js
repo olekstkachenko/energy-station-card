@@ -2,6 +2,109 @@ import { DEFAULT_CONFIG } from './default-config.js';
 import { ICONS, getSvgIcon } from './svg-helpers.js';
 import './energy-station-card-editor.js';
 
+export const I18N = {
+  uk: {
+    live_status: 'HA Live',
+    solar_yield_today: 'Генерація сьогодні',
+    total_pv: 'СУМАРНО PV',
+    inverter_title: 'ГІБРИДНИЙ ІНВЕРТОР',
+    inverter_working: 'ПРАЦЮЄ',
+    inverter_standby: 'ОЧІКУВАННЯ',
+    inverter_fault: 'ПОМИЛКА',
+    inverter_offline: 'ВИМКНЕНО',
+    inverter_self: '⚡ Власне:',
+    grid_title: 'Мережа',
+    grid_import: 'Імпорт',
+    grid_export: 'Експорт',
+    grid_dir_import: '→ Імпорт',
+    grid_dir_export: '← Експорт',
+    grid_dir_off: 'Вимкнено',
+    grid_dir_idle: 'Мережа',
+    house_title: 'Гарантоване',
+    house_badge: 'Будинок',
+    bat_charge: 'Заряд',
+    bat_discharge: 'Розряд',
+    bat_dir_charge: 'Заряд ↓',
+    bat_dir_discharge: 'Розряд ↑',
+    bat_idle: 'Очікування',
+    wind_title: 'Вітрогенерація',
+    wind_day: 'День:',
+    wind_month: 'Місяць:',
+    wind_calm: 'Штиль',
+    wind_gen: 'Генерація',
+    aux_microinverter: 'Мікроінвертор',
+    aux_generator: 'Генератор',
+    aux_wind: 'Вітрогенератор',
+    aux_smart_load: 'Smart Load',
+    aux_source_gen: 'Джерело → GEN port',
+    subload_boiler: 'Бойлер',
+    subload_heat_pump: 'Тепловий насос',
+    subload_other: 'Інше',
+    settings_title: 'Керування',
+    theme_label: 'Тема',
+    theme_dark: 'Темна',
+    theme_light: 'Світла',
+    lang_label: 'Мова',
+    lang_uk: 'УКР',
+    lang_en: 'ENG',
+    bat_prefix: 'Батарея',
+    ctrl_title: 'Контроль струму заряду акумулятора',
+    ctrl_solar_charge: 'Струм заряду АКБ від сонця',
+    ctrl_sell_power: 'Потужність Продажу',
+    ctrl_grid_charge: 'Струм заряду АКБ від мережі'
+  },
+  en: {
+    live_status: 'HA Live',
+    solar_yield_today: 'Today Yield',
+    total_pv: 'TOTAL PV',
+    inverter_title: 'HYBRID INVERTER',
+    inverter_working: 'WORKING',
+    inverter_standby: 'STANDBY',
+    inverter_fault: 'FAULT',
+    inverter_offline: 'OFFLINE',
+    inverter_self: '⚡ Self:',
+    grid_title: 'Grid',
+    grid_import: 'Import',
+    grid_export: 'Export',
+    grid_dir_import: '→ Import',
+    grid_dir_export: '← Export',
+    grid_dir_off: 'Disconnected',
+    grid_dir_idle: 'Grid',
+    house_title: 'Essential Load',
+    house_badge: 'House',
+    bat_charge: 'Charge',
+    bat_discharge: 'Discharge',
+    bat_dir_charge: 'Charge ↓',
+    bat_dir_discharge: 'Discharge ↑',
+    bat_idle: 'Idle',
+    wind_title: 'Wind Generation',
+    wind_day: 'Day:',
+    wind_month: 'Month:',
+    wind_calm: 'Calm',
+    wind_gen: 'Generating',
+    aux_microinverter: 'Microinverter',
+    aux_generator: 'Generator',
+    aux_wind: 'Wind Turbine',
+    aux_smart_load: 'Smart Load',
+    aux_source_gen: 'Source → GEN port',
+    subload_boiler: 'Boiler',
+    subload_heat_pump: 'Heat Pump',
+    subload_other: 'Other',
+    settings_title: 'Controls',
+    theme_label: 'Theme',
+    theme_dark: 'Dark',
+    theme_light: 'Light',
+    lang_label: 'Language',
+    lang_uk: 'UA',
+    lang_en: 'EN',
+    bat_prefix: 'Battery',
+    ctrl_title: 'Battery Charge Current Control',
+    ctrl_solar_charge: 'Solar Charge Current',
+    ctrl_sell_power: 'Sell Power Limit',
+    ctrl_grid_charge: 'Grid Charge Current'
+  }
+};
+
 export class EnergyStationCard extends HTMLElement {
   constructor() {
     super();
@@ -9,6 +112,8 @@ export class EnergyStationCard extends HTMLElement {
     this._config = null;
     this._hass = null;
     this._initialized = false;
+    this._themeMode = 'dark';
+    this._language = 'uk';
     
     // Cached DOM nodes for high performance live updates
     this._nodes = {};
@@ -44,6 +149,10 @@ export class EnergyStationCard extends HTMLElement {
     const safeConfig = JSON.parse(JSON.stringify(config));
     const defaultClone = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
     this._config = this._deepMerge(defaultClone, safeConfig);
+    const storedTheme = (typeof localStorage !== 'undefined') ? localStorage.getItem('energy_station_theme') : null;
+    this._themeMode = storedTheme || this._config.theme_mode || 'dark';
+    const storedLang = (typeof localStorage !== 'undefined') ? localStorage.getItem('energy_station_lang') : null;
+    this._language = storedLang || this._config.language || 'uk';
     this._renderCardSkeleton();
     if (this._hass) this._updateValues();
   }
@@ -74,7 +183,9 @@ export class EnergyStationCard extends HTMLElement {
   _getEntityState(entityId) {
     if (!this._hass || !entityId || !this._hass.states[entityId]) return null;
     const stateObj = this._hass.states[entityId];
-    const val = parseFloat(stateObj.state);
+    const rawStr = String(stateObj.state).trim();
+    const cleanNum = rawStr.replace(',', '.');
+    const val = parseFloat(cleanNum);
     const unit = stateObj.attributes?.unit_of_measurement || '';
     return {
       raw: stateObj.state,
@@ -84,8 +195,53 @@ export class EnergyStationCard extends HTMLElement {
     };
   }
 
+  _t(key) {
+    const lang = this._language || 'uk';
+    return I18N[lang]?.[key] || I18N.uk?.[key] || key;
+  }
+
+  _toggleTheme(targetTheme) {
+    const newTheme = targetTheme || (this._themeMode === 'light' ? 'dark' : 'light');
+    this._themeMode = newTheme;
+    try {
+      if (typeof localStorage !== 'undefined') localStorage.setItem('energy_station_theme', newTheme);
+    } catch (e) {}
+    this._applyTheme();
+  }
+
+  _toggleLanguage(targetLang) {
+    const newLang = targetLang || (this._language === 'en' ? 'uk' : 'en');
+    this._language = newLang;
+    try {
+      if (typeof localStorage !== 'undefined') localStorage.setItem('energy_station_lang', newLang);
+    } catch (e) {}
+    this._renderCardSkeleton();
+    if (this._hass) this._updateValues();
+  }
+
+  _applyTheme() {
+    const container = this.shadowRoot?.querySelector('.energy-station-container');
+    if (!container) return;
+    const isLight = this._themeMode === 'light';
+    container.classList.toggle('theme-light', isLight);
+
+    const headerBtn = this.shadowRoot.getElementById('headerThemeToggle');
+    if (headerBtn) {
+      headerBtn.innerHTML = isLight ? '☀️' : '🌙';
+      headerBtn.setAttribute('title', isLight ? this._t('theme_dark') : this._t('theme_light'));
+    }
+
+    const btnDark = this.shadowRoot.getElementById('btnThemeDark');
+    const btnLight = this.shadowRoot.getElementById('btnThemeLight');
+    if (btnDark && btnLight) {
+      btnDark.classList.toggle('active', !isLight);
+      btnLight.classList.toggle('active', isLight);
+    }
+  }
+
   _formatPower(entityVal, fallbackVal = 0) {
-    if (!entityVal) return { num: fallbackVal.toFixed(3), kw: fallbackVal, str: `${fallbackVal.toFixed(3)} кВт` };
+    const unitStr = this._language === 'en' ? 'kW' : 'кВт';
+    if (!entityVal) return { num: fallbackVal.toFixed(3), kw: fallbackVal, str: `${fallbackVal.toFixed(3)} ${unitStr}` };
     let kw = entityVal.val;
     // Auto convert Watts to kW
     if (entityVal.unit === 'W') {
@@ -94,7 +250,7 @@ export class EnergyStationCard extends HTMLElement {
     return {
       num: kw.toFixed(3),
       kw: kw,
-      str: `${kw.toFixed(3)} кВт`
+      str: `${kw.toFixed(3)} ${unitStr}`
     };
   }
 
@@ -592,6 +748,17 @@ export class EnergyStationCard extends HTMLElement {
             min-width: 105px;
             padding: 6px 8px;
           }
+
+          .es-bottom-row {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 16px !important;
+          }
+
+          .es-bottom-spacer {
+            display: none !important;
+          }
         }
 
         .es-inverter-wings-row {
@@ -876,6 +1043,26 @@ export class EnergyStationCard extends HTMLElement {
           margin: 0 auto;
         }
 
+        .es-bottom-row {
+          display: grid;
+          grid-template-columns: 1fr 1.6fr 1fr;
+          gap: 36px;
+          align-items: center;
+          width: 100%;
+          max-width: 1360px;
+          margin: 0 auto;
+          position: relative;
+        }
+        .es-bottom-spacer {
+          width: 100%;
+        }
+        .es-bottom-controls-dock {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          width: 100%;
+        }
+
         .es-battery-rack {
           display: flex;
           align-items: center;
@@ -920,10 +1107,428 @@ export class EnergyStationCard extends HTMLElement {
           color: #94a3b8;
           margin-top: 2px;
         }
+        /* Quick Settings & Controls Card */
+        .es-quick-settings-card {
+          padding: 10px 14px 12px 14px;
+          background: rgba(14, 23, 42, 0.88);
+          border: 1.5px solid rgba(56, 189, 248, 0.35);
+          border-radius: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 9px;
+          width: 100%;
+          max-width: 320px;
+          box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.45);
+          transition: all 0.25s ease;
+          position: relative;
+          z-index: 2;
+        }
+        .es-quick-settings-card:hover {
+          border-color: #38bdf8;
+          transform: translateY(-2px);
+          box-shadow: 0 10px 28px -2px rgba(56, 189, 248, 0.25);
+        }
+        .es-qs-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding-bottom: 6px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .es-qs-title-wrap {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          min-width: 0;
+        }
+        .es-qs-icon {
+          width: 16px;
+          height: 16px;
+          color: #38bdf8;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .es-qs-title {
+          font-size: 11px;
+          font-weight: 700;
+          color: #cbd5e1;
+          letter-spacing: 0.03em;
+          text-transform: uppercase;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .es-qs-actions {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          flex-shrink: 0;
+        }
+        .es-qs-mini-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          color: #cbd5e1;
+          border-radius: 6px;
+          padding: 2px 6px;
+          cursor: pointer;
+          font-size: 10px;
+          font-weight: 700;
+          transition: all 0.2s ease;
+          line-height: 1;
+          user-select: none;
+        }
+        .es-qs-mini-btn:hover {
+          background: rgba(56, 189, 248, 0.2);
+          border-color: #38bdf8;
+          color: #38bdf8;
+        }
+        .es-qs-mini-icon {
+          display: inline-flex;
+          width: 12px;
+          height: 12px;
+        }
+
+        /* Control Tiles */
+        .es-ctrl-tiles {
+          display: flex;
+          flex-direction: column;
+          gap: 7px;
+        }
+        .es-ctrl-tile {
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+          background: rgba(8, 14, 27, 0.65);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          border-radius: 9px;
+          padding: 6px 10px;
+          transition: border-color 0.2s ease, background 0.2s ease;
+        }
+        .es-ctrl-tile:hover {
+          border-color: rgba(56, 189, 248, 0.35);
+          background: rgba(8, 14, 27, 0.85);
+        }
+        .es-ctrl-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+        }
+        .es-ctrl-label-wrap {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          cursor: pointer;
+        }
+        .es-ctrl-icon {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 18px;
+          height: 18px;
+          border-radius: 5px;
+        }
+        .es-ctrl-solar { color: #fbbf24; }
+        .es-ctrl-sell { color: #34d399; }
+        .es-ctrl-grid { color: #38bdf8; }
+        .es-ctrl-label {
+          font-size: 11px;
+          font-weight: 600;
+          color: #94a3b8;
+          white-space: nowrap;
+        }
+        .es-ctrl-val {
+          font-size: 13px;
+          font-weight: 800;
+          color: #38bdf8;
+          letter-spacing: -0.01em;
+        }
+        .es-ctrl-slider-wrap {
+          display: flex;
+          align-items: center;
+          width: 100%;
+          padding: 2px 0;
+        }
+        .es-ctrl-slider {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 100%;
+          height: 6px;
+          border-radius: 3px;
+          outline: none;
+          background: rgba(255, 255, 255, 0.12);
+          cursor: pointer;
+          transition: background 0.08s linear;
+        }
+        .es-ctrl-slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 15px;
+          height: 15px;
+          border-radius: 50%;
+          background: #38bdf8;
+          cursor: pointer;
+          border: 2px solid #ffffff;
+          box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+          transition: transform 0.12s ease;
+        }
+        .es-ctrl-slider::-webkit-slider-thumb:hover {
+          transform: scale(1.18);
+          background: #0ea5e9;
+        }
+        .es-ctrl-slider::-moz-range-thumb {
+          width: 15px;
+          height: 15px;
+          border-radius: 50%;
+          background: #38bdf8;
+          cursor: pointer;
+          border: 2px solid #ffffff;
+          box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+        }
+        .es-segmented-toggle {
+          display: flex;
+          background: rgba(8, 13, 25, 0.7);
+          border-radius: 10px;
+          padding: 2px;
+          gap: 2px;
+          width: 100%;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .es-seg-btn {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          padding: 4px 6px;
+          border: none;
+          background: transparent;
+          color: #94a3b8;
+          font-size: 11px;
+          font-weight: 700;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          user-select: none;
+        }
+        .es-seg-btn:hover {
+          color: #f8fafc;
+          background: rgba(255, 255, 255, 0.06);
+        }
+        .es-seg-btn.active {
+          background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+          color: #ffffff;
+          box-shadow: 0 2px 8px rgba(2, 132, 199, 0.45);
+        }
+        .es-header-controls {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .es-header-pill-btn {
+          background: rgba(15, 23, 42, 0.75);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          color: #cbd5e1;
+          border-radius: 9999px;
+          padding: 3px 9px;
+          font-size: 11px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          line-height: 1;
+        }
+        .es-header-pill-btn:hover {
+          border-color: #38bdf8;
+          color: #38bdf8;
+          background: rgba(14, 165, 233, 0.15);
+          transform: translateY(-1px);
+        }
+
+        /* LIGHT THEME STYLING OVERRIDES */
+        .energy-station-container.theme-light {
+          background: radial-gradient(circle at 50% 12%, #ffffff 0%, #f1f5f9 60%, #e2e8f0 100%) !important;
+          box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08) !important;
+          color: #0f172a !important;
+        }
+        .theme-light .es-header-title span:first-child {
+          color: #0f172a !important;
+        }
+        .theme-light .es-header-badge {
+          background: rgba(245, 158, 11, 0.15);
+          color: #b45309;
+          border-color: rgba(245, 158, 11, 0.35);
+        }
+        .theme-light .es-header-pill-btn {
+          background: rgba(255, 255, 255, 0.9);
+          border-color: rgba(203, 213, 225, 0.9);
+          color: #334155;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+        .theme-light .es-header-pill-btn:hover {
+          background: #ffffff;
+          border-color: #0284c7;
+          color: #0284c7;
+        }
+        .theme-light .flow-track {
+          stroke: rgba(203, 213, 225, 0.85) !important;
+        }
+        .theme-light .es-schematic-node {
+          background: rgba(255, 255, 255, 0.92) !important;
+          box-shadow: 0 6px 20px -3px rgba(0, 0, 0, 0.08), 0 2px 6px -2px rgba(0, 0, 0, 0.04) !important;
+        }
+        .theme-light .es-node-title {
+          color: #475569 !important;
+        }
+        .theme-light .es-inverter-card {
+          background: rgba(255, 255, 255, 0.94) !important;
+          border-color: rgba(249, 115, 22, 0.75) !important;
+          box-shadow: 0 10px 25px -4px rgba(249, 115, 22, 0.18), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+        }
+        .theme-light .es-inverter-title {
+          color: #475569 !important;
+        }
+        .theme-light .es-inverter-side-telemetry {
+          color: #c2410c !important;
+        }
+        .theme-light .es-inverter-self-consumption {
+          background: rgba(249, 115, 22, 0.1) !important;
+          border-color: rgba(249, 115, 22, 0.35) !important;
+          color: #c2410c !important;
+        }
+        .theme-light .es-sun-header {
+          background: rgba(255, 255, 255, 0.9) !important;
+          border-color: rgba(245, 158, 11, 0.4) !important;
+          box-shadow: 0 4px 16px rgba(245, 158, 11, 0.1) !important;
+        }
+        .theme-light .es-pv-panel {
+          background: rgba(255, 255, 255, 0.92) !important;
+          border-color: rgba(245, 158, 11, 0.45) !important;
+          box-shadow: 0 4px 12px rgba(245, 158, 11, 0.08) !important;
+        }
+        .theme-light .es-pv-label {
+          color: #475569 !important;
+        }
+        .theme-light .es-master-battery-hub {
+          background: linear-gradient(90deg, rgba(209, 250, 229, 0.6) 0%, rgba(255, 255, 255, 0.95) 50%, rgba(209, 250, 229, 0.6) 100%) !important;
+          border-color: rgba(16, 185, 129, 0.5) !important;
+          box-shadow: 0 8px 24px rgba(16, 185, 129, 0.12) !important;
+        }
+        .theme-light #masterBatteryFlowHint span:first-child {
+          color: #0f172a !important;
+        }
+        .theme-light .es-battery-pack-card {
+          background: rgba(255, 255, 255, 0.92) !important;
+          border-color: rgba(16, 185, 129, 0.45) !important;
+          box-shadow: 0 6px 16px rgba(16, 185, 129, 0.1) !important;
+        }
+        .theme-light .es-bat-name {
+          color: #475569 !important;
+        }
+        .theme-light .es-bat-volt {
+          color: #64748b !important;
+        }
+        .theme-light .es-bat-branch-badge {
+          background: rgba(255, 255, 255, 0.98) !important;
+          box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12) !important;
+        }
+        .theme-light .es-bat-branch-badge.charge {
+          border-color: #059669 !important;
+          color: #047857 !important;
+        }
+        .theme-light .es-bat-branch-badge.discharge {
+          border-color: #dc2626 !important;
+          color: #b91c1c !important;
+        }
+        .theme-light .es-turbine-card {
+          background: rgba(255, 255, 255, 0.92) !important;
+          border-color: rgba(6, 182, 212, 0.45) !important;
+          box-shadow: 0 6px 16px rgba(6, 182, 212, 0.1) !important;
+        }
+        .theme-light .es-wind-summary-bar {
+          background: rgba(241, 245, 249, 0.9) !important;
+          border-color: rgba(6, 182, 212, 0.3) !important;
+          color: #475569 !important;
+        }
+        .theme-light .es-subload-card {
+          background: rgba(255, 255, 255, 0.92) !important;
+          border-color: rgba(6, 182, 212, 0.35) !important;
+          box-shadow: 0 4px 12px rgba(6, 182, 212, 0.08) !important;
+        }
+        .theme-light .es-subload-card span:nth-child(2) {
+          color: #475569 !important;
+        }
+        .theme-light .es-aux-box {
+          background: rgba(255, 255, 255, 0.92) !important;
+          border-color: rgba(192, 132, 252, 0.6) !important;
+          box-shadow: 0 6px 18px rgba(147, 51, 234, 0.12) !important;
+        }
+        .theme-light #auxTitle {
+          color: #475569 !important;
+        }
+        .theme-light .es-quick-settings-card {
+          background: rgba(255, 255, 255, 0.95) !important;
+          border-color: rgba(14, 165, 233, 0.45) !important;
+          box-shadow: 0 6px 18px rgba(14, 165, 233, 0.12) !important;
+        }
+        .theme-light .es-qs-header {
+          border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+        }
+        .theme-light .es-qs-title {
+          color: #334155 !important;
+        }
+        .theme-light .es-qs-mini-btn {
+          background: rgba(0, 0, 0, 0.05) !important;
+          border-color: rgba(0, 0, 0, 0.14) !important;
+          color: #475569 !important;
+        }
+        .theme-light .es-qs-mini-btn:hover {
+          background: rgba(14, 165, 233, 0.18) !important;
+          border-color: #0ea5e9 !important;
+          color: #0284c7 !important;
+        }
+        .theme-light .es-ctrl-tile {
+          background: #f8fafc !important;
+          border-color: rgba(0, 0, 0, 0.06) !important;
+        }
+        .theme-light .es-ctrl-tile:hover {
+          border-color: rgba(14, 165, 233, 0.35) !important;
+          background: #ffffff !important;
+        }
+        .theme-light .es-ctrl-label {
+          color: #64748b !important;
+        }
+        .theme-light .es-ctrl-slider {
+          background: rgba(0, 0, 0, 0.1) !important;
+        }
+        .theme-light .es-segmented-toggle {
+          background: rgba(241, 245, 249, 0.9) !important;
+          border-color: rgba(203, 213, 225, 0.8) !important;
+        }
+        .theme-light .es-seg-btn {
+          color: #64748b !important;
+        }
+        .theme-light .es-seg-btn:hover {
+          color: #0f172a !important;
+          background: rgba(226, 232, 240, 0.6) !important;
+        }
+        .theme-light .es-seg-btn.active {
+          background: #0284c7 !important;
+          color: #ffffff !important;
+          box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35) !important;
+        }
+
         .hidden { display: none !important; }
       </style>
 
-      <div class="energy-station-container">
+      <div class="energy-station-container ${this._themeMode === 'light' ? 'theme-light' : ''}">
         
         <!-- FULL CARD DYNAMIC ENERGY FLOW NETWORK -->
         <svg id="energyFlowCanvas" class="es-energy-flow-canvas">
@@ -999,7 +1604,13 @@ export class EnergyStationCard extends HTMLElement {
             <span>${c.title || 'Energy Station'}</span>
             <span class="es-header-badge">PRO FLOW</span>
           </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="es-header-controls">
+            <button class="es-header-pill-btn" id="headerThemeToggle" title="${this._t('theme_label')}">
+              ${this._themeMode === 'light' ? '☀️' : '🌙'}
+            </button>
+            <button class="es-header-pill-btn es-mono" id="headerLangToggle" title="${this._t('lang_label')}">
+              ${this._language === 'uk' ? 'UA' : 'EN'}
+            </button>
             <div class="es-status-dot" id="liveStatusDot"></div>
             <span style="font-size: 11px; color: #94a3b8;" id="liveStatusText">HA Live</span>
           </div>
@@ -1035,9 +1646,9 @@ export class EnergyStationCard extends HTMLElement {
           <!-- Total Solar Badge -->
           <div style="display: flex; flex-direction: column; align-items: center; margin-top: -2px;">
             <div style="width: 20px; height: 20px; color: #fbbf24; margin-bottom: 1px;">${ICONS.sun}</div>
-            <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(245, 158, 11, 0.85); font-weight: 600;">Сумарно PV</span>
+            <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(245, 158, 11, 0.85); font-weight: 600;">${this._t('total_pv')}</span>
             <div class="es-mono glow-solar clickable-node" id="totalPvPowerBadge" style="font-size: 20px; font-weight: 900; color: #fbbf24;">
-              12,000 кВт
+              12,000 ${this._language === 'en' ? 'kW' : 'кВт'}
             </div>
           </div>
         </div>
@@ -1048,30 +1659,30 @@ export class EnergyStationCard extends HTMLElement {
           <!-- LEFT: GRID, NON-ESSENTIAL & CAR -->
           <div class="es-wing-left">
             <div class="es-mono" style="font-size: 13px; color: #cbd5e1; display: flex; flex-direction: column; gap: 3px; align-items: flex-end; margin-bottom: 2px;">
-              <div>Імпорт <span id="gridImportDaily" style="color: #38bdf8; font-weight: 700;">3,10 kWh</span></div>
-              <div>Експорт <span id="gridExportDaily" style="color: #34d399; font-weight: 700;">4,80 kWh</span></div>
+              <div>${this._t('grid_import')} <span id="gridImportDaily" style="color: #38bdf8; font-weight: 700;">3,10 kWh</span></div>
+              <div>${this._t('grid_export')} <span id="gridExportDaily" style="color: #34d399; font-weight: 700;">4,80 kWh</span></div>
             </div>
 
             <!-- 1. Grid Node (Мережа) -->
             <div class="es-schematic-node glow-grid clickable-node" id="gridNode" style="border-color: rgba(56, 189, 248, 0.4);">
               <div class="es-node-icon" style="color: #38bdf8;">${ICONS.grid_tower}</div>
-              <div class="es-node-title">Мережа</div>
-              <div class="es-mono es-node-power" id="gridPowerVal" style="color: #38bdf8;">2,000 кВт</div>
-              <div class="es-mono es-node-dir" id="gridDirectionLabel" style="color: #34d399;">← ЕКСПОРТ</div>
+              <div class="es-node-title">${this._t('grid_title')}</div>
+              <div class="es-mono es-node-power" id="gridPowerVal" style="color: #38bdf8;">2,000 ${this._language === 'en' ? 'kW' : 'кВт'}</div>
+              <div class="es-mono es-node-dir" id="gridDirectionLabel" style="color: #34d399;">${this._t('grid_dir_export')}</div>
             </div>
 
             <!-- 2. Non-essential Node (Негарантоване) -->
             <div class="es-schematic-node clickable-node ${(c.grid?.show_non_essential && c.grid?.non_essential_power_entity) ? '' : 'hidden'}" id="nonEssentialNode" style="border-color: rgba(56, 189, 248, 0.25);">
               <div class="es-node-icon" style="color: #38bdf8;">${ICONS.house_outline || ICONS.house}</div>
-              <div class="es-node-title">Негарантоване</div>
-              <div class="es-mono es-node-power" id="nonEssentialPowerVal" style="color: #38bdf8;">0.000 кВт</div>
+              <div class="es-node-title">${this._t('non_essential')}</div>
+              <div class="es-mono es-node-power" id="nonEssentialPowerVal" style="color: #38bdf8;">0.000 ${this._language === 'en' ? 'kW' : 'кВт'}</div>
             </div>
 
             <!-- 3. Car Node (Авто) -->
             <div class="es-schematic-node clickable-node ${(c.grid?.show_car && c.grid?.car_power_entity) ? '' : 'hidden'}" id="carNode" style="border-color: rgba(56, 189, 248, 0.25);">
               <div class="es-node-icon" style="color: #38bdf8;">${ICONS.car}</div>
-              <div class="es-node-title" id="carTitle">${c.grid?.car_title || 'Авто'}</div>
-              <div class="es-mono es-node-power" id="carPowerVal" style="color: #38bdf8;">0.000 кВт</div>
+              <div class="es-node-title" id="carTitle">${c.grid?.car_title || this._t('car')}</div>
+              <div class="es-mono es-node-power" id="carPowerVal" style="color: #38bdf8;">0.000 ${this._language === 'en' ? 'kW' : 'кВт'}</div>
             </div>
           </div>
 
@@ -1090,12 +1701,12 @@ export class EnergyStationCard extends HTMLElement {
                   <div class="es-inverter-icon-box">${ICONS.inverter}</div>
                   <div class="es-mono es-inverter-freq"><span id="inverterFreq">50,01</span> Hz</div>
                 </div>
-                <div class="es-inverter-title">Гібридний інвертор</div>
-                <div class="es-mono es-inverter-power" id="inverterPowerVal">8,000 кВт</div>
-                <div class="es-inverter-status-badge" id="inverterStatusBadge">ПРАЦЮЄ</div>
+                <div class="es-inverter-title">${this._t('inverter_title')}</div>
+                <div class="es-mono es-inverter-power" id="inverterPowerVal">8,000 ${this._language === 'en' ? 'kW' : 'кВт'}</div>
+                <div class="es-inverter-status-badge" id="inverterStatusBadge">${this._t('inverter_working')}</div>
                 <div class="es-inverter-self-consumption es-mono" id="inverterSelfConsumptionBox" style="display: ${c.inverter?.show_self_consumption !== false ? 'flex' : 'none'}; align-items: center; justify-content: center; gap: 4px; margin-top: 5px; padding: 2px 7px; border-radius: 6px; background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.35); font-size: 10px; color: #fdba74;">
-                  <span style="color: #94a3b8;">⚡ Власне:</span>
-                  <span id="inverterSelfConsumptionVal" style="font-weight: 700; color: #fb923c;">0 Вт</span>
+                  <span style="color: #94a3b8;">${this._t('inverter_self')}</span>
+                  <span id="inverterSelfConsumptionVal" style="font-weight: 700; color: #fb923c;">0 ${this._language === 'en' ? 'W' : 'Вт'}</span>
                 </div>
               </div>
 
@@ -1106,9 +1717,9 @@ export class EnergyStationCard extends HTMLElement {
                   <div style="width: 22px; height: 22px; color: #c084fc; margin-bottom: 2px;" id="auxIconBox">
                     ${ICONS[c.aux?.type] || ICONS.microinverter}
                   </div>
-                  <div style="font-size: 11px; font-weight: 700; color: #cbd5e1; text-transform: uppercase;" id="auxTitle">${(c.aux?.type === 'microinverter' && (!c.aux?.title || c.aux?.title === 'Вітрогенератор')) ? 'Мікроінвертор' : (c.aux?.title || 'Мікроінвертор')}</div>
-                  <div class="es-mono" id="auxPowerVal" style="font-size: 16px; font-weight: 800; color: #c084fc; margin: 2px 0;">2,000 кВт</div>
-                  <div class="es-mono" style="font-size: 10px; color: rgba(216, 180, 254, 0.85);" id="auxSubtitle">${c.aux?.subtitle || 'Джерело → GEN'}</div>
+                  <div style="font-size: 11px; font-weight: 700; color: #cbd5e1; text-transform: uppercase;" id="auxTitle">${(c.aux?.type === 'microinverter' && (!c.aux?.title || c.aux?.title === 'Вітрогенератор')) ? this._t('aux_microinverter') : (c.aux?.title || this._t('aux_microinverter'))}</div>
+                  <div class="es-mono" id="auxPowerVal" style="font-size: 16px; font-weight: 800; color: #c084fc; margin: 2px 0;">2,000 ${this._language === 'en' ? 'kW' : 'кВт'}</div>
+                  <div class="es-mono" style="font-size: 10px; color: rgba(216, 180, 254, 0.85);" id="auxSubtitle">${c.aux?.subtitle || this._t('aux_source_gen')}</div>
                 </div>
 
                 <div><span id="inverterVolt">231,45</span> V</div>
@@ -1123,14 +1734,14 @@ export class EnergyStationCard extends HTMLElement {
           <!-- RIGHT: ESSENTIAL HOUSE LOADS & SUBLOADS -->
           <div class="es-wing-right">
             <div class="es-mono" style="font-size: 13px; color: #cbd5e1; align-self: center; margin-bottom: 2px;">
-              Будинок <span id="dailyHouseKwh" style="color: #22d3ee; font-weight: 700;">12,40 kWh</span>
+              ${this._t('house_badge')} <span id="dailyHouseKwh" style="color: #22d3ee; font-weight: 700;">12,40 kWh</span>
             </div>
 
             <!-- Essential Loads Node (Гарантоване) -->
             <div class="es-schematic-node glow-load clickable-node" id="essentialNode" style="border-color: rgba(6, 182, 212, 0.4);">
               <div class="es-node-icon" style="color: #22d3ee;">${ICONS.house}</div>
-              <div class="es-node-title">Гарантоване</div>
-              <div class="es-mono es-node-power" id="essentialPowerVal" style="color: #22d3ee;">8,000 кВт</div>
+              <div class="es-node-title">${this._t('house_title')}</div>
+              <div class="es-mono es-node-power" id="essentialPowerVal" style="color: #22d3ee;">8,000 ${this._language === 'en' ? 'kW' : 'кВт'}</div>
             </div>
 
             <!-- Subloads Bus Bar -->
@@ -1157,9 +1768,9 @@ export class EnergyStationCard extends HTMLElement {
           <div class="es-master-battery-hub glow-battery clickable-node" id="masterBatteryHub">
             <!-- Left Counters -->
             <div class="es-bat-hub-left-col es-mono" style="font-size: 12px; display: flex; flex-direction: column; gap: 3px; text-align: right;">
-              <div style="color: #94a3b8; font-size: 11px; text-transform: uppercase;">Заряд</div>
+              <div style="color: #94a3b8; font-size: 11px; text-transform: uppercase;">${this._t('bat_charge')}</div>
               <div id="batChargeDaily" style="color: #34d399; font-weight: 700; font-size: 13px;">4,30 kWh</div>
-              <div style="color: #94a3b8; font-size: 11px; text-transform: uppercase; margin-top: 2px;">Розряд</div>
+              <div style="color: #94a3b8; font-size: 11px; text-transform: uppercase; margin-top: 2px;">${this._t('bat_discharge')}</div>
               <div id="batDischargeDaily" style="color: #fbbf24; font-weight: 700; font-size: 13px;">6,10 kWh</div>
             </div>
 
@@ -1167,7 +1778,7 @@ export class EnergyStationCard extends HTMLElement {
             <div class="es-bat-hub-soc-col" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;">
               <div class="es-mono" id="masterBatterySoc" style="font-size: 15px; font-weight: 700; color: #34d399; margin: 0;">80.0%</div>
               <div class="es-mono" id="masterBatteryFlowHint" style="display: flex; align-items: center; justify-content: center; margin-top: 2px;">
-                <span style="font-size: 20px; font-weight: 900; color: #f8fafc;">3,000 кВт</span> <span style="color: #64748b; margin: 0 4px;">•</span> <span style="color: #34d399; font-weight: 700; font-size: 14px;">Заряд ↓</span>
+                <span style="font-size: 20px; font-weight: 900; color: #f8fafc;">3,000 ${this._language === 'en' ? 'kW' : 'кВт'}</span> <span style="color: #64748b; margin: 0 4px;">•</span> <span style="color: #34d399; font-weight: 700; font-size: 14px;">${this._t('bat_dir_charge')}</span>
               </div>
             </div>
 
@@ -1182,8 +1793,12 @@ export class EnergyStationCard extends HTMLElement {
           <!-- Battery Spacer (Conduits drawn on energyFlowCanvas) -->
           <div class="es-bus-container" id="batteryBusContainer" style="height: 44px; width: 100%;"></div>
 
-          <!-- Parallel Modules Rack -->
-          <div class="es-battery-rack" id="batteryRackContainer"></div>
+          <!-- Bottom Grid Row: Spacer (left), Batteries (center), Quick Controls Dock (right) -->
+          <div class="es-bottom-row">
+            <div class="es-bottom-spacer"></div>
+            <div class="es-battery-rack" id="batteryRackContainer"></div>
+            <div class="es-bottom-controls-dock" id="bottomControlsDock"></div>
+          </div>
 
         </div>
 
@@ -1273,7 +1888,8 @@ export class EnergyStationCard extends HTMLElement {
 
       pvPanelsContainer: root.getElementById('pvPanelsContainer'),
       subloadsContainer: root.getElementById('subloadsContainer'),
-      batteryRackContainer: root.getElementById('batteryRackContainer')
+      batteryRackContainer: root.getElementById('batteryRackContainer'),
+      bottomControlsDock: root.getElementById('bottomControlsDock')
     };
   }
 
@@ -1426,10 +2042,12 @@ export class EnergyStationCard extends HTMLElement {
     const count = c.battery?.parallel_batteries || (c.battery?.modules?.length || 2);
     const defaultSocs = [82, 76, 91, 68, 85, 90, 72, 80];
     const defaultVolts = [52.40, 52.40, 52.40, 52.40, 52.40, 52.40];
+    const defaultPrefix = this._t('bat_prefix');
+    const unitStr = this._language === 'en' ? 'kW' : 'кВт';
 
     for (let i = 1; i <= count; i++) {
       const mod = c.battery?.modules?.[i - 1] || c.battery?.module_entities?.[i - 1] || {};
-      const modName = mod.name || `Батарея ${i}`;
+      const modName = mod.name || `${defaultPrefix} ${i}`;
       const soc = defaultSocs[(i - 1) % defaultSocs.length];
       const volt = defaultVolts[(i - 1) % defaultVolts.length];
 
@@ -1441,7 +2059,7 @@ export class EnergyStationCard extends HTMLElement {
         <span class="es-bat-name">${modName}</span>
         <span class="es-bat-soc-val es-mono" id="batPackSoc_${i}">${soc}%</span>
         <div class="es-mono es-bat-volt" id="batPackVolt_${i}">${volt.toFixed(2).replace('.', ',')} V</div>
-        <div class="es-mono es-bat-power" id="batPackPower_${i}" style="font-size: 12px; font-weight: 800; color: #34d399; margin-top: 2px;">0.00 кВт</div>
+        <div class="es-mono es-bat-power" id="batPackPower_${i}" style="font-size: 12px; font-weight: 800; color: #34d399; margin-top: 2px;">0.00 ${unitStr}</div>
       `;
 
       div.addEventListener('click', () => {
@@ -1450,11 +2068,227 @@ export class EnergyStationCard extends HTMLElement {
       });
       container.appendChild(div);
     }
+
+    this._renderQuickSettingsCard();
+  }
+
+  _renderQuickSettingsCard() {
+    const c = this._config || DEFAULT_CONFIG;
+    const dock = this._nodes?.bottomControlsDock || this.shadowRoot.getElementById('bottomControlsDock');
+    if (!dock) return;
+    dock.innerHTML = '';
+    if (c.show_quick_settings === false) return;
+
+    const isLight = this._themeMode === 'light';
+    const isEn = this._language === 'en';
+
+    const solarEnt = c.controls?.solar_charge_entity || 'number.deye_12k_inverter_max_charge_current';
+    const sellEnt = c.controls?.sell_power_entity || 'number.deye_12k_inverter_export_surplus_power';
+    const gridEnt = c.controls?.grid_charge_entity || 'number.deye_12k_inverter_grid_charge_current';
+
+    const card = document.createElement('div');
+    card.className = 'es-quick-settings-card';
+    card.id = 'quickSettingsCard';
+    card.innerHTML = `
+      <div class="es-qs-header">
+        <div class="es-qs-title-wrap">
+          <span class="es-qs-icon">${ICONS.battery_vertical}</span>
+          <span class="es-qs-title">${this._t('ctrl_title')}</span>
+        </div>
+        <div class="es-qs-actions">
+          <button class="es-qs-mini-btn" id="btnThemeToggle" title="${this._t('theme_label')}">
+            <span class="es-qs-mini-icon">${isLight ? ICONS.sun_mode : ICONS.moon}</span>
+          </button>
+          <button class="es-qs-mini-btn" id="btnLangToggle" title="${this._t('lang_label')}">
+            <span>${isEn ? 'EN' : 'UA'}</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="es-ctrl-tiles">
+        <!-- 1. Solar Charge Current -->
+        <div class="es-ctrl-tile" id="ctrlTileSolar">
+          <div class="es-ctrl-top">
+            <div class="es-ctrl-label-wrap" id="ctrlLabelWrapSolar" title="${solarEnt}">
+              <span class="es-ctrl-icon es-ctrl-solar">${ICONS.sun_mode}</span>
+              <span class="es-ctrl-label">${this._t('ctrl_solar_charge')}</span>
+            </div>
+            <div class="es-ctrl-val es-mono" id="ctrlValSolar">80 A</div>
+          </div>
+          <div class="es-ctrl-slider-wrap">
+            <input type="range" class="es-ctrl-slider" id="ctrlSliderSolar" min="0" max="150" step="1" value="80">
+          </div>
+        </div>
+
+        <!-- 2. Sell Power Limit -->
+        <div class="es-ctrl-tile" id="ctrlTileSell">
+          <div class="es-ctrl-top">
+            <div class="es-ctrl-label-wrap" id="ctrlLabelWrapSell" title="${sellEnt}">
+              <span class="es-ctrl-icon es-ctrl-sell">${ICONS.inverter}</span>
+              <span class="es-ctrl-label">${this._t('ctrl_sell_power')}</span>
+            </div>
+            <div class="es-ctrl-val es-mono" id="ctrlValSell">5 000 ${isEn ? 'W' : 'Вт'}</div>
+          </div>
+          <div class="es-ctrl-slider-wrap">
+            <input type="range" class="es-ctrl-slider" id="ctrlSliderSell" min="0" max="12000" step="100" value="5000">
+          </div>
+        </div>
+
+        <!-- 3. Grid Charge Current -->
+        <div class="es-ctrl-tile" id="ctrlTileGrid">
+          <div class="es-ctrl-top">
+            <div class="es-ctrl-label-wrap" id="ctrlLabelWrapGrid" title="${gridEnt}">
+              <span class="es-ctrl-icon es-ctrl-grid">${ICONS.grid_tower}</span>
+              <span class="es-ctrl-label">${this._t('ctrl_grid_charge')}</span>
+            </div>
+            <div class="es-ctrl-val es-mono" id="ctrlValGrid">70 A</div>
+          </div>
+          <div class="es-ctrl-slider-wrap">
+            <input type="range" class="es-ctrl-slider" id="ctrlSliderGrid" min="0" max="150" step="1" value="70">
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Theme & Language toggles
+    card.querySelector('#btnThemeToggle')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._toggleTheme();
+    });
+    card.querySelector('#btnLangToggle')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._toggleLanguage();
+    });
+
+    // More info entity click events
+    card.querySelector('#ctrlLabelWrapSolar')?.addEventListener('click', () => this._fireMoreInfo(solarEnt));
+    card.querySelector('#ctrlLabelWrapSell')?.addEventListener('click', () => this._fireMoreInfo(sellEnt));
+    card.querySelector('#ctrlLabelWrapGrid')?.addEventListener('click', () => this._fireMoreInfo(gridEnt));
+
+    // Sliders input & change
+    const solarSlider = card.querySelector('#ctrlSliderSolar');
+    const solarVal = card.querySelector('#ctrlValSolar');
+    if (solarSlider) {
+      this._updateSliderGradient(solarSlider);
+      solarSlider.addEventListener('input', (e) => {
+        if (solarVal) solarVal.innerText = `${e.target.value} A`;
+        this._updateSliderGradient(solarSlider);
+      });
+      solarSlider.addEventListener('change', (e) => {
+        this._setNumberValue(solarEnt, e.target.value);
+      });
+    }
+
+    const sellSlider = card.querySelector('#ctrlSliderSell');
+    const sellVal = card.querySelector('#ctrlValSell');
+    if (sellSlider) {
+      this._updateSliderGradient(sellSlider);
+      sellSlider.addEventListener('input', (e) => {
+        const valFormatted = Number(e.target.value).toLocaleString(this._language === 'uk' ? 'uk-UA' : 'en-US');
+        if (sellVal) sellVal.innerText = `${valFormatted} ${this._language === 'uk' ? 'Вт' : 'W'}`;
+        this._updateSliderGradient(sellSlider);
+      });
+      sellSlider.addEventListener('change', (e) => {
+        this._setNumberValue(sellEnt, e.target.value);
+      });
+    }
+
+    const gridSlider = card.querySelector('#ctrlSliderGrid');
+    const gridVal = card.querySelector('#ctrlValGrid');
+    if (gridSlider) {
+      this._updateSliderGradient(gridSlider);
+      gridSlider.addEventListener('input', (e) => {
+        if (gridVal) gridVal.innerText = `${e.target.value} A`;
+        this._updateSliderGradient(gridSlider);
+      });
+      gridSlider.addEventListener('change', (e) => {
+        this._setNumberValue(gridEnt, e.target.value);
+      });
+    }
+
+    dock.appendChild(card);
+    this._updateControlSliders();
+  }
+
+  _updateSliderGradient(slider) {
+    if (!slider) return;
+    const min = parseFloat(slider.min) || 0;
+    const max = parseFloat(slider.max) || 100;
+    const val = parseFloat(slider.value) || 0;
+    const pct = Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100));
+    slider.style.background = `linear-gradient(to right, #38bdf8 0%, #38bdf8 ${pct}%, rgba(255, 255, 255, 0.12) ${pct}%, rgba(255, 255, 255, 0.12) 100%)`;
+  }
+
+  _setNumberValue(entityId, value) {
+    if (!this._hass || !entityId) return;
+    const parts = entityId.split('.');
+    const domain = parts[0] || 'number';
+    const numVal = Number(value);
+    this._hass.callService(domain, 'set_value', {
+      entity_id: entityId,
+      value: numVal
+    });
+  }
+
+  _updateControlSliders() {
+    const c = this._config || DEFAULT_CONFIG;
+    if (c.show_quick_settings === false) return;
+    const root = this.shadowRoot;
+    if (!root) return;
+
+    const solarEnt = c.controls?.solar_charge_entity || 'number.deye_12k_inverter_max_charge_current';
+    const sellEnt = c.controls?.sell_power_entity || 'number.deye_12k_inverter_export_surplus_power';
+    const gridEnt = c.controls?.grid_charge_entity || 'number.deye_12k_inverter_grid_charge_current';
+
+    const solarSlider = root.getElementById('ctrlSliderSolar');
+    const solarVal = root.getElementById('ctrlValSolar');
+    const sellSlider = root.getElementById('ctrlSliderSell');
+    const sellVal = root.getElementById('ctrlValSell');
+    const gridSlider = root.getElementById('ctrlSliderGrid');
+    const gridVal = root.getElementById('ctrlValGrid');
+
+    // 1. Solar Charge
+    if (solarSlider && (!solarSlider.matches || !solarSlider.matches(':active'))) {
+      const stateObj = this._hass?.states?.[solarEnt];
+      const val = (stateObj && !isNaN(parseFloat(stateObj.state))) ? parseFloat(stateObj.state) : (solarSlider.value ? parseFloat(solarSlider.value) : 80);
+      solarSlider.value = val;
+      if (solarVal) solarVal.innerText = `${Math.round(val)} A`;
+      this._updateSliderGradient(solarSlider);
+    }
+
+    // 2. Sell Power
+    if (sellSlider && (!sellSlider.matches || !sellSlider.matches(':active'))) {
+      const stateObj = this._hass?.states?.[sellEnt];
+      const val = (stateObj && !isNaN(parseFloat(stateObj.state))) ? parseFloat(stateObj.state) : (sellSlider.value ? parseFloat(sellSlider.value) : 5000);
+      sellSlider.value = val;
+      const formatted = Math.round(val).toLocaleString(this._language === 'uk' ? 'uk-UA' : 'en-US');
+      const unit = this._language === 'uk' ? 'Вт' : 'W';
+      if (sellVal) sellVal.innerText = `${formatted} ${unit}`;
+      this._updateSliderGradient(sellSlider);
+    }
+
+    // 3. Grid Charge
+    if (gridSlider && (!gridSlider.matches || !gridSlider.matches(':active'))) {
+      const stateObj = this._hass?.states?.[gridEnt];
+      const val = (stateObj && !isNaN(parseFloat(stateObj.state))) ? parseFloat(stateObj.state) : (gridSlider.value ? parseFloat(gridSlider.value) : 70);
+      gridSlider.value = val;
+      if (gridVal) gridVal.innerText = `${Math.round(val)} A`;
+      this._updateSliderGradient(gridSlider);
+    }
   }
 
   _bindInteractions() {
     const root = this.shadowRoot;
     const c = this._config || DEFAULT_CONFIG;
+
+    root.getElementById('headerThemeToggle')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._toggleTheme();
+    });
+    root.getElementById('headerLangToggle')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._toggleLanguage();
+    });
 
     root.getElementById('solarHeaderNode')?.addEventListener('click', () => {
       this._fireMoreInfo(c.solar?.daily_yield_entity || c.solar?.total_power_entity);
@@ -1489,6 +2323,14 @@ export class EnergyStationCard extends HTMLElement {
     root.getElementById('masterBatteryHub')?.addEventListener('click', () => {
       this._fireMoreInfo(c.battery?.soc_entity);
     });
+    root.getElementById('batChargeDaily')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._fireMoreInfo(c.battery?.charge_daily_entity || 'sensor.inverter_12_kvt_daily_battery_charge');
+    });
+    root.getElementById('batDischargeDaily')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._fireMoreInfo(c.battery?.discharge_daily_entity || 'sensor.inverter_12_kvt_daily_battery_discharge');
+    });
 
     for (let i = 1; i <= 8; i++) {
       const badge = root.getElementById(`batBranchBadge_${i}`);
@@ -1503,6 +2345,7 @@ export class EnergyStationCard extends HTMLElement {
   _updateValues() {
     if (!this._nodes.dailySolarYield) return;
     const c = this._config || DEFAULT_CONFIG;
+    const unitStr = this._language === 'en' ? 'kW' : 'кВт';
 
     // 1. Solar
     const pvCount = c.solar?.pv_count || (c.solar?.strings?.length || 3);
@@ -1568,7 +2411,7 @@ export class EnergyStationCard extends HTMLElement {
       calculatedTotalPvKw += kwNum;
 
       if (panelVal) {
-        panelVal.innerText = `${kwNum.toFixed(3)} кВт`;
+        panelVal.innerText = `${kwNum.toFixed(3)} ${unitStr}`;
       }
       if (panelVolt) {
         panelVolt.innerText = `${voltNum.toFixed(1)} V`;
@@ -1586,7 +2429,7 @@ export class EnergyStationCard extends HTMLElement {
     } else {
       totalSolarKw = calculatedTotalPvKw;
     }
-    this._nodes.totalPvPowerBadge.innerText = `${totalSolarKw.toFixed(3)} кВт`;
+    this._nodes.totalPvPowerBadge.innerText = `${totalSolarKw.toFixed(3)} ${unitStr}`;
 
     const sPvDaily = this._getEntityState(c.solar?.daily_yield_entity);
     const dailyKwh = sPvDaily ? sPvDaily.val : (hasConfiguredPvEntities ? 0 : 48.6);
@@ -1678,7 +2521,16 @@ export class EnergyStationCard extends HTMLElement {
           const threshold = t.animation_threshold ?? c.wind?.animation_threshold ?? 50;
           const rotor = iconBox?.querySelector('.turbine-rotor');
 
-          if (powerWatts >= threshold) {
+          // RPM / Wind Speed telemetry: support turbine level, station wind level, or auto-detect sensor.wind_rpm
+          const rpmEntity = t.rpm_entity || t.speed_entity || c.wind?.rpm_entity || c.wind?.speed_entity || (i === 0 ? 'sensor.wind_rpm' : '');
+          let sRpm = (rpmEntity && this._hass?.states[rpmEntity]) ? this._getEntityState(rpmEntity) : null;
+          if (!sRpm && i === 0 && this._hass?.states['sensor.wind_rpm']) {
+            sRpm = this._getEntityState('sensor.wind_rpm');
+          }
+
+          const isSpinning = powerWatts >= threshold || (sRpm && typeof sRpm.val === 'number' && sRpm.val > 0);
+
+          if (isSpinning) {
             // GENERATING: Rotor spins!
             if (rotor) rotor.classList.add('spinning');
             if (cardEl) {
@@ -1687,12 +2539,18 @@ export class EnergyStationCard extends HTMLElement {
             }
 
             const maxPower = c.wind?.max_power || 3000;
-            const ratio = Math.min(1, Math.max(0, (powerWatts - threshold) / (maxPower - threshold)));
+            const maxRpm = c.wind?.max_rpm || 600;
+            let ratio = 0;
+            if (sRpm && typeof sRpm.val === 'number' && sRpm.val > 0) {
+              ratio = Math.min(1, Math.max(0, sRpm.val / maxRpm));
+            } else {
+              ratio = Math.min(1, Math.max(0, (powerWatts - threshold) / (maxPower - threshold)));
+            }
             const duration = (3.2 - ratio * 2.75).toFixed(2);
             if (rotor) rotor.style.setProperty('--turbine-speed', `${duration}s`);
 
             if (statusEl) {
-              statusEl.innerText = 'Генерація';
+              statusEl.innerText = this._t('wind_gen');
               statusEl.style.color = '#67e8f9';
             }
           } else {
@@ -1703,25 +2561,22 @@ export class EnergyStationCard extends HTMLElement {
               cardEl.style.borderColor = 'rgba(255, 255, 255, 0.08)';
             }
             if (statusEl) {
-              statusEl.innerText = 'Штиль';
+              statusEl.innerText = this._t('wind_calm');
               statusEl.style.color = '#94a3b8';
             }
           }
 
-          // RPM / Wind Speed telemetry: ONLY show if valid sensor entity exists and has a numeric state > 0
-          const rpmEntity = t.rpm_entity || t.speed_entity;
-          const sRpm = (rpmEntity && this._hass?.states[rpmEntity]) ? this._getEntityState(rpmEntity) : null;
           const rpmBox = this.shadowRoot.getElementById(`turbineRpmBox_${i + 1}`);
           if (rpmBox) {
             const hasValidRpm = sRpm &&
               sRpm.raw !== 'unavailable' &&
               sRpm.raw !== 'unknown' &&
               typeof sRpm.val === 'number' &&
-              !isNaN(sRpm.val) &&
-              sRpm.val > 0;
+              !isNaN(sRpm.val);
             if (hasValidRpm) {
               rpmBox.style.display = 'inline';
-              if (rpmVal) rpmVal.innerText = Math.round(sRpm.val);
+              const unit = sRpm.unit ? sRpm.unit : 'RPM';
+              rpmBox.innerHTML = `<span id="turbineRpmVal_${i + 1}">${Math.round(sRpm.val)}</span> ${unit}`;
             } else {
               rpmBox.style.display = 'none';
             }
@@ -1888,10 +2743,10 @@ export class EnergyStationCard extends HTMLElement {
     const gridNode = this.shadowRoot.getElementById('gridNode');
     if (this._nodes.gridPowerVal) {
       if (!isGridConnected) {
-        this._nodes.gridPowerVal.innerText = '0.000 кВт';
+        this._nodes.gridPowerVal.innerText = `0.000 ${unitStr}`;
         this._nodes.gridPowerVal.style.color = '#64748b';
       } else {
-        this._nodes.gridPowerVal.innerText = `${absGridKw.toFixed(3)} кВт`;
+        this._nodes.gridPowerVal.innerText = `${absGridKw.toFixed(3)} ${unitStr}`;
         if (isExport) {
           this._nodes.gridPowerVal.style.color = '#34d399';
         } else if (isImport) {
@@ -1904,16 +2759,16 @@ export class EnergyStationCard extends HTMLElement {
 
     if (this._nodes.gridDirectionLabel) {
       if (!isGridConnected) {
-        this._nodes.gridDirectionLabel.innerText = 'Вимкнено';
+        this._nodes.gridDirectionLabel.innerText = this._t('grid_dir_off');
         this._nodes.gridDirectionLabel.style.color = '#ef4444';
       } else if (isExport) {
-        this._nodes.gridDirectionLabel.innerText = '← Експорт';
+        this._nodes.gridDirectionLabel.innerText = this._t('grid_dir_export');
         this._nodes.gridDirectionLabel.style.color = '#34d399';
       } else if (isImport) {
-        this._nodes.gridDirectionLabel.innerText = '→ Імпорт';
+        this._nodes.gridDirectionLabel.innerText = this._t('grid_dir_import');
         this._nodes.gridDirectionLabel.style.color = '#38bdf8';
       } else {
-        this._nodes.gridDirectionLabel.innerText = 'Мережа';
+        this._nodes.gridDirectionLabel.innerText = this._t('grid_dir_idle');
         this._nodes.gridDirectionLabel.style.color = '#64748b';
       }
     }
@@ -2017,16 +2872,16 @@ export class EnergyStationCard extends HTMLElement {
     this._isDischarging = isDischarging;
 
     if (this._nodes.masterBatteryFlowHint) {
-      let stateText = 'Очікування';
+      let stateText = this._t('bat_idle');
       let stateColor = '#94a3b8';
       if (isCharging) {
-        stateText = 'Заряд ↓';
+        stateText = this._t('bat_dir_charge');
         stateColor = '#34d399';
       } else if (isDischarging) {
-        stateText = 'Розряд ↑';
+        stateText = this._t('bat_dir_discharge');
         stateColor = '#f87171';
       }
-      this._nodes.masterBatteryFlowHint.innerHTML = `<span style="font-size: 20px; font-weight: 900; color: #f8fafc;">${absBatKw.toFixed(3)} кВт</span> <span style="color: #64748b; margin: 0 4px;">•</span> <span style="color: ${stateColor}; font-weight: 700; font-size: 14px;">${stateText}</span>`;
+      this._nodes.masterBatteryFlowHint.innerHTML = `<span style="font-size: 20px; font-weight: 900; color: #f8fafc;">${absBatKw.toFixed(3)} ${unitStr}</span> <span style="color: #64748b; margin: 0 4px;">•</span> <span style="color: ${stateColor}; font-weight: 700; font-size: 14px;">${stateText}</span>`;
     }
 
     const sBatVolt = this._getEntityState(c.battery?.voltage_entity);
@@ -2052,35 +2907,42 @@ export class EnergyStationCard extends HTMLElement {
     // Net remaining power available for House load and Inverter self-consumption
     const netAvailableKw = Math.max(0, totalInflowKw - totalOutflowKnownKw);
 
-    // Inverter Self-Consumption
+    // Inverter Self-Consumption & Essential House Load
     const sSelf = this._getEntityState(c.inverter?.self_consumption_entity);
     let selfConsumptionKw = 0;
 
-    const sEss = this._getEntityState(c.load?.essential_power_entity);
-    const isAutoCalculateHouse = c.load?.auto_calculate !== false;
-    const hasValidPositiveMeasuredHouse = Boolean(sEss && typeof sEss.val === 'number' && !isNaN(sEss.val) && sEss.val > 0 && !isAutoCalculateHouse);
-
-    if (sSelf && typeof sSelf.val === 'number' && !isNaN(sSelf.val)) {
-      selfConsumptionKw = Math.max(0, sSelf.unit === 'W' ? sSelf.val / 1000 : sSelf.val);
-    } else if (hasValidPositiveMeasuredHouse) {
-      // If house load is explicitly measured and positive: Inverter loss is the unmeasured residue!
-      const measuredHouseKw = sEss.unit === 'W' ? sEss.val / 1000 : sEss.val;
-      selfConsumptionKw = Math.max(0, netAvailableKw - measuredHouseKw);
-    } else {
-      // House load is auto-calculated: use nominal standby power (default 100 W)
-      const standbyWatts = (c.inverter?.standby_power !== undefined) ? c.inverter.standby_power : 100;
-      const nominalLossKw = standbyWatts / 1000;
-      selfConsumptionKw = Math.min(netAvailableKw, nominalLossKw);
+    let sEss = this._getEntityState(c.load?.essential_power_entity);
+    if (!sEss && (!c.load?.essential_power_entity || c.load?.essential_power_entity === 'sensor.deye_12k_inverter_essential_load_power' || c.load?.essential_power_entity === 'sensor.deye_12k_inverter_load_power')) {
+      // Auto fallback to standard Deye ESPHome / Solarman sensor names if not explicitly found
+      sEss = this._getEntityState('sensor.deye_12k_inverter_load_power') ||
+             this._getEntityState('sensor.deye_12k_inverter_essential_load_power') ||
+             this._getEntityState('sensor.load_power') ||
+             this._getEntityState('sensor.solarman_essential_load');
     }
 
-    // Essential House Load (Гарантоване)
+    const hasValidPositiveSensor = Boolean(sEss && typeof sEss.val === 'number' && !isNaN(sEss.val) && sEss.val > 0);
+
     let essentialKw = 0;
-    if (isAutoCalculateHouse || !sEss || typeof sEss.val !== 'number' || isNaN(sEss.val) || sEss.val <= 0) {
-      // Auto-calculate from balance: Net Available - Inverter Self Consumption
-      essentialKw = Math.max(0, netAvailableKw - selfConsumptionKw);
-    } else {
-      // Explicit sensor configured and positive
+    if (hasValidPositiveSensor) {
+      // Physical sensor is valid and positive: use the measured load!
       essentialKw = Math.max(0, sEss.unit === 'W' ? sEss.val / 1000 : sEss.val);
+
+      if (sSelf && typeof sSelf.val === 'number' && !isNaN(sSelf.val)) {
+        selfConsumptionKw = Math.max(0, sSelf.unit === 'W' ? sSelf.val / 1000 : sSelf.val);
+      } else {
+        // Inverter loss is dynamic residue: Net Available - Measured House Load
+        selfConsumptionKw = Math.max(0, netAvailableKw - essentialKw);
+      }
+    } else {
+      // Auto-calculate from balance when sensor is missing, 0, or negative (e.g. charging artifact):
+      if (sSelf && typeof sSelf.val === 'number' && !isNaN(sSelf.val)) {
+        selfConsumptionKw = Math.max(0, sSelf.unit === 'W' ? sSelf.val / 1000 : sSelf.val);
+      } else {
+        const standbyWatts = (c.inverter?.standby_power !== undefined) ? c.inverter.standby_power : 100;
+        const nominalLossKw = standbyWatts / 1000;
+        selfConsumptionKw = Math.min(netAvailableKw, nominalLossKw);
+      }
+      essentialKw = Math.max(0, netAvailableKw - selfConsumptionKw);
     }
 
     // Update Inverter Self-Consumption display
@@ -2088,9 +2950,9 @@ export class EnergyStationCard extends HTMLElement {
       if (c.inverter?.show_self_consumption !== false) {
         this._nodes.inverterSelfConsumptionBox.style.display = 'flex';
         if (selfConsumptionKw < 1.0) {
-          this._nodes.inverterSelfConsumptionVal.innerText = `${Math.round(selfConsumptionKw * 1000)} Вт`;
+          this._nodes.inverterSelfConsumptionVal.innerText = `${Math.round(selfConsumptionKw * 1000)} ${this._language === 'en' ? 'W' : 'Вт'}`;
         } else {
-          this._nodes.inverterSelfConsumptionVal.innerText = `${selfConsumptionKw.toFixed(3)} кВт`;
+          this._nodes.inverterSelfConsumptionVal.innerText = `${selfConsumptionKw.toFixed(3)} ${unitStr}`;
         }
       } else {
         this._nodes.inverterSelfConsumptionBox.style.display = 'none';
@@ -2098,7 +2960,7 @@ export class EnergyStationCard extends HTMLElement {
     }
 
     // Update Essential House Load display
-    this._nodes.essentialPowerVal.innerText = `${essentialKw.toFixed(3)} кВт`;
+    this._nodes.essentialPowerVal.innerText = `${essentialKw.toFixed(3)} ${unitStr}`;
 
     const sHouseDaily = this._getEntityState(c.load?.daily_house_entity);
     this._nodes.dailyHouseKwh.innerText = sHouseDaily ? `${sHouseDaily.val.toFixed(2)} kWh` : '12,40 kWh';
@@ -2137,11 +2999,32 @@ export class EnergyStationCard extends HTMLElement {
       this._nodes.batCapacityVal.innerText = `${capVal.toFixed(2).replace('.', ',')} kWh`;
     }
 
-    const sBatChg = this._getEntityState(c.battery?.charge_daily_entity);
-    this._nodes.batChargeDaily.innerText = sBatChg ? `${sBatChg.val.toFixed(2)} kWh` : '4,30 kWh';
+    const chgEnt = c.battery?.charge_daily_entity;
+    let sBatChg = this._getEntityState(chgEnt);
+    if (!sBatChg) {
+      sBatChg = this._getEntityState('sensor.inverter_12_kvt_daily_battery_charge') ||
+                this._getEntityState('sensor.deye_12k_inverter_daily_battery_charge') ||
+                this._getEntityState('sensor.daily_battery_charge') ||
+                this._getEntityState('sensor.solarman_daily_battery_charge') ||
+                this._getEntityState('sensor.solarman_battery_charge_energy_day');
+    }
 
-    const sBatDis = this._getEntityState(c.battery?.discharge_daily_entity);
-    this._nodes.batDischargeDaily.innerText = sBatDis ? `${sBatDis.val.toFixed(2)} kWh` : '6,10 kWh';
+    const disEnt = c.battery?.discharge_daily_entity;
+    let sBatDis = this._getEntityState(disEnt);
+    if (!sBatDis) {
+      sBatDis = this._getEntityState('sensor.inverter_12_kvt_daily_battery_discharge') ||
+                this._getEntityState('sensor.deye_12k_inverter_daily_battery_discharge') ||
+                this._getEntityState('sensor.daily_battery_discharge') ||
+                this._getEntityState('sensor.solarman_daily_battery_discharge') ||
+                this._getEntityState('sensor.solarman_battery_discharge_energy_day');
+    }
+
+    if (this._nodes.batChargeDaily) {
+      this._nodes.batChargeDaily.innerText = sBatChg ? `${sBatChg.val.toFixed(2)} kWh` : (this._hass ? '0.00 kWh' : '4,30 kWh');
+    }
+    if (this._nodes.batDischargeDaily) {
+      this._nodes.batDischargeDaily.innerText = sBatDis ? `${sBatDis.val.toFixed(2)} kWh` : (this._hass ? '0.00 kWh' : '6,10 kWh');
+    }
 
     // Battery modules (SOC, Current, Voltage, Power, Temperature)
     const batModulesData = [];
@@ -2189,7 +3072,7 @@ export class EnergyStationCard extends HTMLElement {
       if (packSoc) packSoc.innerText = `${socNum.toFixed(0)}%`;
       if (packVolt) packVolt.innerText = `${voltNum.toFixed(1)} V`;
       if (packCurr) packCurr.innerText = `${Math.abs(currNum).toFixed(1)} A`;
-      if (packPower) packPower.innerText = `${kwNum.toFixed(2)} кВт`;
+      if (packPower) packPower.innerText = `${kwNum.toFixed(2)} ${unitStr}`;
       if (packTempVal) packTempVal.innerText = `${tempNum.toFixed(1)}`;
 
       // State: Charge (GREEN) or Discharge (RED).
@@ -2211,13 +3094,13 @@ export class EnergyStationCard extends HTMLElement {
         const isIdle = kwNum < 0.02;
         if (isIdle) {
           branchBadge.className = 'es-bat-branch-badge es-mono idle';
-          branchBadge.innerHTML = `<span>0.00 кВт</span>`;
+          branchBadge.innerHTML = `<span>0.00 ${unitStr}</span>`;
         } else if (isChg) {
           branchBadge.className = 'es-bat-branch-badge es-mono charge';
-          branchBadge.innerHTML = `<span>${kwNum.toFixed(2)} кВт</span> <span style="font-weight: 800;">↓</span>`;
+          branchBadge.innerHTML = `<span>${kwNum.toFixed(2)} ${unitStr}</span> <span style="font-weight: 800;">↓</span>`;
         } else {
           branchBadge.className = 'es-bat-branch-badge es-mono discharge';
-          branchBadge.innerHTML = `<span>${kwNum.toFixed(2)} кВт</span> <span style="font-weight: 800;">↑</span>`;
+          branchBadge.innerHTML = `<span>${kwNum.toFixed(2)} ${unitStr}</span> <span style="font-weight: 800;">↑</span>`;
         }
       }
 
@@ -2239,13 +3122,13 @@ export class EnergyStationCard extends HTMLElement {
       if (packTag) {
         if (isChg) {
           packTag.className = 'es-bat-state-tag charge';
-          packTag.innerText = 'Заряд';
+          packTag.innerText = this._t('bat_charge');
           packTag.style.color = '#34d399';
           packTag.style.background = 'rgba(16, 185, 129, 0.18)';
           packTag.style.borderColor = 'rgba(16, 185, 129, 0.4)';
         } else {
           packTag.className = 'es-bat-state-tag discharge';
-          packTag.innerText = 'Розряд';
+          packTag.innerText = this._t('bat_discharge');
           packTag.style.color = '#f87171';
           packTag.style.background = 'rgba(239, 68, 68, 0.18)';
           packTag.style.borderColor = 'rgba(239, 68, 68, 0.4)';
@@ -2295,6 +3178,9 @@ export class EnergyStationCard extends HTMLElement {
       subloadsTotalKw,
       auxKw
     );
+
+    // Sync live state for control sliders
+    this._updateControlSliders();
   }
 
   _setupResizeObserver() {

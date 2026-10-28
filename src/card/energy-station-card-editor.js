@@ -120,7 +120,7 @@ export class EnergyStationCardEditor extends HTMLElement {
       this._config.grid.power_entity = 'sensor.deye_12k_inverter_total_grid_power';
       this._config.grid.import_daily_entity = 'sensor.deye_12k_inverter_daily_energy_bought';
       this._config.grid.export_daily_entity = 'sensor.deye_12k_inverter_daily_energy_sold';
-      this._config.load.essential_power_entity = 'sensor.deye_12k_inverter_essential_load_power';
+      this._config.load.essential_power_entity = 'sensor.deye_12k_inverter_load_power';
       this._config.load.daily_house_entity = 'sensor.deye_12k_inverter_daily_load_energy';
     } else if (presetName === 'deye_solarman') {
       this._config.inverter.model_name = 'DEYE HYBRID';
@@ -313,6 +313,39 @@ export class EnergyStationCardEditor extends HTMLElement {
           <div class="field-row">
             <label>Назва станції / Заголовок:</label>
             <input type="text" id="title" value="${c.title || 'Energy Station'}">
+          </div>
+          <div class="field-row">
+            <label>Тема оформлення (Theme):</label>
+            <select id="themeMode">
+              <option value="dark" ${c.theme_mode !== 'light' ? 'selected' : ''}>🌙 Темна (Dark)</option>
+              <option value="light" ${c.theme_mode === 'light' ? 'selected' : ''}>☀️ Світла (Light)</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <label>Мова інтерфейсу (Language):</label>
+            <select id="cardLanguage">
+              <option value="uk" ${c.language !== 'en' ? 'selected' : ''}>🇺🇦 Українська (UK)</option>
+              <option value="en" ${c.language === 'en' ? 'selected' : ''}>🇬🇧 English (EN)</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <label>Панель перемикачів на картці:</label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="showQuickSettings" ${c.show_quick_settings !== false ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #0284c7;">
+              <span style="font-size: 11px;">Показувати блок контролю струму та теми/мови</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <label>Сенсор струму заряду АКБ від сонця:</label>
+            <input type="text" id="ctrlSolarCharge" value="${c.controls?.solar_charge_entity || ''}" placeholder="number.deye_12k_inverter_max_charge_current">
+          </div>
+          <div class="field-row">
+            <label>Сенсор потужності продажу в мережу:</label>
+            <input type="text" id="ctrlSellPower" value="${c.controls?.sell_power_entity || ''}" placeholder="number.deye_12k_inverter_export_surplus_power">
+          </div>
+          <div class="field-row">
+            <label>Сенсор струму заряду АКБ від мережі:</label>
+            <input type="text" id="ctrlGridCharge" value="${c.controls?.grid_charge_entity || ''}" placeholder="number.deye_12k_inverter_grid_charge_current">
           </div>
           <div class="field-row">
             <label>Анімація енергетичних потоків (струмки):</label>
@@ -532,8 +565,8 @@ export class EnergyStationCardEditor extends HTMLElement {
                     <label style="font-size: 10px; color: #94a3b8;">Сенсор потужності (kW/W):</label>
                     <input type="text" class="turbine-power-inp" data-idx="${idx}" value="${t.power_entity || `sensor.wind_turbine_${idx + 1}_power`}" placeholder="sensor.wind_turbine_${idx + 1}_power">
                     
-                    <label style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Сенсор швидкості вітру (м/с, опціонально):</label>
-                    <input type="text" class="turbine-speed-inp" data-idx="${idx}" value="${t.speed_entity || t.rpm_entity || ''}" placeholder="sensor.wind_turbine_${idx + 1}_speed">
+                    <label style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Сенсор обертів (RPM) або швидкості вітру (опціонально):</label>
+                    <input type="text" class="turbine-speed-inp" data-idx="${idx}" value="${t.rpm_entity || t.speed_entity || ''}" placeholder="sensor.wind_rpm">
                     
                     <label style="font-size: 10px; color: #6ee7b7; margin-top: 2px;">Сенсор генерації за день (kWh, опціонально):</label>
                     <input type="text" class="turbine-daily-inp" data-idx="${idx}" value="${t.daily_energy_entity || ''}" placeholder="sensor.wind_turbine_${idx + 1}_daily_energy">
@@ -857,6 +890,12 @@ export class EnergyStationCardEditor extends HTMLElement {
     };
 
     bindInput('title', 'title');
+    bindInput('themeMode', 'theme_mode');
+    bindInput('cardLanguage', 'language');
+    bindCheckbox('showQuickSettings', 'show_quick_settings');
+    bindInput('ctrlSolarCharge', 'controls.solar_charge_entity');
+    bindInput('ctrlSellPower', 'controls.sell_power_entity');
+    bindInput('ctrlGridCharge', 'controls.grid_charge_entity');
     bindCheckbox('animEnabled', 'animations.enabled');
     bindNumber('animSpeed', 'animations.speed', 'animSpeedVal', 's');
 
@@ -1015,6 +1054,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         const idx = parseInt(e.target.dataset.idx);
         if (!this._config.wind.turbines) this._config.wind.turbines = [];
         if (!this._config.wind.turbines[idx]) this._config.wind.turbines[idx] = {};
+        this._config.wind.turbines[idx].rpm_entity = e.target.value;
         this._config.wind.turbines[idx].speed_entity = e.target.value;
         this._valueChanged('wind.turbines', this._config.wind.turbines);
       });

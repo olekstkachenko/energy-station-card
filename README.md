@@ -62,6 +62,9 @@
 ```yaml
 type: custom:energy-station-card
 title: "Energy Station"
+theme_mode: "dark" # "dark" | "light"
+language: "uk" # "uk" | "en"
+show_quick_settings: true # Панель перемикачів теми та мови в нижньому правому куті
 animations:
   enabled: true
   speed: 1.2
@@ -147,7 +150,7 @@ grid:
   car_power_entity: sensor.ev_charger_power
 
 load:
-  essential_power_entity: sensor.deye_12k_inverter_essential_load_power
+  essential_power_entity: sensor.deye_12k_inverter_load_power
   daily_house_entity: sensor.deye_12k_inverter_daily_load_energy
   subloads:
     - name: "Бойлер"

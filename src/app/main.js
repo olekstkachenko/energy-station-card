@@ -415,7 +415,7 @@ grid:
 
 load:
   auto_calculate: ${c.load?.auto_calculate !== false}
-  essential_power_entity: ${c.load?.essential_power_entity || 'sensor.deye_12k_inverter_essential_load_power'}
+  essential_power_entity: ${c.load?.essential_power_entity || 'sensor.deye_12k_inverter_load_power'}
   daily_house_entity: ${c.load?.daily_house_entity || 'sensor.deye_12k_inverter_daily_load_energy'}
   subloads:
 ${(c.load?.subloads || []).map(s => `    - name: "${s.name}"\n      entity: ${s.entity}\n      icon: ${s.icon}`).join('\n')}

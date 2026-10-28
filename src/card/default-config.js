@@ -4,7 +4,15 @@
 export const DEFAULT_CONFIG = {
   title: 'Energy Station',
   card_style: 'full', // 'full' | 'compact'
-  theme_mode: 'dark',
+  theme_mode: 'dark', // 'dark' | 'light'
+  language: 'uk', // 'uk' | 'en'
+  show_quick_settings: true, // Показувати панель швидких перемикачів на картці
+  controls: {
+    show: true,
+    solar_charge_entity: 'number.deye_12k_inverter_max_charge_current',
+    grid_charge_entity: 'number.deye_12k_inverter_grid_charge_current',
+    sell_power_entity: 'number.deye_12k_inverter_export_surplus_power'
+  },
   refresh_rate: 1000,
   animations: {
     enabled: true,
@@ -176,7 +184,7 @@ export const DEFAULT_CONFIG = {
   load: {
     show: true,
     auto_calculate: true, // Авторозрахунок споживання будинку за балансом енергії
-    essential_power_entity: 'sensor.deye_12k_inverter_essential_load_power',
+    essential_power_entity: 'sensor.deye_12k_inverter_load_power',
     daily_house_entity: 'sensor.deye_12k_inverter_daily_load_energy',
     subloads: [
       { id: 'boiler', name: 'Бойлер', entity: 'sensor.boiler_power', icon: 'boiler' },

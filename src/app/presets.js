@@ -83,7 +83,7 @@ export const PRESETS = {
         car_power_entity: 'sensor.ev_charger_power'
       },
       load: {
-        essential_power_entity: 'sensor.deye_12k_inverter_essential_load_power',
+        essential_power_entity: 'sensor.deye_12k_inverter_load_power',
         daily_house_entity: 'sensor.deye_12k_inverter_daily_load_energy',
         subloads: [
           { id: 'boiler', name: 'Бойлер', entity: 'sensor.boiler_power', icon: 'boiler' },
