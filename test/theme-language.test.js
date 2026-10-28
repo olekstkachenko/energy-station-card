@@ -147,5 +147,146 @@ test('Energy Station Card - Theme & Language Customization', async (t) => {
     assert.strictEqual(card._scale, 0.7);
   });
 
+  await t.test('dual-zone tariffs calculates day/night split, cost, solar savings and feed-in export income correctly', () => {
+    assert.strictEqual(DEFAULT_CONFIG.tariffs.day_rate, 4.32);
+    assert.strictEqual(DEFAULT_CONFIG.tariffs.night_rate, 2.16);
+    assert.strictEqual(DEFAULT_CONFIG.tariffs.export_rate, 5.30);
+    assert.strictEqual(DEFAULT_CONFIG.tariffs.night_start_hour, 23);
+    assert.strictEqual(DEFAULT_CONFIG.tariffs.night_end_hour, 7);
+    assert.strictEqual(DEFAULT_CONFIG.tariffs.currency, 'грн');
+
+    const card = new EnergyStationCard();
+    card._config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    card._nodes = {
+      gridCostDailyRow: { style: { display: 'none' } },
+      gridCostDailyVal: { innerText: '' },
+      gridCostSplitVal: { innerText: '' },
+      gridExportIncomeRow: { style: { display: 'none' } },
+      gridExportIncomeVal: { innerText: '' },
+      gridTariffBadge: { style: { background: '', border: '', color: '', display: 'none' }, innerText: '' },
+      solarSavingsDaily: { style: { display: 'none' }, innerText: '' }
+    };
+
+    // 10 kWh import, 6 kWh export, 15 kWh solar
+    card._calculateTariffs(10.0, 6.0, 15.0);
+
+    // Verify grid daily cost row is displayed and has value
+    assert.strictEqual(card._nodes.gridCostDailyRow.style.display, 'block');
+    assert.match(card._nodes.gridCostDailyVal.innerText, /грн/);
+    assert.match(card._nodes.gridCostSplitVal.innerText, /🌙/);
+
+    // Verify export income (6 kWh * 5.30 = +31.80 грн)
+    assert.strictEqual(card._nodes.gridExportIncomeRow.style.display, 'block');
+    assert.strictEqual(card._nodes.gridExportIncomeVal.innerText, '+31.80 грн');
+
+    // Verify active tariff badge is displayed
+    assert.strictEqual(card._nodes.gridTariffBadge.style.display, 'inline-flex');
+    assert.match(card._nodes.gridTariffBadge.innerText, /грн/);
+
+    // Verify solar savings: 15 kWh * 4.32 = ~64.80 грн
+    assert.strictEqual(card._nodes.solarSavingsDaily.style.display, 'block');
+    assert.strictEqual(card._nodes.solarSavingsDaily.innerText, '💰 Заощаджено: ~64.80 грн');
+  });
+
+  await t.test('battery telemetry displays temperature, remaining capacity, and cell delta unbalance', () => {
+    assert.strictEqual(I18N.uk.bat_delta, 'Розбаланс');
+    assert.strictEqual(I18N.en.bat_delta, 'Cell Delta');
+    assert.strictEqual(I18N.uk.bat_remaining, 'Залишок');
+    assert.strictEqual(I18N.en.bat_remaining, 'Remaining');
+
+    // Verify cell_delta_entity in default config
+    assert.strictEqual(DEFAULT_CONFIG.battery.modules[0].cell_delta_entity, 'sensor.bms_rack1_cell_delta');
+    assert.strictEqual(DEFAULT_CONFIG.battery.modules[1].cell_delta_entity, 'sensor.bms_rack2_cell_delta');
+
+    const card = new EnergyStationCard();
+    card._config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+
+    const domMap = {
+      batCapacityVal: { innerHTML: '', innerText: '', style: {} },
+      batMasterTempVal: { innerText: '', style: {} },
+      batChargeDaily: { innerText: '', style: {} },
+      batDischargeDaily: { innerText: '', style: {} },
+      batPackSoc_1: { innerText: '', style: {} },
+      batPackVolt_1: { innerText: '', style: {} },
+      batPackCurr_1: { innerText: '', style: {} },
+      batPackPower_1: { innerText: '', style: {} },
+      batPackTempVal_1: { innerText: '', style: {} },
+      batPackDelta_1: { style: {} },
+      batPackDeltaVal_1: { innerText: '', style: {} },
+      batPackKwh_1: { innerText: '', style: {} },
+      batPackSoc_2: { innerText: '', style: {} },
+      batPackVolt_2: { innerText: '', style: {} },
+      batPackCurr_2: { innerText: '', style: {} },
+      batPackPower_2: { innerText: '', style: {} },
+      batPackTempVal_2: { innerText: '', style: {} },
+      batPackDelta_2: { style: {} },
+      batPackDeltaVal_2: { innerText: '', style: {} },
+      batPackKwh_2: { innerText: '', style: {} }
+    };
+
+    const dummyNode = () => ({
+      innerText: '',
+      innerHTML: '',
+      style: { setProperty() {} },
+      classList: { add() {}, remove() {}, contains: () => false },
+      setAttribute() {},
+      getAttribute: () => '',
+      querySelector: () => null,
+      querySelectorAll: () => []
+    });
+
+    card._nodes = new Proxy(domMap, {
+      get(target, prop) {
+        if (!(prop in target)) {
+          target[prop] = dummyNode();
+        }
+        return target[prop];
+      }
+    });
+
+    card.shadowRoot.getElementById = (id) => {
+      if (!domMap[id]) {
+        domMap[id] = dummyNode();
+      }
+      return domMap[id];
+    };
+
+    // Simulate HA with temperature and delta sensors
+    card._hass = {
+      states: {
+        'sensor.deye_12k_inverter_battery_soc': { state: '75', attributes: { unit_of_measurement: '%' } },
+        'sensor.deye_12k_inverter_battery_temperature': { state: '26.8', attributes: { unit_of_measurement: '°C' } },
+        'sensor.inverter_12_kvt_battery_capacity': { state: '13.0', attributes: { unit_of_measurement: 'kWh' } },
+        'sensor.bms_rack1_soc': { state: '80', attributes: { unit_of_measurement: '%' } },
+        'sensor.bms_rack1_temperature': { state: '28.5', attributes: { unit_of_measurement: '°C' } },
+        'sensor.bms_rack1_cell_delta': { state: '0.014', attributes: { unit_of_measurement: 'V' } }, // 14 mV in Volts
+        'sensor.bms_rack2_soc': { state: '70', attributes: { unit_of_measurement: '%' } },
+        'sensor.bms_rack2_temperature': { state: '22.0', attributes: { unit_of_measurement: '°C' } },
+        'sensor.bms_rack2_cell_delta': { state: '42', attributes: { unit_of_measurement: 'mV' } } // 42 mV (amber)
+      }
+    };
+
+    card._updateValues();
+
+    // 1. Master battery temperature
+    assert.strictEqual(domMap.batMasterTempVal.innerText, '26,8');
+
+    // 2. Master remaining capacity: 13.0 * 75% = 9.75 kWh
+    assert.match(domMap.batCapacityVal.innerHTML, /~9,75/);
+
+    // 3. Module 1 temperature, remaining capacity (7.88 * 80% = 6.30 kWh), and cell delta (14 mV -> green)
+    assert.strictEqual(domMap.batPackTempVal_1.innerText, '28,5');
+    assert.match(domMap.batPackKwh_1.innerText, /~6,30/);
+    assert.strictEqual(domMap.batPackDeltaVal_1.innerText, '14 mV');
+    assert.strictEqual(domMap.batPackDelta_1.style.color, '#34d399'); // Green (<= 25 mV)
+
+    // 4. Module 2 cell delta (42 mV -> amber)
+    assert.strictEqual(domMap.batPackTempVal_2.innerText, '22,0');
+    assert.match(domMap.batPackKwh_2.innerText, /~3,58/); // 5.12 * 70% = 3.58 kWh
+    assert.strictEqual(domMap.batPackDeltaVal_2.innerText, '42 mV');
+    assert.strictEqual(domMap.batPackDelta_2.style.color, '#fbbf24'); // Amber (26..50 mV)
+  });
+
 });
+
 

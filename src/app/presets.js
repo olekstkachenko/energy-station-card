@@ -62,6 +62,7 @@ export const PRESETS = {
             voltage_entity: 'sensor.bms_rack1_voltage',
             power_entity: 'sensor.bms_rack1_power',
             temperature_entity: 'sensor.bms_rack1_temperature',
+            cell_delta_entity: 'sensor.bms_rack1_cell_delta',
             capacity_kwh: 7.88
           },
           {
@@ -72,6 +73,7 @@ export const PRESETS = {
             voltage_entity: 'sensor.bms_rack2_voltage',
             power_entity: 'sensor.bms_rack2_power',
             temperature_entity: 'sensor.bms_rack2_temperature',
+            cell_delta_entity: 'sensor.bms_rack2_cell_delta',
             capacity_kwh: 5.12
           }
         ]
@@ -177,7 +179,8 @@ export const PRESETS = {
             current_entity: 'sensor.solarman_battery_current',
             voltage_entity: 'sensor.solarman_battery_voltage',
             power_entity: 'sensor.solarman_battery_power',
-            temperature_entity: 'sensor.solarman_battery_temperature'
+            temperature_entity: 'sensor.solarman_battery_temperature',
+            cell_delta_entity: 'sensor.solarman_battery_cell_delta'
           },
           {
             id: 'bat2',
@@ -186,7 +189,8 @@ export const PRESETS = {
             current_entity: 'sensor.solarman_battery_pack2_current',
             voltage_entity: 'sensor.solarman_battery_pack2_voltage',
             power_entity: 'sensor.solarman_battery_pack2_power',
-            temperature_entity: 'sensor.solarman_battery_pack2_temperature'
+            temperature_entity: 'sensor.solarman_battery_pack2_temperature',
+            cell_delta_entity: 'sensor.solarman_battery_pack2_cell_delta'
           }
         ]
       },

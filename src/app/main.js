@@ -302,17 +302,19 @@ function setupSimulationLoop() {
     addState(c.battery?.power_entity, mockTelemetry.batPower, 'kW');
     addState(c.battery?.voltage_entity, mockTelemetry.batVolt, 'V');
     addState(c.battery?.current_entity, mockTelemetry.batCurrent, 'A');
+    addState(c.battery?.temperature_entity || 'sensor.deye_12k_inverter_battery_temperature', 25.4, '°C');
     addState(c.battery?.capacity_entity || 'sensor.inverter_12_kvt_battery_capacity', mockTelemetry.batCap, 'kWh');
     addState('sensor.inverter_12_kvt_battery_capacity', mockTelemetry.batCap, 'kWh');
     addState(c.battery?.charge_daily_entity, mockTelemetry.batCharge, 'kWh');
     addState(c.battery?.discharge_daily_entity, mockTelemetry.batDischarge, 'kWh');
 
-    // Simulate battery modules (matching screenshot 42% / 43%, 25.0° / 18.0°, 51.6V / 51.8V, 4.4A / 19.6A, 2.27kW / 1.01kW)
+    // Simulate battery modules (matching screenshot 42% / 43%, 25.0° / 18.0°, 51.6V / 51.8V, 4.4A / 19.6A, 2.27kW / 1.01kW, 12mV / 8mV)
     const batModCount = c.battery?.parallel_batteries || 2;
     const mockSocs = [42, 43, 76, 85, 90, 68, 72, 80];
     const mockVolts = [51.6, 51.8, 52.4, 52.1, 52.6, 51.9];
     const mockCurrs = [4.4, 19.6, 8.2, 12.4, 6.0, 10.5];
     const mockTemps = [25.0, 18.0, 22.5, 21.0, 24.0, 20.0];
+    const mockDeltas = [12, 8, 15, 9, 14, 11];
     const mockPowers = [2.27, 1.01, 0.43, 0.65, 0.31, 0.55];
 
     for (let bIdx = 0; bIdx < batModCount; bIdx++) {
@@ -322,12 +324,14 @@ function setupSimulationLoop() {
       const mV = mockVolts[bIdx % mockVolts.length] + (Math.random() - 0.5) * 0.1;
       const mI = mockCurrs[bIdx % mockCurrs.length] + (Math.random() - 0.5) * 0.2;
       const mT = mockTemps[bIdx % mockTemps.length];
+      const mDelta = mockDeltas[bIdx % mockDeltas.length];
       const mP = mockPowers[bIdx % mockPowers.length];
 
       addState(mConf.soc_entity || `sensor.bms_rack${bNum}_soc`, mSoc, '%');
       addState(mConf.current_entity || `sensor.bms_rack${bNum}_current`, mI, 'A');
       addState(mConf.voltage_entity || `sensor.bms_rack${bNum}_voltage`, mV, 'V');
       addState(mConf.temperature_entity || `sensor.bms_rack${bNum}_temperature`, mT, '°C');
+      addState(mConf.cell_delta_entity || `sensor.bms_rack${bNum}_cell_delta`, mDelta, 'mV');
       addState(mConf.power_entity || `sensor.bms_rack${bNum}_power`, mP, 'kW');
     }
 
@@ -398,14 +402,15 @@ battery:
   power_entity: ${c.battery?.power_entity || 'sensor.deye_12k_inverter_battery_power'}
   voltage_entity: ${c.battery?.voltage_entity || 'sensor.deye_12k_inverter_battery_voltage'}
   current_entity: ${c.battery?.current_entity || 'sensor.deye_12k_inverter_battery_current'}
+  temperature_entity: ${c.battery?.temperature_entity || 'sensor.deye_12k_inverter_battery_temperature'}
   capacity_entity: ${c.battery?.capacity_entity || 'sensor.inverter_12_kvt_battery_capacity'}
   charge_daily_entity: ${c.battery?.charge_daily_entity || 'sensor.deye_12k_inverter_daily_battery_charge'}
   discharge_daily_entity: ${c.battery?.discharge_daily_entity || 'sensor.deye_12k_inverter_daily_battery_discharge'}
   modules:
 ${(c.battery?.modules || [
-  { name: 'Батарея 1', soc_entity: 'sensor.bms_rack1_soc', current_entity: 'sensor.bms_rack1_current', voltage_entity: 'sensor.bms_rack1_voltage', power_entity: 'sensor.bms_rack1_power', temperature_entity: 'sensor.bms_rack1_temperature', capacity_kwh: 7.88 },
-  { name: 'Батарея 2', soc_entity: 'sensor.bms_rack2_soc', current_entity: 'sensor.bms_rack2_current', voltage_entity: 'sensor.bms_rack2_voltage', power_entity: 'sensor.bms_rack2_power', temperature_entity: 'sensor.bms_rack2_temperature', capacity_kwh: 5.12 }
-]).slice(0, c.battery?.parallel_batteries || 2).map((m, idx) => `    - name: "${m.name || `Батарея ${idx + 1}`}"\n      soc_entity: ${m.soc_entity || `sensor.bms_rack${idx + 1}_soc`}\n      current_entity: ${m.current_entity || `sensor.bms_rack${idx + 1}_current`}\n      voltage_entity: ${m.voltage_entity || `sensor.bms_rack${idx + 1}_voltage`}\n      power_entity: ${m.power_entity || `sensor.bms_rack${idx + 1}_power`}\n      temperature_entity: ${m.temperature_entity || `sensor.bms_rack${idx + 1}_temperature`}\n      capacity_kwh: ${m.capacity_kwh !== undefined ? m.capacity_kwh : (idx === 0 ? 7.88 : 5.12)}`).join('\n')}
+  { name: 'Батарея 1', soc_entity: 'sensor.bms_rack1_soc', current_entity: 'sensor.bms_rack1_current', voltage_entity: 'sensor.bms_rack1_voltage', power_entity: 'sensor.bms_rack1_power', temperature_entity: 'sensor.bms_rack1_temperature', cell_delta_entity: 'sensor.bms_rack1_cell_delta', capacity_kwh: 7.88 },
+  { name: 'Батарея 2', soc_entity: 'sensor.bms_rack2_soc', current_entity: 'sensor.bms_rack2_current', voltage_entity: 'sensor.bms_rack2_voltage', power_entity: 'sensor.bms_rack2_power', temperature_entity: 'sensor.bms_rack2_temperature', cell_delta_entity: 'sensor.bms_rack2_cell_delta', capacity_kwh: 5.12 }
+]).slice(0, c.battery?.parallel_batteries || 2).map((m, idx) => `    - name: "${m.name || `Батарея ${idx + 1}`}"\n      soc_entity: ${m.soc_entity || `sensor.bms_rack${idx + 1}_soc`}\n      current_entity: ${m.current_entity || `sensor.bms_rack${idx + 1}_current`}\n      voltage_entity: ${m.voltage_entity || `sensor.bms_rack${idx + 1}_voltage`}\n      power_entity: ${m.power_entity || `sensor.bms_rack${idx + 1}_power`}\n      temperature_entity: ${m.temperature_entity || `sensor.bms_rack${idx + 1}_temperature`}\n      cell_delta_entity: ${m.cell_delta_entity || `sensor.bms_rack${idx + 1}_cell_delta`}\n      capacity_kwh: ${m.capacity_kwh !== undefined ? m.capacity_kwh : (idx === 0 ? 7.88 : 5.12)}`).join('\n')}
 
 grid:
   power_entity: ${c.grid?.power_entity || 'sensor.deye_12k_inverter_total_grid_power'}

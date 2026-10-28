@@ -123,6 +123,7 @@ export const DEFAULT_CONFIG = {
     voltage_entity: 'sensor.deye_12k_inverter_battery_voltage',
     current_entity: 'sensor.deye_12k_inverter_battery_current',
     temperature_entity: 'sensor.deye_12k_inverter_battery_temperature',
+    cell_delta_entity: '',
     capacity_kwh: 13.0,
     capacity_entity: 'sensor.inverter_12_kvt_battery_capacity',
     charge_daily_entity: 'sensor.deye_12k_inverter_daily_battery_charge',
@@ -141,6 +142,7 @@ export const DEFAULT_CONFIG = {
         voltage_entity: 'sensor.bms_rack1_voltage',
         power_entity: 'sensor.bms_rack1_power',
         temperature_entity: 'sensor.bms_rack1_temperature',
+        cell_delta_entity: 'sensor.bms_rack1_cell_delta',
         capacity_kwh: 7.88
       },
       {
@@ -151,6 +153,7 @@ export const DEFAULT_CONFIG = {
         voltage_entity: 'sensor.bms_rack2_voltage',
         power_entity: 'sensor.bms_rack2_power',
         temperature_entity: 'sensor.bms_rack2_temperature',
+        cell_delta_entity: 'sensor.bms_rack2_cell_delta',
         capacity_kwh: 5.12
       }
     ],
@@ -194,5 +197,21 @@ export const DEFAULT_CONFIG = {
       { id: 'other', name: 'Інше', entity: 'sensor.other_loads_power', icon: 'other' }
     ],
     color: '#06b6d4'
+  },
+
+  // 6. Tariffs & Electricity Cost Calculation (Двозонний тариф День / Ніч та Зелений Тариф)
+  tariffs: {
+    enabled: true,
+    currency: 'грн',
+    day_rate: 4.32,
+    night_rate: 2.16,
+    export_rate: 5.30, // Зелений тариф / продаж в мережу (грн/кВт·год)
+    night_start_hour: 23, // 23:00
+    night_end_hour: 7,    // 07:00
+    show_daily_cost: true, // показувати вартість біля імпорту з мережі
+    show_export_income: true, // показувати дохід від експорту (Зелений тариф)
+    show_active_badge: true, // показувати бейдж поточного активного тарифу
+    show_solar_savings: true // показувати суму заощаджень від сонця
   }
 };
+

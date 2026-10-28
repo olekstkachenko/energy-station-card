@@ -304,6 +304,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         <button class="tab-btn ${this._currentTab === 'battery' ? 'active' : ''}" data-tab="battery">🔋 Батарея & Стек</button>
         <button class="tab-btn ${this._currentTab === 'grid' ? 'active' : ''}" data-tab="grid">🌐 Мережа & Авто</button>
         <button class="tab-btn ${this._currentTab === 'loads' ? 'active' : ''}" data-tab="loads">🏠 Дім & Споживачі</button>
+        <button class="tab-btn ${this._currentTab === 'tariffs' ? 'active' : ''}" data-tab="tariffs">💰 Тарифи</button>
       </div>
 
       <!-- TAB CONTENT: GENERAL -->
@@ -625,6 +626,11 @@ export class EnergyStationCardEditor extends HTMLElement {
             <input type="text" id="batCurrent" placeholder="Струм батареї A" value="${c.battery?.current_entity || ''}">
           </div>
           <div class="field-row">
+            <label>Температура АКБ (°C) та Загальний розбаланс банок (mV):</label>
+            <input type="text" id="batTemp" placeholder="sensor.deye_12k_inverter_battery_temperature" value="${c.battery?.temperature_entity || ''}" style="margin-bottom: 4px;">
+            <input type="text" id="batDelta" placeholder="sensor.bms_cell_delta (опціонально)" value="${c.battery?.cell_delta_entity || ''}">
+          </div>
+          <div class="field-row">
             <label>Сенсор ємності інвертора (показується в дужках):</label>
             <input type="text" id="batCapacity" placeholder="sensor.inverter_12_kvt_battery_capacity" value="${c.battery?.capacity_entity || ''}">
             <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Ємність батареї розрахована інвертором (буде виведена в дужках поруч із сумою модулів)</div>
@@ -666,6 +672,7 @@ export class EnergyStationCardEditor extends HTMLElement {
               const defaultVolt = `sensor.bms_rack${num}_voltage`;
               const defaultPower = `sensor.bms_rack${num}_power`;
               const defaultTemp = `sensor.bms_rack${num}_temperature`;
+              const defaultDelta = `sensor.bms_rack${num}_cell_delta`;
               return `
                 <div style="background: #080d19; padding: 10px 12px; border-radius: 8px; border: 1px solid #1e293b;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
@@ -703,9 +710,14 @@ export class EnergyStationCardEditor extends HTMLElement {
                       <input type="number" step="0.01" class="bat-mod-cap-inp" data-idx="${idx}" value="${m.capacity_kwh !== undefined ? m.capacity_kwh : (num === 1 ? 7.88 : 5.12)}" placeholder="5.12">
                     </div>
                     <div class="field-row" style="margin-bottom: 0;">
-                      <label style="color: #cbd5e1; font-size: 10px;">Батарея ${num} Потужність (опціонально):</label>
-                      <input type="text" class="bat-mod-power-inp" data-idx="${idx}" value="${m.power_entity !== undefined ? m.power_entity : defaultPower}" placeholder="${defaultPower} (авто P = U × I)">
+                      <label style="color: #a7f3d0; font-size: 10px; font-weight: 600;">Батарея ${num} Розбаланс (Cell Delta mV):</label>
+                      <input type="text" class="bat-mod-delta-inp" data-idx="${idx}" value="${m.cell_delta_entity !== undefined ? m.cell_delta_entity : (m.delta !== undefined ? m.delta : defaultDelta)}" placeholder="${defaultDelta}">
                     </div>
+                  </div>
+
+                  <div class="field-row" style="margin-top: 6px; margin-bottom: 0;">
+                    <label style="color: #cbd5e1; font-size: 10px;">Батарея ${num} Потужність (опціонально):</label>
+                    <input type="text" class="bat-mod-power-inp" data-idx="${idx}" value="${m.power_entity !== undefined ? m.power_entity : defaultPower}" placeholder="${defaultPower} (авто P = U × I)">
                   </div>
                 </div>
               `;
@@ -855,6 +867,76 @@ export class EnergyStationCardEditor extends HTMLElement {
           <button type="button" class="preset-badge" id="btnAddSubloadBottom" style="width: 100%; background: rgba(14, 165, 233, 0.12); border-color: rgba(56, 189, 248, 0.35); color: #38bdf8; font-size: 12px; padding: 7px; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px;">
             <span>+ Додати споживача</span>
           </button>
+        </div>
+      </div>
+
+      <!-- TAB CONTENT: TARIFFS -->
+      <div style="display: ${this._currentTab === 'tariffs' ? 'block' : 'none'};">
+        <div class="field-group">
+          <div class="field-group-title">Двозонний облік тарифів (День / Ніч)</div>
+          
+          <div class="field-row">
+            <label>Увімкнути облік тарифів:</label>
+            <input type="checkbox" id="tariffsEnabled" ${(c.tariffs?.enabled !== false) ? 'checked' : ''} style="width: 20px; height: 20px; accent-color: #38bdf8;">
+          </div>
+
+          <div class="field-row">
+            <label>Валюта / позначення:</label>
+            <input type="text" id="tariffCurrency" value="${c.tariffs?.currency || 'грн'}" placeholder="грн або ₴" style="max-width: 120px;">
+          </div>
+
+          <div class="field-row">
+            <label>☀️ Денний тариф (${c.tariffs?.currency || 'грн'}/кВт·год):</label>
+            <input type="number" step="0.01" min="0" id="tariffDayRate" value="${c.tariffs?.day_rate ?? 4.32}" placeholder="4.32" style="max-width: 140px;">
+          </div>
+
+          <div class="field-row">
+            <label>🌙 Нічний тариф (${c.tariffs?.currency || 'грн'}/кВт·год):</label>
+            <input type="number" step="0.01" min="0" id="tariffNightRate" value="${c.tariffs?.night_rate ?? 2.16}" placeholder="2.16" style="max-width: 140px;">
+          </div>
+
+          <div class="field-row">
+            <label>🟢 Зелений тариф / експорт (${c.tariffs?.currency || 'грн'}/кВт·год):</label>
+            <input type="number" step="0.01" min="0" id="tariffExportRate" value="${c.tariffs?.export_rate ?? 5.30}" placeholder="5.30" style="max-width: 140px;">
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
+            <div class="field-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+              <label>Початок ночі (година):</label>
+              <select id="tariffNightStart" style="width: 100%;">
+                ${Array.from({length: 24}, (_, i) => `<option value="${i}" ${(c.tariffs?.night_start_hour ?? 23) === i ? 'selected' : ''}>${String(i).padStart(2, '0')}:00</option>`).join('')}
+              </select>
+            </div>
+            <div class="field-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+              <label>Кінець ночі (година):</label>
+              <select id="tariffNightEnd" style="width: 100%;">
+                ${Array.from({length: 24}, (_, i) => `<option value="${i}" ${(c.tariffs?.night_end_hour ?? 7) === i ? 'selected' : ''}>${String(i).padStart(2, '0')}:00</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div style="font-size: 11px; color: #94a3b8; margin-top: 6px; line-height: 1.4;">
+            💡 Картка автоматично ділить добовий імпорт з мережі (наприклад 22.9 кВт·год) на нічну (з 23:00 до 07:00) та денну зону за годинником або з історії Home Assistant.
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Відображення на станції</div>
+          <div class="field-row">
+            <label>Показувати вартість імпорту за сьогодні:</label>
+            <input type="checkbox" id="tariffShowDailyCost" ${(c.tariffs?.show_daily_cost !== false) ? 'checked' : ''} style="width: 20px; height: 20px; accent-color: #38bdf8;">
+          </div>
+          <div class="field-row">
+            <label>Показувати дохід від експорту (Зелений тариф):</label>
+            <input type="checkbox" id="tariffShowExportIncome" ${(c.tariffs?.show_export_income !== false) ? 'checked' : ''} style="width: 20px; height: 20px; accent-color: #34d399;">
+          </div>
+          <div class="field-row">
+            <label>Показувати бейдж активного тарифу (🌙 Ніч / ☀️ День):</label>
+            <input type="checkbox" id="tariffShowActiveBadge" ${(c.tariffs?.show_active_badge !== false) ? 'checked' : ''} style="width: 20px; height: 20px; accent-color: #38bdf8;">
+          </div>
+          <div class="field-row">
+            <label>Показувати заощадження від сонця (💰):</label>
+            <input type="checkbox" id="tariffShowSolarSavings" ${(c.tariffs?.show_solar_savings !== false) ? 'checked' : ''} style="width: 20px; height: 20px; accent-color: #38bdf8;">
+          </div>
         </div>
       </div>
     `;
@@ -1108,6 +1190,8 @@ export class EnergyStationCardEditor extends HTMLElement {
     bindInput('batPowerSign', 'battery.power_sign');
     bindInput('batVolt', 'battery.voltage_entity');
     bindInput('batCurrent', 'battery.current_entity');
+    bindInput('batTemp', 'battery.temperature_entity');
+    bindInput('batDelta', 'battery.cell_delta_entity');
     bindInput('batCapacity', 'battery.capacity_entity');
     bindInput('batChargeDaily', 'battery.charge_daily_entity');
     bindInput('batDischargeDaily', 'battery.discharge_daily_entity');
@@ -1126,7 +1210,8 @@ export class EnergyStationCardEditor extends HTMLElement {
           current_entity: `sensor.bms_rack${i}_current`,
           voltage_entity: `sensor.bms_rack${i}_voltage`,
           power_entity: `sensor.bms_rack${i}_power`,
-          temperature_entity: `sensor.bms_rack${i}_temperature`
+          temperature_entity: `sensor.bms_rack${i}_temperature`,
+          cell_delta_entity: `sensor.bms_rack${i}_cell_delta`
         });
       }
       this._valueChanged('battery.parallel_batteries', val);
@@ -1181,6 +1266,16 @@ export class EnergyStationCardEditor extends HTMLElement {
         if (!this._config.battery.modules) this._config.battery.modules = [];
         if (!this._config.battery.modules[idx]) this._config.battery.modules[idx] = {};
         this._config.battery.modules[idx].temperature_entity = e.target.value;
+        this._valueChanged('battery.modules', this._config.battery.modules);
+      });
+    });
+
+    root.querySelectorAll('.bat-mod-delta-inp').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const idx = parseInt(e.target.dataset.idx);
+        if (!this._config.battery.modules) this._config.battery.modules = [];
+        if (!this._config.battery.modules[idx]) this._config.battery.modules[idx] = {};
+        this._config.battery.modules[idx].cell_delta_entity = e.target.value;
         this._valueChanged('battery.modules', this._config.battery.modules);
       });
     });
@@ -1281,6 +1376,19 @@ export class EnergyStationCardEditor extends HTMLElement {
         }
       });
     });
+
+    // Tariffs
+    bindCheckbox('tariffsEnabled', 'tariffs.enabled');
+    bindInput('tariffCurrency', 'tariffs.currency');
+    bindNumber('tariffDayRate', 'tariffs.day_rate');
+    bindNumber('tariffNightRate', 'tariffs.night_rate');
+    bindNumber('tariffExportRate', 'tariffs.export_rate');
+    bindNumber('tariffNightStart', 'tariffs.night_start_hour');
+    bindNumber('tariffNightEnd', 'tariffs.night_end_hour');
+    bindCheckbox('tariffShowDailyCost', 'tariffs.show_daily_cost');
+    bindCheckbox('tariffShowExportIncome', 'tariffs.show_export_income');
+    bindCheckbox('tariffShowActiveBadge', 'tariffs.show_active_badge');
+    bindCheckbox('tariffShowSolarSavings', 'tariffs.show_solar_savings');
   }
 }
 

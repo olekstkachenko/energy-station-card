@@ -51,7 +51,16 @@ export const I18N = {
     ctrl_title: 'Контроль струму заряду акумулятора',
     ctrl_solar_charge: 'Струм заряду АКБ від сонця',
     ctrl_sell_power: 'Потужність Продажу',
-    ctrl_grid_charge: 'Струм заряду АКБ від мережі'
+    ctrl_grid_charge: 'Струм заряду АКБ від мережі',
+    tariff_night: 'Ніч',
+    tariff_day: 'День',
+    tariff_export: 'Зелений тариф',
+    tariff_cost: 'Вартість',
+    export_income: 'Дохід від експорту',
+    solar_saved: 'Заощаджено',
+    bat_delta: 'Розбаланс',
+    bat_remaining: 'Залишок',
+    kwh_unit: 'кВт·год'
   },
   en: {
     live_status: 'HA Live',
@@ -101,7 +110,16 @@ export const I18N = {
     ctrl_title: 'Battery Charge Current Control',
     ctrl_solar_charge: 'Solar Charge Current',
     ctrl_sell_power: 'Sell Power Limit',
-    ctrl_grid_charge: 'Grid Charge Current'
+    ctrl_grid_charge: 'Grid Charge Current',
+    tariff_night: 'Night',
+    tariff_day: 'Day',
+    tariff_export: 'Feed-in Tariff',
+    tariff_cost: 'Cost',
+    export_income: 'Export Income',
+    solar_saved: 'Saved',
+    bat_delta: 'Cell Delta',
+    bat_remaining: 'Remaining',
+    kwh_unit: 'kWh'
   }
 };
 
@@ -1140,6 +1158,27 @@ export class EnergyStationCard extends HTMLElement {
           color: #94a3b8;
           margin-top: 2px;
         }
+        .es-bat-telemetry-row {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          margin-top: 4px;
+          font-size: 11px;
+        }
+        .es-bat-delta-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1px 5px;
+          border-radius: 4px;
+          font-size: 10px;
+          font-weight: 700;
+          transition: all 0.25s ease;
+        }
+        .theme-light .es-bat-delta-badge {
+          box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
         /* Quick Settings & Controls Card */
         .es-quick-settings-card {
           padding: 10px 14px 12px 14px;
@@ -1665,6 +1704,7 @@ export class EnergyStationCard extends HTMLElement {
             <div style="width: 220px; height: 5px; background: #1e293b; border-radius: 9999px; margin-top: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.06);">
               <div id="solarProgressBar" style="height: 100%; width: 88%; background: linear-gradient(90deg, #f59e0b, #fde047); border-radius: 9999px; transition: width 0.7s;"></div>
             </div>
+            <div class="es-mono" id="solarSavingsDaily" style="font-size: 11px; font-weight: 700; color: #34d399; margin-top: 4px; display: none;"></div>
           </div>
 
           <!-- PV Panels Grid -->
@@ -1698,7 +1738,19 @@ export class EnergyStationCard extends HTMLElement {
           <div class="es-wing-left">
             <div class="es-mono" style="font-size: 13px; color: #cbd5e1; display: flex; flex-direction: column; gap: 3px; align-items: flex-end; margin-bottom: 2px;">
               <div>${this._t('grid_import')} <span id="gridImportDaily" style="color: #38bdf8; font-weight: 700;">3,10 kWh</span></div>
+              <div id="gridCostDailyRow" style="font-size: 11px; display: none; margin-top: -1px; text-align: right;">
+                <span id="gridCostDailyVal" style="color: #38bdf8; font-weight: 700;">~0.00 грн</span>
+                <span id="gridCostSplitVal" style="color: #64748b; font-size: 10px; margin-left: 2px;"></span>
+              </div>
               <div>${this._t('grid_export')} <span id="gridExportDaily" style="color: #34d399; font-weight: 700;">4,80 kWh</span></div>
+              <div id="gridExportIncomeRow" style="font-size: 11px; display: none; margin-top: -1px; text-align: right;">
+                <span id="gridExportIncomeVal" style="color: #34d399; font-weight: 700;">+0.00 грн</span>
+              </div>
+            </div>
+
+            <!-- Active Tariff Badge -->
+            <div id="gridTariffBadgeContainer" style="display: flex; justify-content: flex-end; margin-bottom: 3px;">
+              <div class="es-mono" id="gridTariffBadge" style="font-size: 10px; font-weight: 700; border-radius: 9999px; padding: 2px 8px; display: none; align-items: center; gap: 4px;"></div>
             </div>
 
             <!-- 1. Grid Node (Мережа) -->
@@ -1820,11 +1872,14 @@ export class EnergyStationCard extends HTMLElement {
               </div>
             </div>
 
-            <!-- Right Telemetry ('До резерву 20%' and progress bar removed as requested) -->
+            <!-- Right Telemetry -->
             <div class="es-bat-hub-right-col es-mono" style="font-size: 12px; display: flex; flex-direction: column; gap: 3px;">
-              <div id="batVoltVal" style="color: #6ee7b7; font-weight: 700;">53,24 V</div>
+              <div style="display: flex; align-items: center; justify-content: flex-start; gap: 8px;">
+                <span id="batVoltVal" style="color: #6ee7b7; font-weight: 700;">53,24 V</span>
+                <span id="batMasterTempBadge" style="color: #fdba74; font-size: 11px; font-weight: 600; cursor: pointer;" title="Температура АКБ">🌡️ <span id="batMasterTempVal">25,0</span>°C</span>
+              </div>
               <div id="batCurrentVal" style="color: #38bdf8; font-weight: 700;">-56,30 A</div>
-              <div id="batCapacityVal" style="color: #f1f5f9; font-weight: 600;">9,00 kWh</div>
+              <div id="batCapacityVal" style="color: #f1f5f9; font-weight: 600;" title="Залишок ємності АКБ / Номінальна ємність">~10,40 kWh (13,00 kWh)</div>
             </div>
           </div>
 
@@ -1872,11 +1927,18 @@ export class EnergyStationCard extends HTMLElement {
       dailySolarYield: root.getElementById('dailySolarYield'),
       targetSolarYield: root.getElementById('targetSolarYield'),
       solarProgressBar: root.getElementById('solarProgressBar'),
+      solarSavingsDaily: root.getElementById('solarSavingsDaily'),
       totalPvPowerBadge: root.getElementById('totalPvPowerBadge'),
       solarFlowCollector: root.getElementById('solarFlowCollector'),
 
       gridImportDaily: root.getElementById('gridImportDaily'),
+      gridCostDailyRow: root.getElementById('gridCostDailyRow'),
+      gridCostDailyVal: root.getElementById('gridCostDailyVal'),
+      gridCostSplitVal: root.getElementById('gridCostSplitVal'),
+      gridTariffBadge: root.getElementById('gridTariffBadge'),
       gridExportDaily: root.getElementById('gridExportDaily'),
+      gridExportIncomeRow: root.getElementById('gridExportIncomeRow'),
+      gridExportIncomeVal: root.getElementById('gridExportIncomeVal'),
       gridPowerVal: root.getElementById('gridPowerVal'),
       gridDirectionLabel: root.getElementById('gridDirectionLabel'),
       carPowerVal: root.getElementById('carPowerVal'),
@@ -1919,6 +1981,8 @@ export class EnergyStationCard extends HTMLElement {
       masterBatteryFlowHint: root.getElementById('masterBatteryFlowHint'),
       batVoltVal: root.getElementById('batVoltVal'),
       batCurrentVal: root.getElementById('batCurrentVal'),
+      batMasterTempVal: root.getElementById('batMasterTempVal'),
+      batMasterTempBadge: root.getElementById('batMasterTempBadge'),
       batReserveSoc: root.getElementById('batReserveSoc'),
       batReserveProgressBar: root.getElementById('batReserveProgressBar'),
       batCapacityVal: root.getElementById('batCapacityVal'),
@@ -2080,14 +2144,19 @@ export class EnergyStationCard extends HTMLElement {
     const count = c.battery?.parallel_batteries || (c.battery?.modules?.length || 2);
     const defaultSocs = [82, 76, 91, 68, 85, 90, 72, 80];
     const defaultVolts = [52.40, 52.40, 52.40, 52.40, 52.40, 52.40];
+    const defaultTemps = [25.0, 21.0, 22.5, 20.0, 24.0, 19.5, 23.0, 21.5];
+    const defaultDeltas = [12, 8, 15, 9, 14, 11, 18, 10];
     const defaultPrefix = this._t('bat_prefix');
     const unitStr = this._language === 'en' ? 'kW' : 'кВт';
+    const unitKwh = this._language === 'en' ? 'kWh' : 'кВт·год';
 
     for (let i = 1; i <= count; i++) {
       const mod = c.battery?.modules?.[i - 1] || c.battery?.module_entities?.[i - 1] || {};
       const modName = mod.name || `${defaultPrefix} ${i}`;
       const soc = defaultSocs[(i - 1) % defaultSocs.length];
       const volt = defaultVolts[(i - 1) % defaultVolts.length];
+      const temp = defaultTemps[(i - 1) % defaultTemps.length];
+      const delta = defaultDeltas[(i - 1) % defaultDeltas.length];
 
       const div = document.createElement('div');
       div.className = 'es-battery-pack-card glow-battery clickable-node';
@@ -2098,9 +2167,28 @@ export class EnergyStationCard extends HTMLElement {
         <span class="es-bat-soc-val es-mono" id="batPackSoc_${i}">${soc}%</span>
         <div class="es-mono es-bat-volt" id="batPackVolt_${i}">${volt.toFixed(2).replace('.', ',')} V</div>
         <div class="es-mono es-bat-power" id="batPackPower_${i}" style="font-size: 12px; font-weight: 800; color: #34d399; margin-top: 2px;">0.00 ${unitStr}</div>
+
+        <!-- Telemetry Row: Temperature & Cell Delta -->
+        <div class="es-mono es-bat-telemetry-row">
+          <span id="batPackTemp_${i}" style="color: #fdba74; font-weight: 600; display: inline-flex; align-items: center; gap: 1px; cursor: pointer;" title="Температура осередків">🌡️<span id="batPackTempVal_${i}">${temp.toFixed(1)}</span>°C</span>
+          <span id="batPackDelta_${i}" class="es-bat-delta-badge" style="font-weight: 700; font-size: 10px; padding: 1px 4px; border-radius: 4px; background: rgba(52, 211, 153, 0.12); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.25); cursor: pointer;" title="Розбаланс осередків (Cell Delta)">Δ <span id="batPackDeltaVal_${i}">${delta} mV</span></span>
+        </div>
+
+        <!-- Approximate Remaining Capacity -->
+        <div class="es-mono es-bat-kwh" id="batPackKwh_${i}" style="font-size: 11px; font-weight: 600; color: #94a3b8; margin-top: 3px;" title="Залишок ємності">~0,00 ${unitKwh}</div>
       `;
 
-      div.addEventListener('click', () => {
+      div.addEventListener('click', (e) => {
+        if (e.target.closest(`#batPackTemp_${i}`)) {
+          const tEnt = mod.temperature_entity || mod.temp || `sensor.bms_rack${i}_temperature`;
+          this._fireMoreInfo(tEnt);
+          return;
+        }
+        if (e.target.closest(`#batPackDelta_${i}`)) {
+          const dEnt = mod.cell_delta_entity || mod.delta_entity || `sensor.bms_rack${i}_cell_delta`;
+          this._fireMoreInfo(dEnt);
+          return;
+        }
         const ent = mod.soc_entity || mod.soc || mod.voltage_entity || mod.volt || mod.current_entity || c.battery?.soc_entity;
         this._fireMoreInfo(ent);
       });
@@ -2389,6 +2477,179 @@ export class EnergyStationCard extends HTMLElement {
         const ent = mod.power_entity || mod.current_entity || mod.soc_entity || c.battery?.soc_entity;
         this._fireMoreInfo(ent);
       });
+    }
+  }
+
+  _fetchNightEndFromHa(todayStr, nightEndHour) {
+    if (this._fetchingHistoryForDate === todayStr) return;
+    const c = this._config || DEFAULT_CONFIG;
+    const gridEntity = c.grid?.import_daily_entity;
+    if (!this._hass?.callWS || !gridEntity) return;
+
+    this._fetchingHistoryForDate = todayStr;
+    const now = new Date();
+    const dStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), nightEndHour, 0, 0);
+    const dEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), nightEndHour, 15, 0);
+
+    this._hass.callWS({
+      type: 'history/history_during_period',
+      start_time: dStart.toISOString(),
+      end_time: dEnd.toISOString(),
+      entity_ids: [gridEntity],
+      no_attributes: true
+    }).then(res => {
+      const records = res?.[gridEntity];
+      if (records && records.length > 0) {
+        const val = parseFloat(records[0].state);
+        if (!isNaN(val) && val >= 0) {
+          const storageKey = `es_tariff_split_${todayStr}`;
+          let snap = {};
+          if (typeof localStorage !== 'undefined') {
+            try {
+              const cur = localStorage.getItem(storageKey);
+              if (cur) snap = JSON.parse(cur);
+            } catch (e) {}
+          }
+          snap.night_end = val;
+          if (typeof localStorage !== 'undefined') {
+            try { localStorage.setItem(storageKey, JSON.stringify(snap)); } catch (e) {}
+          }
+          if (this._hass) this._updateValues();
+        }
+      }
+    }).catch(() => {
+      // Quiet fail if HA history not enabled
+    });
+  }
+
+  _calculateTariffs(gridImportKwh, gridExportKwh, solarDailyKwh) {
+    const c = this._config || DEFAULT_CONFIG;
+    const tCfg = c.tariffs || {};
+    if (tCfg.enabled === false) {
+      if (this._nodes?.gridCostDailyRow) this._nodes.gridCostDailyRow.style.display = 'none';
+      if (this._nodes?.gridExportIncomeRow) this._nodes.gridExportIncomeRow.style.display = 'none';
+      if (this._nodes?.gridTariffBadge) this._nodes.gridTariffBadge.style.display = 'none';
+      if (this._nodes?.solarSavingsDaily) this._nodes.solarSavingsDaily.style.display = 'none';
+      return;
+    }
+
+    const currency = tCfg.currency || 'грн';
+    const dayRate = typeof tCfg.day_rate === 'number' ? tCfg.day_rate : 4.32;
+    const nightRate = typeof tCfg.night_rate === 'number' ? tCfg.night_rate : 2.16;
+    const exportRate = typeof tCfg.export_rate === 'number' ? tCfg.export_rate : 5.30;
+    const nightStart = typeof tCfg.night_start_hour === 'number' ? tCfg.night_start_hour : 23;
+    const nightEnd = typeof tCfg.night_end_hour === 'number' ? tCfg.night_end_hour : 7;
+
+    const now = new Date();
+    const curHour = now.getHours() + (now.getMinutes() / 60);
+
+    // Is it currently Night tariff?
+    const isNight = (nightStart > nightEnd)
+      ? (curHour >= nightStart || curHour < nightEnd)
+      : (curHour >= nightStart && curHour < nightEnd);
+
+    // Active tariff badge
+    if (this._nodes?.gridTariffBadge && tCfg.show_active_badge !== false) {
+      const activeRate = isNight ? nightRate : dayRate;
+      const activeLabel = isNight ? this._t('tariff_night') : this._t('tariff_day');
+      const icon = isNight ? '🌙' : '☀️';
+      const badgeBg = isNight ? 'rgba(99, 102, 241, 0.15)' : 'rgba(245, 158, 11, 0.15)';
+      const badgeBorder = isNight ? 'rgba(129, 140, 248, 0.35)' : 'rgba(251, 191, 36, 0.35)';
+      const badgeColor = isNight ? '#a5b4fc' : '#fbbf24';
+
+      this._nodes.gridTariffBadge.style.background = badgeBg;
+      this._nodes.gridTariffBadge.style.border = `1px solid ${badgeBorder}`;
+      this._nodes.gridTariffBadge.style.color = badgeColor;
+      this._nodes.gridTariffBadge.innerText = `${icon} ${activeLabel}: ${activeRate.toFixed(2)} ${currency}`;
+      this._nodes.gridTariffBadge.style.display = 'inline-flex';
+    } else if (this._nodes?.gridTariffBadge) {
+      this._nodes.gridTariffBadge.style.display = 'none';
+    }
+
+    // Solar savings
+    if (this._nodes?.solarSavingsDaily && tCfg.show_solar_savings !== false && solarDailyKwh > 0) {
+      const savedAmount = solarDailyKwh * dayRate;
+      this._nodes.solarSavingsDaily.innerText = `💰 ${this._t('solar_saved')}: ~${savedAmount.toFixed(2)} ${currency}`;
+      this._nodes.solarSavingsDaily.style.display = 'block';
+    } else if (this._nodes?.solarSavingsDaily) {
+      this._nodes.solarSavingsDaily.style.display = 'none';
+    }
+
+    // Export income (Зелений Тариф)
+    if (this._nodes?.gridExportIncomeRow && tCfg.show_export_income !== false && typeof gridExportKwh === 'number' && gridExportKwh > 0) {
+      const exportIncome = gridExportKwh * exportRate;
+      if (this._nodes.gridExportIncomeVal) {
+        this._nodes.gridExportIncomeVal.innerText = `+${exportIncome.toFixed(2)} ${currency}`;
+      }
+      this._nodes.gridExportIncomeRow.style.display = 'block';
+    } else if (this._nodes?.gridExportIncomeRow) {
+      this._nodes.gridExportIncomeRow.style.display = 'none';
+    }
+
+    // Grid daily cost calculation
+    if (typeof gridImportKwh !== 'number' || isNaN(gridImportKwh) || gridImportKwh < 0) {
+      if (this._nodes?.gridCostDailyRow) this._nodes.gridCostDailyRow.style.display = 'none';
+      return;
+    }
+
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const storageKey = `es_tariff_split_${todayStr}`;
+    let snapshot = {};
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(storageKey);
+        if (stored) snapshot = JSON.parse(stored);
+      } catch (e) {}
+    }
+
+    let nightKwh = 0;
+    let dayKwh = 0;
+
+    if (curHour < nightEnd) {
+      // Early morning (00:00 - 07:00): 100% night energy
+      nightKwh = gridImportKwh;
+      dayKwh = 0;
+      snapshot.night_end = gridImportKwh;
+      if (typeof localStorage !== 'undefined') {
+        try { localStorage.setItem(storageKey, JSON.stringify(snapshot)); } catch (e) {}
+      }
+    } else if (curHour >= nightEnd && curHour < nightStart) {
+      // Daytime (07:00 - 23:00)
+      if (typeof snapshot.night_end === 'number' && snapshot.night_end <= gridImportKwh) {
+        nightKwh = snapshot.night_end;
+        dayKwh = Math.max(0, gridImportKwh - nightKwh);
+      } else {
+        // Query HA history for 07:00 checkpoint or fallback to time proportion
+        this._fetchNightEndFromHa(todayStr, nightEnd);
+        const nightPortion = Math.min(1.0, nightEnd / curHour);
+        nightKwh = gridImportKwh * nightPortion;
+        dayKwh = Math.max(0, gridImportKwh - nightKwh);
+      }
+      snapshot.day_end = gridImportKwh;
+      if (typeof localStorage !== 'undefined') {
+        try { localStorage.setItem(storageKey, JSON.stringify(snapshot)); } catch (e) {}
+      }
+    } else {
+      // Late night (23:00 - 24:00)
+      const nightEndVal = typeof snapshot.night_end === 'number' ? snapshot.night_end : (gridImportKwh * (nightEnd / curHour));
+      const dayEndVal = typeof snapshot.day_end === 'number' ? snapshot.day_end : gridImportKwh;
+      dayKwh = Math.max(0, dayEndVal - nightEndVal);
+      const extraNight = Math.max(0, gridImportKwh - dayEndVal);
+      nightKwh = nightEndVal + extraNight;
+    }
+
+    const totalCost = (nightKwh * nightRate) + (dayKwh * dayRate);
+
+    if (this._nodes?.gridCostDailyRow && tCfg.show_daily_cost !== false) {
+      if (this._nodes.gridCostDailyVal) {
+        this._nodes.gridCostDailyVal.innerText = `~${totalCost.toFixed(2)} ${currency}`;
+      }
+      if (this._nodes.gridCostSplitVal) {
+        this._nodes.gridCostSplitVal.innerText = `(🌙 ${nightKwh.toFixed(1)} + ☀️ ${dayKwh.toFixed(1)})`;
+      }
+      this._nodes.gridCostDailyRow.style.display = 'block';
+    } else if (this._nodes?.gridCostDailyRow) {
+      this._nodes.gridCostDailyRow.style.display = 'none';
     }
   }
 
@@ -2839,6 +3100,9 @@ export class EnergyStationCard extends HTMLElement {
     const sGridExport = this._getEntityState(c.grid?.export_daily_entity);
     this._nodes.gridExportDaily.innerText = sGridExport ? `${sGridExport.val.toFixed(2)} kWh` : '0.00 kWh';
 
+    // Calculate & render dual-zone tariffs, grid costs and export income
+    this._calculateTariffs(sGridImport ? sGridImport.val : 0, sGridExport ? sGridExport.val : 0, dailyKwh);
+
     // Non-essential & Car (Hidden by default unless entity configured or show explicitly enabled)
     const nonEssNode = this.shadowRoot.getElementById('nonEssentialNode');
     const showNonEss = Boolean(c.grid?.show_non_essential && c.grid?.non_essential_power_entity) || (c.grid?.show_non_essential !== false && Boolean(c.grid?.non_essential_power_entity));
@@ -3043,10 +3307,25 @@ export class EnergyStationCard extends HTMLElement {
 
     const sCap = this._getEntityState(c.battery?.capacity_entity || 'sensor.inverter_12_kvt_battery_capacity');
     const invCapVal = (sCap && !isNaN(sCap.val)) ? sCap.val : null;
+    const totalCap = (invCapVal !== null && invCapVal <= 40) ? invCapVal : totalModulesCapacity;
+
+    // Remaining capacity based on master battery SOC
+    const sBatSoc = this._getEntityState(c.battery?.soc_entity || 'sensor.deye_12k_inverter_battery_soc');
+    const masterSocNum = sBatSoc ? sBatSoc.val : 80.0;
+    const remainingCap = totalCap * (masterSocNum / 100.0);
+    const unitKwh = this._language === 'en' ? 'kWh' : 'кВт·год';
 
     if (this._nodes.batCapacityVal) {
-      const capVal = invCapVal !== null ? invCapVal : totalModulesCapacity;
-      this._nodes.batCapacityVal.innerText = `${capVal.toFixed(2).replace('.', ',')} kWh`;
+      this._nodes.batCapacityVal.innerHTML = `<span title="Залишок ємності / Номінальна ємність">~${remainingCap.toFixed(2).replace('.', ',')} ${unitKwh} <span style="color: #94a3b8; font-size: 10px; font-weight: normal;">(${totalCap.toFixed(1).replace('.', ',')})</span></span>`;
+    }
+
+    // Master Battery Temperature
+    const sBatTemp = this._getEntityState(c.battery?.temperature_entity || 'sensor.deye_12k_inverter_battery_temperature') ||
+                     this._getEntityState('sensor.inverter_12_kvt_battery_temperature') ||
+                     this._getEntityState('sensor.solarman_battery_temperature');
+    const masterTempNum = sBatTemp ? sBatTemp.val : 25.0;
+    if (this._nodes.batMasterTempVal) {
+      this._nodes.batMasterTempVal.innerText = `${masterTempNum.toFixed(1).replace('.', ',')}`;
     }
 
     const chgEnt = c.battery?.charge_daily_entity;
@@ -3076,7 +3355,7 @@ export class EnergyStationCard extends HTMLElement {
       this._nodes.batDischargeDaily.innerText = sBatDis ? `${sBatDis.val.toFixed(2)} kWh` : (this._hass ? '0.00 kWh' : '6,10 kWh');
     }
 
-    // Battery modules (SOC, Current, Voltage, Power, Temperature)
+    // Battery modules (SOC, Current, Voltage, Power, Temperature, Cell Delta, Remaining Capacity)
     const batModulesData = [];
     for (let i = 1; i <= batCount; i++) {
       const packSoc = this.shadowRoot.getElementById(`batPackSoc_${i}`);
@@ -3084,6 +3363,8 @@ export class EnergyStationCard extends HTMLElement {
       const packCurr = this.shadowRoot.getElementById(`batPackCurr_${i}`);
       const packPower = this.shadowRoot.getElementById(`batPackPower_${i}`);
       const packTempVal = this.shadowRoot.getElementById(`batPackTempVal_${i}`);
+      const packDelta = this.shadowRoot.getElementById(`batPackDelta_${i}`);
+      const packDeltaVal = this.shadowRoot.getElementById(`batPackDeltaVal_${i}`);
       const packTag = this.shadowRoot.getElementById(`batPackStateTag_${i}`);
       const packKwh = this.shadowRoot.getElementById(`batPackKwh_${i}`);
 
@@ -3098,18 +3379,48 @@ export class EnergyStationCard extends HTMLElement {
       const voltEnt = mod.voltage_entity || mod.volt || `sensor.bms_rack${i}_voltage`;
       const pwrEnt = mod.power_entity || `sensor.bms_rack${i}_power`;
       const tempEnt = mod.temperature_entity || mod.temp || `sensor.bms_rack${i}_temperature`;
+      const deltaEnt = mod.cell_delta_entity || mod.delta_entity || `sensor.bms_rack${i}_cell_delta`;
 
       const sModSoc = this._getEntityState(socEnt);
       const sModCurr = this._getEntityState(currEnt);
       const sModVolt = this._getEntityState(voltEnt);
       const sModPwr = this._getEntityState(pwrEnt);
       const sModTemp = this._getEntityState(tempEnt);
+      let sModDelta = this._getEntityState(deltaEnt);
+      if (!sModDelta) {
+        sModDelta = this._getEntityState(`sensor.bms_rack${i}_delta_cell_voltage`) ||
+                    this._getEntityState(`sensor.bms_rack${i}_cell_difference`);
+      }
 
-      // Values with realistic fallbacks matching user setup (82% / 85%, 54.1V / 54.0V, 18.4A / 25.2A, 38.2° / 21.0°)
+      // Check max/min cell voltage if delta entity is not direct
+      if (!sModDelta && (mod.max_cell_voltage_entity || mod.min_cell_voltage_entity)) {
+        const sMax = this._getEntityState(mod.max_cell_voltage_entity);
+        const sMin = this._getEntityState(mod.min_cell_voltage_entity);
+        if (sMax && sMin) {
+          const diffV = Math.abs(sMax.val - sMin.val);
+          sModDelta = { val: diffV < 1.0 ? Math.round(diffV * 1000) : diffV, unit: 'mV' };
+        }
+      }
+
+      // Values with realistic fallbacks matching user setup (82% / 85%, 54.1V / 54.0V, 18.4A / 25.2A, 36.5° / 21.0°, 12 mV / 8 mV)
       const socNum = sModSoc ? sModSoc.val : (i === 1 ? 82 : (i === 2 ? 85 : 75));
       const voltNum = sModVolt ? sModVolt.val : (i === 1 ? 54.1 : (i === 2 ? 54.0 : 52.4));
       const currNum = sModCurr ? sModCurr.val : (i === 1 ? 18.4 : (i === 2 ? 25.2 : 8.2));
-      const tempNum = sModTemp ? sModTemp.val : (i === 1 ? 38.2 : (i === 2 ? 21.0 : 21.5));
+      const tempNum = sModTemp ? sModTemp.val : (i === 1 ? 36.5 : (i === 2 ? 21.0 : 22.5));
+
+      // Calculate cell delta in mV
+      let deltaMv = null;
+      if (sModDelta) {
+        let rawVal = sModDelta.val;
+        // If reported in Volts (e.g. 0.012 V), convert to millivolts
+        if (rawVal < 1.0 && rawVal > 0) {
+          deltaMv = Math.round(rawVal * 1000);
+        } else {
+          deltaMv = Math.round(rawVal);
+        }
+      } else if (!this._hass) {
+        deltaMv = i === 1 ? 12 : (i === 2 ? 8 : 15);
+      }
 
       let kwNum = 0;
       if (sModPwr) {
@@ -3119,11 +3430,50 @@ export class EnergyStationCard extends HTMLElement {
         kwNum = (voltNum * Math.abs(currNum)) / 1000.0;
       }
 
+      // Module capacity & remaining capacity
+      const modNominalCap = mod.capacity_kwh !== undefined 
+        ? parseFloat(mod.capacity_kwh) 
+        : (i === 1 ? 7.88 : (i === 2 ? 5.12 : (totalCap / batCount)));
+      const modRemainingCap = modNominalCap * (socNum / 100.0);
+
       if (packSoc) packSoc.innerText = `${socNum.toFixed(0)}%`;
-      if (packVolt) packVolt.innerText = `${voltNum.toFixed(1)} V`;
-      if (packCurr) packCurr.innerText = `${Math.abs(currNum).toFixed(1)} A`;
-      if (packPower) packPower.innerText = `${kwNum.toFixed(2)} ${unitStr}`;
-      if (packTempVal) packTempVal.innerText = `${tempNum.toFixed(1)}`;
+      if (packVolt) packVolt.innerText = `${voltNum.toFixed(1).replace('.', ',')} V`;
+      if (packCurr) packCurr.innerText = `${Math.abs(currNum).toFixed(1).replace('.', ',')} A`;
+      if (packPower) packPower.innerText = `${kwNum.toFixed(2).replace('.', ',')} ${unitStr}`;
+      if (packTempVal) packTempVal.innerText = `${tempNum.toFixed(1).replace('.', ',')}`;
+
+      // Update Cell Delta
+      if (packDeltaVal) {
+        if (deltaMv !== null && !isNaN(deltaMv)) {
+          packDeltaVal.innerText = `${deltaMv} mV`;
+          if (packDelta) {
+            packDelta.style.display = 'inline-flex';
+            if (deltaMv <= 25) {
+              // Perfect balance (Green)
+              packDelta.style.color = '#34d399';
+              packDelta.style.background = 'rgba(52, 211, 153, 0.12)';
+              packDelta.style.borderColor = 'rgba(52, 211, 153, 0.3)';
+            } else if (deltaMv <= 50) {
+              // Slight unbalance (Amber)
+              packDelta.style.color = '#fbbf24';
+              packDelta.style.background = 'rgba(251, 191, 36, 0.12)';
+              packDelta.style.borderColor = 'rgba(251, 191, 36, 0.3)';
+            } else {
+              // High unbalance / Warning (Red)
+              packDelta.style.color = '#f87171';
+              packDelta.style.background = 'rgba(248, 113, 113, 0.16)';
+              packDelta.style.borderColor = 'rgba(248, 113, 113, 0.4)';
+            }
+          }
+        } else {
+          if (packDelta) packDelta.style.display = 'none';
+        }
+      }
+
+      // Update Pack Remaining Capacity
+      if (packKwh) {
+        packKwh.innerText = `~${modRemainingCap.toFixed(2).replace('.', ',')} ${unitKwh}`;
+      }
 
       // State: Charge (GREEN) or Discharge (RED).
       let isChg = false;
@@ -3190,13 +3540,6 @@ export class EnergyStationCard extends HTMLElement {
       }
       if (packCurr) {
         packCurr.style.color = isChg ? '#38bdf8' : '#f87171';
-      }
-
-      // Remaining kWh calculated from individual battery module capacity_kwh
-      const modCap = mod.capacity_kwh !== undefined ? parseFloat(mod.capacity_kwh) : ((c.battery?.capacity_kwh || 10.0) / batCount);
-      const remKwh = (modCap * (socNum / 100.0)).toFixed(2);
-      if (packKwh) {
-        packKwh.innerText = `${remKwh} kWh`;
       }
 
       // Level bars lighting based on SOC and state (GREEN on charge, RED on discharge)
