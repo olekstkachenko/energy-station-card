@@ -356,6 +356,61 @@ test('Energy Station Card - Theme & Language Customization', async (t) => {
     assert.strictEqual(domMap.totalPvCapTotal.innerText, '(з 15,0 кВтп)');
   });
 
+  await t.test('end-to-end DOM verification: matches physical Deye LCD 13:09:24 ground truth', () => {
+    const card = new EnergyStationCard();
+    card._config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    card._config.grid.selling_enabled = true; // User had export enabled
+    card._config.load.essential_power_entity = 'sensor.deye_12k_inverter_load_power';
+    card._config.grid.power_entity = 'sensor.deye_12k_inverter_total_grid_power';
+    card._language = 'uk';
+
+    const domMap = {};
+    card._nodes = new Proxy(domMap, {
+      get: (target, prop) => {
+        if (!(prop in target)) target[prop] = dummyNode();
+        return target[prop];
+      }
+    });
+
+    card.shadowRoot.getElementById = (id) => {
+      if (!domMap[id]) domMap[id] = dummyNode();
+      return domMap[id];
+    };
+
+    // Scenario 1: Only internal inverter grid port is mapped in HA (-1358 W)
+    card._hass = {
+      states: {
+        'sensor.deye_12k_inverter_pv1_power': { state: '1500', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_12k_inverter_pv2_power': { state: '1451', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_12k_inverter_pv3_power': { state: '0', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_12k_inverter_total_grid_power': { state: '-1358', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_12k_inverter_load_power': { state: '1358', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_12k_inverter_battery_power': { state: '-1430', attributes: { unit_of_measurement: 'W' } }
+      }
+    };
+
+    card._updateValues();
+
+    // 1. House Load (Гарантоване) MUST display the true house load: 1.358 кВт (NEVER 0.116 кВт!)
+    assert.strictEqual(domMap.essentialPowerVal.innerText, '1.358 кВт');
+
+    // 2. Grid MUST NOT display fake export of 1.358 кВт!
+    assert.notStrictEqual(domMap.gridPowerVal.innerText, '1.358 кВт');
+    assert.notStrictEqual(domMap.gridDirectionLabel.innerText, '← Експорт');
+    assert.strictEqual(domMap.gridPowerVal.innerText, '0.000 кВт');
+    assert.strictEqual(domMap.gridDirectionLabel.innerText, 'Мережа');
+
+    // Scenario 2: External CT sensor is present in HA (reports 30 W import from street)
+    card._hass.states['sensor.deye_12k_inverter_external_power'] = { state: '30', attributes: { unit_of_measurement: 'W' } };
+
+    card._updateValues();
+
+    // House load remains 1.358 кВт
+    assert.strictEqual(domMap.essentialPowerVal.innerText, '1.358 кВт');
+    // Grid displays 0.030 кВт
+    assert.strictEqual(domMap.gridPowerVal.innerText, '0.030 кВт');
+  });
+
 });
 
 

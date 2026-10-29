@@ -764,6 +764,14 @@ export class EnergyStationCardEditor extends HTMLElement {
           </div>
 
           <div class="field-row">
+            <label>Зовнішній лічильник мережі (External CT / Smart Meter, опціонально):</label>
+            <input type="text" id="gridExternalPower" value="${c.grid?.external_power_entity || ''}" placeholder="sensor.deye_12k_inverter_external_power або sensor.solarman_grid_external_power">
+            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
+              Трансформатор струму (CT) на вводі з вулиці. Відображає реальний перетік на стовпі (напр. 30 Вт в режимі Zero Export).
+            </div>
+          </div>
+
+          <div class="field-row">
             <label>Знак потужності (Напрямок перетоку за сенсором):</label>
             <select id="gridPowerSign">
               <option value="deye" ${c.grid?.power_sign !== 'inverted' ? 'selected' : ''}>Стандарт Deye / Sunsynk / Solarman (+ Імпорт, - Експорт)</option>
@@ -1339,6 +1347,7 @@ export class EnergyStationCardEditor extends HTMLElement {
 
     bindCheckbox('gridSellingEnabled', 'grid.selling_enabled');
     bindInput('gridPower', 'grid.power_entity');
+    bindInput('gridExternalPower', 'grid.external_power_entity');
     bindInput('gridVoltage', 'grid.voltage_entity');
     bindInput('gridStatus', 'grid.status_entity');
     bindNumber('gridVoltageThreshold', 'grid.voltage_threshold');

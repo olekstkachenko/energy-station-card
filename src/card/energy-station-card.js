@@ -3136,8 +3136,192 @@ export class EnergyStationCard extends HTMLElement {
       }
     }
 
-    // 3. Grid
-    const sGridPower = this._getEntityState(c.grid?.power_entity);
+    // 3. Subloads, Non-essential & Car Loads
+    const nonEssNode = this.shadowRoot.getElementById('nonEssentialNode');
+    const showNonEss = Boolean(c.grid?.show_non_essential && c.grid?.non_essential_power_entity) || (c.grid?.show_non_essential !== false && Boolean(c.grid?.non_essential_power_entity));
+    let nonEssKw = 0;
+    if (nonEssNode) {
+      if (showNonEss) {
+        nonEssNode.classList.remove('hidden');
+        const sNonEss = this._getEntityState(c.grid.non_essential_power_entity);
+        const nonEssFormatted = this._formatPower(sNonEss, 0);
+        nonEssKw = nonEssFormatted.kw;
+        if (this._nodes.nonEssentialPowerVal) {
+          this._nodes.nonEssentialPowerVal.innerText = nonEssFormatted.str;
+        }
+      } else {
+        nonEssNode.classList.add('hidden');
+      }
+    }
+
+    const carNode = this.shadowRoot.getElementById('carNode');
+    const showCar = Boolean(c.grid?.show_car && c.grid?.car_power_entity) || (c.grid?.show_car !== false && Boolean(c.grid?.car_power_entity));
+    let carKw = 0;
+    if (carNode) {
+      if (showCar) {
+        carNode.classList.remove('hidden');
+        const sCar = this._getEntityState(c.grid.car_power_entity);
+        const carFormatted = this._formatPower(sCar, 0);
+        carKw = carFormatted.kw;
+        if (this._nodes.carPowerVal) {
+          this._nodes.carPowerVal.innerText = carFormatted.str;
+        }
+      } else {
+        carNode.classList.add('hidden');
+      }
+    }
+
+    // Subloads - calculate first so minimum essential load is known
+    let subloadsTotalKw = 0;
+    (c.load?.subloads || []).forEach((sub, idx) => {
+      const subVal = this.shadowRoot.getElementById(`subloadVal_${idx}`);
+      const sSub = this._getEntityState(sub.entity);
+      const formatted = this._formatPower(sSub, 0);
+      subloadsTotalKw += formatted.kw;
+      if (subVal) {
+        subVal.innerText = formatted.str;
+      }
+    });
+
+    // 4. Battery System
+    const sSoc = this._getEntityState(c.battery?.soc_entity);
+    const socVal = sSoc ? sSoc.val : 80.0;
+    this._nodes.masterBatterySoc.innerText = `${socVal.toFixed(1)}%`;
+    this._nodes.masterBatterySoc.style.fontSize = '15px';
+    this._nodes.masterBatterySoc.style.fontWeight = '700';
+
+    const sBatPower = this._getEntityState(c.battery?.power_entity);
+    const sBatCurr = this._getEntityState(c.battery?.current_entity);
+    const rawBatKw = sBatPower ? (sBatPower.unit === 'W' ? sBatPower.val / 1000 : sBatPower.val) : 0;
+    const batPowerSign = c.battery?.power_sign || (c.battery?.invert_power ? 'standard' : 'deye');
+
+    let isCharging = false;
+    let isDischarging = false;
+    const absBatKw = Math.abs(rawBatKw);
+    const batThresholdKw = 0.02; // 20 W
+
+    if (absBatKw >= batThresholdKw) {
+      if (batPowerSign === 'deye') {
+        // Deye standard: Negative (-) = Charging into battery, Positive (+) = Discharging
+        if (rawBatKw < 0) {
+          isCharging = true;
+        } else {
+          isDischarging = true;
+        }
+      } else {
+        // Standard: Positive (+) = Charging, Negative (-) = Discharging
+        if (rawBatKw > 0) {
+          isCharging = true;
+        } else {
+          isDischarging = true;
+        }
+      }
+    } else if (sBatCurr && Math.abs(sBatCurr.val) >= 0.3) {
+      if (batPowerSign === 'deye') {
+        if (sBatCurr.val < 0) isCharging = true;
+        else isDischarging = true;
+      } else {
+        if (sBatCurr.val > 0) isCharging = true;
+        else isDischarging = true;
+      }
+    }
+
+    this._isCharging = isCharging;
+    this._isDischarging = isDischarging;
+    const batInKw = isCharging ? absBatKw : 0;
+    const batOutKw = isDischarging ? absBatKw : 0;
+
+    if (this._nodes.masterBatteryFlowHint) {
+      let stateText = this._t('bat_idle');
+      let stateColor = '#94a3b8';
+      if (isCharging) {
+        stateText = this._t('bat_dir_charge');
+        stateColor = '#34d399';
+      } else if (isDischarging) {
+        stateText = this._t('bat_dir_discharge');
+        stateColor = '#f87171';
+      }
+      this._nodes.masterBatteryFlowHint.innerHTML = `<span style="font-size: 20px; font-weight: 900; color: #f8fafc;">${absBatKw.toFixed(3)} ${unitStr}</span> <span style="color: #64748b; margin: 0 4px;">•</span> <span style="color: ${stateColor}; font-weight: 700; font-size: 14px;">${stateText}</span>`;
+    }
+
+    const sBatVolt = this._getEntityState(c.battery?.voltage_entity);
+    const vStr = sBatVolt ? sBatVolt.val.toFixed(2) : '53.24';
+    const cStr = sBatCurr ? sBatCurr.val.toFixed(2) : '-56.30';
+    if (this._nodes.batVoltVal) this._nodes.batVoltVal.innerText = `${vStr.replace('.', ',')} V`;
+    if (this._nodes.batCurrentVal) this._nodes.batCurrentVal.innerText = `${cStr.replace('.', ',')} A`;
+    if (this._nodes.batReserveSoc) this._nodes.batReserveSoc.innerText = c.battery?.reserve_soc !== undefined ? c.battery.reserve_soc : 20;
+    if (this._nodes.batReserveProgressBar) {
+      const rSoc = c.battery?.reserve_soc !== undefined ? c.battery.reserve_soc : 20;
+      this._nodes.batReserveProgressBar.style.width = `${rSoc}%`;
+    }
+
+    // 5. Read House Load Sensor (Essential Load)
+    let sEss = this._getEntityState(c.load?.essential_power_entity);
+    if (!sEss && (!c.load?.essential_power_entity || c.load?.essential_power_entity === 'sensor.deye_12k_inverter_essential_load_power' || c.load?.essential_power_entity === 'sensor.deye_12k_inverter_load_power')) {
+      sEss = this._getEntityState('sensor.deye_12k_inverter_load_power') ||
+             this._getEntityState('sensor.deye_12k_inverter_essential_load_power') ||
+             this._getEntityState('sensor.load_power') ||
+             this._getEntityState('sensor.solarman_essential_load');
+    }
+    const rawSensorKw = (sEss && typeof sEss.val === 'number' && !isNaN(sEss.val))
+      ? Math.max(0, sEss.unit === 'W' ? sEss.val / 1000 : sEss.val)
+      : 0;
+    const hasValidPositiveSensor = Boolean(sEss && rawSensorKw > 0);
+
+    // 6. Grid Power Resolution & Disambiguation
+    // Try resolving an external CT / meter sensor first (measuring the street grid boundary)
+    let sGridPower = null;
+    let isExternalCt = false;
+
+    if (c.grid?.external_power_entity) {
+      sGridPower = this._getEntityState(c.grid.external_power_entity);
+      if (sGridPower && typeof sGridPower.val === 'number' && !isNaN(sGridPower.val)) {
+        isExternalCt = true;
+      }
+    }
+
+    if (!sGridPower) {
+      const candidateExternalEntities = [
+        'sensor.deye_12k_inverter_external_power',
+        'sensor.deye_12k_inverter_external_ct_power',
+        'sensor.deye_12k_inverter_external_ct_total_power',
+        'sensor.deye_12k_inverter_grid_external_power',
+        'sensor.solarman_grid_external_power',
+        'sensor.solarman_external_power',
+        'sensor.solarman_total_grid_external_power',
+        'sensor.sunsynk_external_grid_power',
+        'sensor.sunsynk_grid_external_power',
+        'sensor.external_power',
+        'sensor.grid_external_power'
+      ];
+      for (const ent of candidateExternalEntities) {
+        const sCand = this._getEntityState(ent);
+        if (sCand && typeof sCand.val === 'number' && !isNaN(sCand.val)) {
+          sGridPower = sCand;
+          isExternalCt = true;
+          break;
+        }
+      }
+    }
+
+    if (!sGridPower) {
+      // Check 3-phase external CT sum (L1 + L2 + L3)
+      const p1 = this._getEntityState('sensor.deye_12k_inverter_external_ct_l1_power') || this._getEntityState('sensor.solarman_external_power_l1');
+      const p2 = this._getEntityState('sensor.deye_12k_inverter_external_ct_l2_power') || this._getEntityState('sensor.solarman_external_power_l2');
+      const p3 = this._getEntityState('sensor.deye_12k_inverter_external_ct_l3_power') || this._getEntityState('sensor.solarman_external_power_l3');
+      if (p1 && p2 && p3 && !isNaN(p1.val) && !isNaN(p2.val) && !isNaN(p3.val)) {
+        const sumVal = (p1.unit === 'kW' ? p1.val * 1000 : p1.val) +
+                       (p2.unit === 'kW' ? p2.val * 1000 : p2.val) +
+                       (p3.unit === 'kW' ? p3.val * 1000 : p3.val);
+        sGridPower = { val: sumVal, unit: 'W', raw: String(sumVal) };
+        isExternalCt = true;
+      }
+    }
+
+    if (!sGridPower) {
+      sGridPower = this._getEntityState(c.grid?.power_entity);
+    }
+
     const rawGridKw = sGridPower ? (sGridPower.unit === 'W' ? sGridPower.val / 1000 : sGridPower.val) : 0;
     const powerSign = c.grid?.power_sign || (c.grid?.invert_power ? 'inverted' : 'deye');
     const sellingEnabled = c.grid?.selling_enabled === true;
@@ -3170,28 +3354,70 @@ export class EnergyStationCard extends HTMLElement {
       isExport = false;
       isImport = false;
     } else {
-      absGridKw = Math.abs(rawGridKw);
-      if (absGridKw >= thresholdKw) {
-        if (powerSign === 'deye') {
-          // Deye standard: Positive (+) = Import from grid, Negative (-) = Export to grid
-          if (rawGridKw < 0) {
-            isExport = true;
+      if (isExternalCt) {
+        // Direct external CT reading at the meter boundary (e.g. 0.03 kW on Deye LCD)
+        absGridKw = Math.abs(rawGridKw);
+        if (absGridKw >= thresholdKw) {
+          if (powerSign === 'deye') {
+            if (rawGridKw < 0) isExport = true;
+            else isImport = true;
           } else {
-            isImport = true;
+            if (rawGridKw > 0) isExport = true;
+            else isImport = true;
+          }
+        }
+      } else {
+        // Inverter internal grid port (e.g. sensor.deye_12k_inverter_total_grid_power).
+        // When whole-home loads are connected to the home AC panel, power flowing from the inverter
+        // to the home panel appears as negative power at this port.
+        // It is NOT grid export unless the power leaving the port exceeds the house consumption!
+        if (powerSign === 'deye') {
+          if (rawGridKw > 0) {
+            absGridKw = rawGridKw;
+            if (absGridKw >= thresholdKw) isImport = true;
+          } else if (rawGridKw < 0) {
+            const leavingKw = Math.abs(rawGridKw);
+            const netExportKw = Math.max(0, leavingKw - rawSensorKw);
+            if (netExportKw >= thresholdKw) {
+              absGridKw = netExportKw;
+              isExport = true;
+            } else {
+              absGridKw = 0;
+              isExport = false;
+            }
           }
         } else {
-          // Inverted: Positive (+) = Export to grid, Negative (-) = Import from grid
-          if (rawGridKw > 0) {
-            isExport = true;
-          } else {
-            isImport = true;
+          if (rawGridKw < 0) {
+            absGridKw = Math.abs(rawGridKw);
+            if (absGridKw >= thresholdKw) isImport = true;
+          } else if (rawGridKw > 0) {
+            const netExportKw = Math.max(0, rawGridKw - rawSensorKw);
+            if (netExportKw >= thresholdKw) {
+              absGridKw = netExportKw;
+              isExport = true;
+            } else {
+              absGridKw = 0;
+              isExport = false;
+            }
           }
+        }
+      }
+
+      // Physical Conservation of Energy bound:
+      // Grid export cannot physically exceed surplus generation minus all internal loads
+      const maxPossibleExport = Math.max(0, totalSolarKw + totalWindKw + (auxKw > 0 ? auxKw : 0) + batOutKw - batInKw - rawSensorKw - nonEssKw - carKw);
+      if (isExport && absGridKw > (maxPossibleExport + 0.1)) {
+        absGridKw = maxPossibleExport;
+        if (absGridKw < thresholdKw) {
+          isExport = false;
+          absGridKw = 0;
         }
       }
 
       // If station does not sell to the grid (selling_enabled === false), never animate or flag export!
       if (isExport && !sellingEnabled) {
         isExport = false;
+        absGridKw = 0;
       }
     }
 
@@ -3247,168 +3473,17 @@ export class EnergyStationCard extends HTMLElement {
     // Calculate & render dual-zone tariffs, grid costs and export income
     this._calculateTariffs(sGridImport ? sGridImport.val : 0, sGridExport ? sGridExport.val : 0, dailyKwh);
 
-    // Non-essential & Car (Hidden by default unless entity configured or show explicitly enabled)
-    const nonEssNode = this.shadowRoot.getElementById('nonEssentialNode');
-    const showNonEss = Boolean(c.grid?.show_non_essential && c.grid?.non_essential_power_entity) || (c.grid?.show_non_essential !== false && Boolean(c.grid?.non_essential_power_entity));
-    let nonEssKw = 0;
-    if (nonEssNode) {
-      if (showNonEss) {
-        nonEssNode.classList.remove('hidden');
-        const sNonEss = this._getEntityState(c.grid.non_essential_power_entity);
-        const nonEssFormatted = this._formatPower(sNonEss, 0);
-        nonEssKw = nonEssFormatted.kw;
-        if (this._nodes.nonEssentialPowerVal) {
-          this._nodes.nonEssentialPowerVal.innerText = nonEssFormatted.str;
-        }
-      } else {
-        nonEssNode.classList.add('hidden');
-      }
-    }
-
-    const carNode = this.shadowRoot.getElementById('carNode');
-    const showCar = Boolean(c.grid?.show_car && c.grid?.car_power_entity) || (c.grid?.show_car !== false && Boolean(c.grid?.car_power_entity));
-    let carKw = 0;
-    if (carNode) {
-      if (showCar) {
-        carNode.classList.remove('hidden');
-        const sCar = this._getEntityState(c.grid.car_power_entity);
-        const carFormatted = this._formatPower(sCar, 0);
-        carKw = carFormatted.kw;
-        if (this._nodes.carPowerVal) {
-          this._nodes.carPowerVal.innerText = carFormatted.str;
-        }
-      } else {
-        carNode.classList.add('hidden');
-      }
-    }
-
-    // 4. Battery System
-    const sSoc = this._getEntityState(c.battery?.soc_entity);
-    const socVal = sSoc ? sSoc.val : 80.0;
-    this._nodes.masterBatterySoc.innerText = `${socVal.toFixed(1)}%`;
-    this._nodes.masterBatterySoc.style.fontSize = '15px';
-    this._nodes.masterBatterySoc.style.fontWeight = '700';
-
-    const sBatPower = this._getEntityState(c.battery?.power_entity);
-    const sBatCurr = this._getEntityState(c.battery?.current_entity);
-    const rawBatKw = sBatPower ? (sBatPower.unit === 'W' ? sBatPower.val / 1000 : sBatPower.val) : 0;
-    const batPowerSign = c.battery?.power_sign || (c.battery?.invert_power ? 'standard' : 'deye');
-
-    let isCharging = false;
-    let isDischarging = false;
-    const absBatKw = Math.abs(rawBatKw);
-    const batThresholdKw = 0.02; // 20 W
-
-    if (absBatKw >= batThresholdKw) {
-      if (batPowerSign === 'deye') {
-        // Deye standard: Negative (-) = Charging into battery, Positive (+) = Discharging
-        if (rawBatKw < 0) {
-          isCharging = true;
-        } else {
-          isDischarging = true;
-        }
-      } else {
-        // Standard: Positive (+) = Charging, Negative (-) = Discharging
-        if (rawBatKw > 0) {
-          isCharging = true;
-        } else {
-          isDischarging = true;
-        }
-      }
-    } else if (sBatCurr && Math.abs(sBatCurr.val) >= 0.3) {
-      // If power is 0 or not reported, check battery current sign
-      if (batPowerSign === 'deye') {
-        if (sBatCurr.val < 0) isCharging = true;
-        else isDischarging = true;
-      } else {
-        if (sBatCurr.val > 0) isCharging = true;
-        else isDischarging = true;
-      }
-    }
-
-    this._isCharging = isCharging;
-    this._isDischarging = isDischarging;
-
-    if (this._nodes.masterBatteryFlowHint) {
-      let stateText = this._t('bat_idle');
-      let stateColor = '#94a3b8';
-      if (isCharging) {
-        stateText = this._t('bat_dir_charge');
-        stateColor = '#34d399';
-      } else if (isDischarging) {
-        stateText = this._t('bat_dir_discharge');
-        stateColor = '#f87171';
-      }
-      this._nodes.masterBatteryFlowHint.innerHTML = `<span style="font-size: 20px; font-weight: 900; color: #f8fafc;">${absBatKw.toFixed(3)} ${unitStr}</span> <span style="color: #64748b; margin: 0 4px;">•</span> <span style="color: ${stateColor}; font-weight: 700; font-size: 14px;">${stateText}</span>`;
-    }
-
-    const sBatVolt = this._getEntityState(c.battery?.voltage_entity);
-    const vStr = sBatVolt ? sBatVolt.val.toFixed(2) : '53.24';
-    const cStr = sBatCurr ? sBatCurr.val.toFixed(2) : '-56.30';
-    if (this._nodes.batVoltVal) this._nodes.batVoltVal.innerText = `${vStr.replace('.', ',')} V`;
-    if (this._nodes.batCurrentVal) this._nodes.batCurrentVal.innerText = `${cStr.replace('.', ',')} A`;
-    if (this._nodes.batReserveSoc) this._nodes.batReserveSoc.innerText = c.battery?.reserve_soc !== undefined ? c.battery.reserve_soc : 20;
-    if (this._nodes.batReserveProgressBar) {
-      const rSoc = c.battery?.reserve_soc !== undefined ? c.battery.reserve_soc : 20;
-      this._nodes.batReserveProgressBar.style.width = `${rSoc}%`;
-    }
-
-    // 5. Inverter Self-Consumption & Essential House Loads Calculation
+    // 7. Inverter Self-Consumption & Essential House Loads Balance
     const gridInKw = isImport ? absGridKw : 0;
-    const batOutKw = isDischarging ? absBatKw : 0;
-    const totalInflowKw = totalSolarKw + totalWindKw + (auxKw > 0 ? auxKw : 0) + gridInKw + batOutKw;
-
-    const batInKw = isCharging ? absBatKw : 0;
     const gridOutKw = isExport ? absGridKw : 0;
+    const totalInflowKw = totalSolarKw + totalWindKw + (auxKw > 0 ? auxKw : 0) + gridInKw + batOutKw;
     const totalOutflowKnownKw = batInKw + gridOutKw + nonEssKw + carKw;
-
-    // Net remaining power available for House load and Inverter self-consumption
     const netAvailableKw = Math.max(0, totalInflowKw - totalOutflowKnownKw);
 
-    // Subloads - calculate first so minimum essential load is known
-    let subloadsTotalKw = 0;
-    (c.load?.subloads || []).forEach((sub, idx) => {
-      const subVal = this.shadowRoot.getElementById(`subloadVal_${idx}`);
-      const sSub = this._getEntityState(sub.entity);
-      const formatted = this._formatPower(sSub, 0);
-      subloadsTotalKw += formatted.kw;
-      if (subVal) {
-        subVal.innerText = formatted.str;
-      }
-    });
-
-    // Inverter Self-Consumption & Essential House Load
     const sSelf = this._getEntityState(c.inverter?.self_consumption_entity);
     const measuredSelfKw = (sSelf && typeof sSelf.val === 'number' && !isNaN(sSelf.val))
       ? Math.max(0, sSelf.unit === 'W' ? sSelf.val / 1000 : sSelf.val)
       : null;
-
-    let sEss = this._getEntityState(c.load?.essential_power_entity);
-    if (!sEss && (!c.load?.essential_power_entity || c.load?.essential_power_entity === 'sensor.deye_12k_inverter_essential_load_power' || c.load?.essential_power_entity === 'sensor.deye_12k_inverter_load_power')) {
-      // Auto fallback to standard Deye ESPHome / Solarman sensor names if not explicitly found
-      sEss = this._getEntityState('sensor.deye_12k_inverter_load_power') ||
-             this._getEntityState('sensor.deye_12k_inverter_essential_load_power') ||
-             this._getEntityState('sensor.load_power') ||
-             this._getEntityState('sensor.solarman_essential_load');
-    }
-
-    const rawSensorKw = (sEss && typeof sEss.val === 'number' && !isNaN(sEss.val))
-      ? Math.max(0, sEss.unit === 'W' ? sEss.val / 1000 : sEss.val)
-      : 0;
-    const hasValidPositiveSensor = Boolean(sEss && rawSensorKw > 0);
-
-    const shouldSeparateExport = c.load?.separate_export !== false;
-    const isAutoCalculateHouse = c.load?.auto_calculate !== false;
-
-    // Separate export power from the house load sensor if exporting
-    // (In Deye / Sunsynk inverters, Inverter Power / Load Power includes grid export during selling)
-    let separatedSensorKw = rawSensorKw;
-    if (shouldSeparateExport && isExport && gridOutKw > 0) {
-      if (rawSensorKw >= (gridOutKw - 0.05)) {
-        // Sensor reading contains the export power: cleanly separate it!
-        separatedSensorKw = Math.max(0, rawSensorKw - gridOutKw);
-      }
-    }
 
     const standbyWatts = (c.inverter?.standby_power !== undefined) ? c.inverter.standby_power : 100;
     const nominalLossKw = standbyWatts / 1000;
@@ -3416,18 +3491,16 @@ export class EnergyStationCard extends HTMLElement {
     let essentialKw = 0;
     let selfConsumptionKw = 0;
 
-    if (hasValidPositiveSensor && (!isAutoCalculateHouse || separatedSensorKw > 0)) {
-      // Physical sensor is valid and provides a positive distinct house load (or auto-calc is off)
-      let candidateHouseKw = Math.max(subloadsTotalKw, separatedSensorKw);
-      // Essential house load cannot physically exceed net remaining available inflow
-      candidateHouseKw = Math.min(netAvailableKw, candidateHouseKw);
-
-      essentialKw = candidateHouseKw;
+    if (hasValidPositiveSensor) {
+      // Physical sensor is valid and positive: use the measured load directly!
+      essentialKw = Math.max(subloadsTotalKw, rawSensorKw);
 
       if (measuredSelfKw !== null) {
         selfConsumptionKw = measuredSelfKw;
       } else {
-        selfConsumptionKw = Math.max(0, netAvailableKw - essentialKw);
+        // Dynamic inverter loss: Net Inflow minus all accounted loads and charging
+        const dynamicResidueKw = Math.max(0, totalInflowKw - (batInKw + gridOutKw + essentialKw + nonEssKw + carKw));
+        selfConsumptionKw = dynamicResidueKw > 0 ? dynamicResidueKw : nominalLossKw;
       }
     } else {
       // Auto-calculate from balance when sensor is missing, 0, or negative / artifact:

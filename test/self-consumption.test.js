@@ -371,42 +371,48 @@ describe('Energy Station Card - Inverter Self-Consumption & House Load Balance',
     assert.equal((essentialKw + selfConsumptionKw + batInKw).toFixed(3), gridInKw.toFixed(3), 'Full energy balance preserved');
   });
 
-  it('correctly separates grid export from house load during solar sell (exact user screenshot scenario)', () => {
-    // User scenario from screenshot:
-    // PV Generation: 3.698 kW
-    // Battery Charging: 1.574 kW
-    // Grid Export: 1.918 kW
-    // Deye Load Power entity reports: 1.918 kW (1918 W) because inverter output includes export
-    // Boiler: 0.000 kW
-    const totalSolarKw = 3.698;
+  it('correctly matches physical Deye inverter screen: Solar 3.00 kW, Battery -1.43 kW, House 1.38 kW, Grid 0.03 kW (Zero Export)', () => {
+    // Exact user scenario from physical Deye 12K LCD screen at 13:09:24:
+    // PV Generation: 2.951 kW (3.00 kW on Deye LCD)
+    // Battery Charging: 1.430 kW (54.8V, -1.43 kW on Deye LCD)
+    // House Load: 1.358 kW (1.38 kW on Deye LCD)
+    // Grid: 0.030 kW import (0.03 kW on Deye LCD tower icon)
+    // Inverter internal grid port: -1358 W (feeding the house panel)
+    const totalSolarKw = 2.951;
     const totalWindKw = 0;
     const auxKw = 0;
-    const absGridKw = 1.918;
-    const isImport = false;
-    const isExport = true;
-    const absBatKw = 1.574;
-    const isCharging = true;
-    const isDischarging = false;
     const nonEssKw = 0;
     const carKw = 0;
     const subloadsTotalKw = 0;
 
     const c = {
+      grid: {
+        power_entity: 'sensor.deye_12k_inverter_total_grid_power',
+        external_power_entity: 'sensor.deye_12k_inverter_external_power',
+        selling_enabled: true,
+        power_sign: 'deye',
+        min_power_threshold: 50
+      },
       inverter: {
         show_self_consumption: true,
         self_consumption_entity: '',
-        standby_power: 100 // 100W nominal
+        standby_power: 100
       },
       load: {
         auto_calculate: true,
-        separate_export: true,
         essential_power_entity: 'sensor.deye_12k_inverter_load_power'
+      },
+      battery: {
+        power_sign: 'deye'
       }
     };
 
     const hass = {
       states: {
-        'sensor.deye_12k_inverter_load_power': { state: '1918', attributes: { unit_of_measurement: 'W' } }
+        'sensor.deye_12k_inverter_total_grid_power': { state: '-1358', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_12k_inverter_external_power': { state: '30', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_12k_inverter_load_power': { state: '1358', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_12k_inverter_battery_power': { state: '-1430', attributes: { unit_of_measurement: 'W' } }
       }
     };
 
@@ -417,140 +423,167 @@ describe('Energy Station Card - Inverter Self-Consumption & House Load Balance',
       return { raw: s.state, val: isNaN(val) ? 0 : val, unit: s.attributes?.unit_of_measurement || '' };
     };
 
-    // Calculation logic matching _updateValues:
-    const gridInKw = isImport ? absGridKw : 0;
-    const batOutKw = isDischarging ? absBatKw : 0;
-    const totalInflowKw = totalSolarKw + totalWindKw + (auxKw > 0 ? auxKw : 0) + gridInKw + batOutKw;
-
+    // 1. Battery
+    const sBatPower = getEntityState('sensor.deye_12k_inverter_battery_power');
+    const rawBatKw = sBatPower.val / 1000;
+    const isCharging = rawBatKw < 0;
+    const isDischarging = rawBatKw > 0;
+    const absBatKw = Math.abs(rawBatKw);
     const batInKw = isCharging ? absBatKw : 0;
-    const gridOutKw = isExport ? absGridKw : 0;
-    const totalOutflowKnownKw = batInKw + gridOutKw + nonEssKw + carKw;
+    const batOutKw = isDischarging ? absBatKw : 0;
 
-    const netAvailableKw = Math.max(0, totalInflowKw - totalOutflowKnownKw); // 3.698 - 3.492 = 0.206 kW
-
-    const sSelf = getEntityState(c.inverter?.self_consumption_entity);
-    const measuredSelfKw = (sSelf && typeof sSelf.val === 'number' && !isNaN(sSelf.val))
-      ? Math.max(0, sSelf.unit === 'W' ? sSelf.val / 1000 : sSelf.val)
-      : null;
-
-    let sEss = getEntityState(c.load?.essential_power_entity);
-    const rawSensorKw = (sEss && typeof sEss.val === 'number' && !isNaN(sEss.val))
-      ? Math.max(0, sEss.unit === 'W' ? sEss.val / 1000 : sEss.val)
-      : 0;
+    // 2. House Load Sensor
+    const sEss = getEntityState(c.load.essential_power_entity);
+    const rawSensorKw = sEss.val / 1000;
     const hasValidPositiveSensor = Boolean(sEss && rawSensorKw > 0);
 
-    const shouldSeparateExport = c.load?.separate_export !== false;
-    const isAutoCalculateHouse = c.load?.auto_calculate !== false;
+    // 3. Grid Resolution
+    let sGridPower = getEntityState(c.grid.external_power_entity);
+    let isExternalCt = !!sGridPower;
+    if (!sGridPower) sGridPower = getEntityState(c.grid.power_entity);
 
-    let separatedSensorKw = rawSensorKw;
-    if (shouldSeparateExport && isExport && gridOutKw > 0) {
-      if (rawSensorKw >= (gridOutKw - 0.05)) {
-        separatedSensorKw = Math.max(0, rawSensorKw - gridOutKw);
+    const rawGridKw = sGridPower.val / 1000;
+    const thresholdKw = c.grid.min_power_threshold / 1000;
+    let isExport = false;
+    let isImport = false;
+    let absGridKw = 0;
+
+    if (isExternalCt) {
+      absGridKw = Math.abs(rawGridKw);
+      if (absGridKw >= thresholdKw) {
+        if (rawGridKw < 0) isExport = true;
+        else isImport = true;
       }
     }
 
-    const standbyWatts = (c.inverter?.standby_power !== undefined) ? c.inverter.standby_power : 100;
-    const nominalLossKw = standbyWatts / 1000;
+    // 4. House Load & Self-Consumption
+    const gridInKw = isImport ? absGridKw : 0;
+    const gridOutKw = isExport ? absGridKw : 0;
+    const totalInflowKw = totalSolarKw + totalWindKw + auxKw + gridInKw + batOutKw;
+    const essentialKw = hasValidPositiveSensor ? Math.max(subloadsTotalKw, rawSensorKw) : 0;
+    const selfConsumptionKw = Math.max(0, totalInflowKw - (batInKw + gridOutKw + essentialKw));
 
-    let essentialKw = 0;
-    let selfConsumptionKw = 0;
+    // Assertions matching physical Deye LCD:
+    // 1. House load MUST be 1.358 kW (matching 1.38 kW on Deye LCD), NEVER 0.116 kW!
+    assert.equal(essentialKw.toFixed(3), '1.358');
+    assert.notEqual(essentialKw.toFixed(3), '0.116');
 
-    if (hasValidPositiveSensor && (!isAutoCalculateHouse || separatedSensorKw > 0)) {
-      let candidateHouseKw = Math.max(subloadsTotalKw, separatedSensorKw);
-      candidateHouseKw = Math.min(netAvailableKw, candidateHouseKw);
-      essentialKw = candidateHouseKw;
+    // 2. Grid must NOT be exporting 1.358 kW!
+    assert.equal(isExport, false);
+    assert.equal(gridOutKw, 0);
 
-      if (measuredSelfKw !== null) {
-        selfConsumptionKw = measuredSelfKw;
-      } else {
-        selfConsumptionKw = Math.max(0, netAvailableKw - essentialKw);
-      }
-    } else {
-      if (measuredSelfKw !== null) {
-        selfConsumptionKw = measuredSelfKw;
-      } else {
-        selfConsumptionKw = Math.min(netAvailableKw, nominalLossKw);
-      }
-      essentialKw = Math.max(subloadsTotalKw, Math.max(0, netAvailableKw - selfConsumptionKw));
-    }
+    // 3. Grid reading reflects external CT (0.03 kW / 30 W import)
+    assert.equal(absGridKw.toFixed(3), '0.030');
 
-    // Assertions:
-    // 1. Separated sensor reading: 1.918 - 1.918 = 0.000 kW (no fake duplicate house load)
-    assert.equal(separatedSensorKw.toFixed(3), '0.000');
+    // 4. Battery is charging 1.430 kW
+    assert.equal(batInKw.toFixed(3), '1.430');
 
-    // 2. Net available for house & inverter standby: 3.698 - (1.574 + 1.918) = 0.206 kW
-    assert.equal(netAvailableKw.toFixed(3), '0.206');
-
-    // 3. Inverter self consumption: 100 W (0.100 kW)
-    assert.equal(selfConsumptionKw.toFixed(3), '0.100');
-
-    // 4. House load: 0.106 kW, NEVER 1.918 kW!
-    assert.equal(essentialKw.toFixed(3), '0.106');
-    assert.notEqual(essentialKw.toFixed(3), '1.918', 'House load must NOT equal export power');
-
-    // 5. Total accounted power equals solar inflow: 1.574 + 1.918 + 0.106 + 0.100 = 3.698 kW
-    const totalOutflow = batInKw + gridOutKw + essentialKw + selfConsumptionKw;
-    assert.equal(totalOutflow.toFixed(3), totalSolarKw.toFixed(3), 'Full conservation of energy');
+    // 5. Inverter dynamic standby / loss absorbs the residue (~163 W)
+    assert.equal(selfConsumptionKw.toFixed(3), '0.163');
   });
 
-  it('correctly isolates true house load when house is consuming 500W during 1.918 kW export', () => {
-    const totalSolarKw = 4.198;
-    const absGridKw = 1.918;
-    const isExport = true;
-    const isImport = false;
-    const absBatKw = 1.574;
-    const isCharging = true;
-    const isDischarging = false;
+  it('correctly handles case where only inverter grid port sensor is present (no external CT configured)', () => {
+    // Only sensor.deye_12k_inverter_total_grid_power exists (-1358 W)
+    // House load sensor is 1358 W
+    const totalSolarKw = 2.951;
     const subloadsTotalKw = 0;
+    const nonEssKw = 0;
+    const carKw = 0;
 
-    // Deye sensor measures total inverter output: 500W load + 1918W export = 2418W
-    const hass = {
-      states: {
-        'sensor.deye_12k_inverter_load_power': { state: '2418', attributes: { unit_of_measurement: 'W' } }
-      }
-    };
+    const rawGridKw = -1.358;
+    const rawSensorKw = 1.358;
+    const isExternalCt = false;
+    const thresholdKw = 0.05;
 
-    const getEntityState = (id) => {
-      const s = hass.states[id];
-      const val = parseFloat(s.state);
-      return { raw: s.state, val: isNaN(val) ? 0 : val, unit: s.attributes?.unit_of_measurement || '' };
-    };
+    let isExport = false;
+    let isImport = false;
+    let absGridKw = 0;
 
-    const c = {
-      inverter: { standby_power: 100 },
-      load: { auto_calculate: true, separate_export: true, essential_power_entity: 'sensor.deye_12k_inverter_load_power' }
-    };
-
-    const gridInKw = 0;
-    const batOutKw = 0;
-    const totalInflowKw = totalSolarKw;
-    const batInKw = absBatKw;
-    const gridOutKw = absGridKw;
-    const totalOutflowKnownKw = batInKw + gridOutKw; // 3.492 kW
-    const netAvailableKw = Math.max(0, totalInflowKw - totalOutflowKnownKw); // 0.706 kW
-
-    const sEss = getEntityState(c.load.essential_power_entity);
-    const rawSensorKw = sEss.val / 1000; // 2.418 kW
-    const hasValidPositiveSensor = true;
-    const shouldSeparateExport = true;
-    const isAutoCalculateHouse = true;
-
-    let separatedSensorKw = rawSensorKw;
-    if (shouldSeparateExport && isExport && gridOutKw > 0) {
-      if (rawSensorKw >= (gridOutKw - 0.05)) {
-        separatedSensorKw = Math.max(0, rawSensorKw - gridOutKw); // 2.418 - 1.918 = 0.500 kW
+    if (!isExternalCt) {
+      if (rawGridKw < 0) {
+        const leavingKw = Math.abs(rawGridKw);
+        const netExportKw = Math.max(0, leavingKw - rawSensorKw);
+        if (netExportKw >= thresholdKw) {
+          absGridKw = netExportKw;
+          isExport = true;
+        } else {
+          absGridKw = 0;
+          isExport = false;
+        }
       }
     }
 
-    let candidateHouseKw = Math.max(subloadsTotalKw, separatedSensorKw);
-    candidateHouseKw = Math.min(netAvailableKw, candidateHouseKw);
-    const essentialKw = candidateHouseKw;
-    const selfConsumptionKw = Math.max(0, netAvailableKw - essentialKw);
+    const batInKw = 1.430;
+    const gridInKw = isImport ? absGridKw : 0;
+    const gridOutKw = isExport ? absGridKw : 0;
+    const totalInflowKw = totalSolarKw + gridInKw;
+    const essentialKw = rawSensorKw;
+    const selfConsumptionKw = Math.max(0, totalInflowKw - (batInKw + gridOutKw + essentialKw + nonEssKw + carKw));
 
-    assert.equal(essentialKw.toFixed(3), '0.500', 'House load is exactly 500 W');
-    assert.equal(gridOutKw.toFixed(3), '1.918', 'Grid export is 1.918 kW');
-    assert.equal(selfConsumptionKw.toFixed(3), '0.206', 'Self consumption absorbs dynamic residue');
-    assert.equal((batInKw + gridOutKw + essentialKw + selfConsumptionKw).toFixed(3), totalSolarKw.toFixed(3), 'Energy balance preserved');
+    // Assertions:
+    // 1. Net export is 0 kW because all 1.358 kW leaving the grid port goes to the house!
+    assert.equal(isExport, false);
+    assert.equal(absGridKw, 0);
+
+    // 2. House load remains 1.358 kW, NOT 0 kW!
+    assert.equal(essentialKw.toFixed(3), '1.358');
+
+    // 3. Standby covers the remaining ~163 W
+    assert.equal(selfConsumptionKw.toFixed(3), '0.163');
+  });
+
+  it('correctly handles genuine solar export (selling) without wiping out house load', () => {
+    // 6.0 kW solar, 1.5 kW battery charge, 1.2 kW house load, 3.0 kW grid export
+    const totalSolarKw = 6.000;
+    const nonEssKw = 0;
+    const carKw = 0;
+    const batInKw = 1.500;
+    const rawSensorKw = 1.200;
+    const hasValidPositiveSensor = true;
+    const subloadsTotalKw = 0;
+
+    // Inverter grid port reports -4.200 kW (1.2 kW house + 3.0 kW grid export)
+    const rawGridKw = -4.200;
+    const isExternalCt = false;
+    const thresholdKw = 0.05;
+
+    let isExport = false;
+    let absGridKw = 0;
+
+    if (!isExternalCt) {
+      const leavingKw = Math.abs(rawGridKw);
+      const netExportKw = Math.max(0, leavingKw - rawSensorKw); // 4.2 - 1.2 = 3.0 kW
+      if (netExportKw >= thresholdKw) {
+        absGridKw = netExportKw;
+        isExport = true;
+      }
+    }
+
+    // Conservation check
+    const maxPossibleExport = Math.max(0, totalSolarKw - batInKw - rawSensorKw - nonEssKw - carKw); // 3.3 kW
+    if (isExport && absGridKw > (maxPossibleExport + 0.1)) {
+      absGridKw = maxPossibleExport;
+    }
+
+    const gridOutKw = isExport ? absGridKw : 0;
+    const essentialKw = hasValidPositiveSensor ? Math.max(subloadsTotalKw, rawSensorKw) : 0;
+    const totalInflowKw = totalSolarKw;
+    const selfConsumptionKw = Math.max(0, totalInflowKw - (batInKw + gridOutKw + essentialKw + nonEssKw + carKw));
+
+    // Assertions:
+    // 1. Grid export is cleanly isolated: 3.000 kW
+    assert.equal(isExport, true);
+    assert.equal(gridOutKw.toFixed(3), '3.000');
+
+    // 2. House load is preserved: 1.200 kW
+    assert.equal(essentialKw.toFixed(3), '1.200');
+
+    // 3. Self-consumption / losses absorb remaining 300 W
+    assert.equal(selfConsumptionKw.toFixed(3), '0.300');
+
+    // 4. Perfect conservation of energy
+    const totalOutflow = batInKw + gridOutKw + essentialKw + selfConsumptionKw;
+    assert.equal(totalOutflow.toFixed(3), totalSolarKw.toFixed(3));
   });
 });
 

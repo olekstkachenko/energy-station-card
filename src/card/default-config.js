@@ -172,6 +172,7 @@ export const DEFAULT_CONFIG = {
   grid: {
     show: true,
     power_entity: 'sensor.deye_12k_inverter_total_grid_power',
+    external_power_entity: '', // Зовнішній лічильник/трансформатор струму (CT clamp) на вводі мережі (опціонально)
     voltage_entity: '', // сенсор напруги мережі (якщо порожньо — береться з inverter.voltage_entity)
     status_entity: '', // бінарний сенсор наявності мережі (опціонально)
     voltage_threshold: 90, // поріг напруги (В), нижче якого мережа вважається вимкненою (блекаут)
