@@ -15,6 +15,7 @@ export const PRESETS = {
       },
       solar: {
         pv_count: 3,
+        installed_power: 12.0,
         total_power_entity: '', // Автоматично розраховується як сума стрінгів PV
         daily_yield_entity: 'sensor.deye_12k_inverter_daily_solar_energy',
         target_daily_yield: 55.0,
@@ -22,6 +23,7 @@ export const PRESETS = {
           {
             id: 'pv1',
             name: 'PV 1',
+            capacity_kw: 4.0,
             voltage_entity: 'sensor.deye_12k_inverter_pv1_voltage',
             current_entity: 'sensor.deye_12k_inverter_pv1_current',
             power_entity: 'sensor.deye_12k_inverter_pv1_power'
@@ -29,6 +31,7 @@ export const PRESETS = {
           {
             id: 'pv2',
             name: 'PV 2',
+            capacity_kw: 4.0,
             voltage_entity: 'sensor.deye_12k_inverter_pv2_voltage',
             current_entity: 'sensor.deye_12k_inverter_pv2_current',
             power_entity: 'sensor.deye_12k_inverter_pv2_power'
@@ -36,6 +39,7 @@ export const PRESETS = {
           {
             id: 'pv3',
             name: 'PV 3',
+            capacity_kw: 4.0,
             voltage_entity: 'sensor.deye_12k_inverter_pv3_voltage',
             current_entity: 'sensor.deye_12k_inverter_pv3_current',
             power_entity: 'sensor.deye_12k_inverter_pv3_power'
@@ -85,6 +89,8 @@ export const PRESETS = {
         car_power_entity: 'sensor.ev_charger_power'
       },
       load: {
+        auto_calculate: true,
+        separate_export: true,
         essential_power_entity: 'sensor.deye_12k_inverter_load_power',
         daily_house_entity: 'sensor.deye_12k_inverter_daily_load_energy',
         subloads: [
@@ -141,6 +147,7 @@ export const PRESETS = {
       },
       solar: {
         pv_count: 2,
+        installed_power: 8.0,
         total_power_entity: 'sensor.solarman_pv_total_power',
         daily_yield_entity: 'sensor.solarman_daily_production',
         target_daily_yield: 50.0,
@@ -148,6 +155,7 @@ export const PRESETS = {
           {
             id: 'pv1',
             name: 'PV 1',
+            capacity_kw: 4.0,
             voltage_entity: 'sensor.solarman_pv1_voltage',
             current_entity: 'sensor.solarman_pv1_current',
             power_entity: 'sensor.solarman_pv1_power'
@@ -155,6 +163,7 @@ export const PRESETS = {
           {
             id: 'pv2',
             name: 'PV 2',
+            capacity_kw: 4.0,
             voltage_entity: 'sensor.solarman_pv2_voltage',
             current_entity: 'sensor.solarman_pv2_current',
             power_entity: 'sensor.solarman_pv2_power'
@@ -234,6 +243,7 @@ export const PRESETS = {
       },
       solar: {
         pv_count: 10,
+        installed_power: 12.0,
         total_power_entity: 'mock.pv_total',
         daily_yield_entity: 'mock.pv_daily',
         target_daily_yield: 55.0

@@ -42,6 +42,17 @@ if (typeof globalThis.requestAnimationFrame === 'undefined') {
 const { DEFAULT_CONFIG } = await import('../src/card/default-config.js');
 const { I18N, EnergyStationCard } = await import('../src/card/energy-station-card.js');
 
+const dummyNode = () => ({
+  innerText: '',
+  innerHTML: '',
+  style: { setProperty() {} },
+  classList: { add() {}, remove() {}, contains: () => false },
+  setAttribute() {},
+  getAttribute: () => '',
+  querySelector: () => null,
+  querySelectorAll: () => []
+});
+
 test('Energy Station Card - Theme & Language Customization', async (t) => {
 
   await t.test('DEFAULT_CONFIG provides dark theme, uk language, and show_quick_settings enabled', () => {
@@ -224,17 +235,6 @@ test('Energy Station Card - Theme & Language Customization', async (t) => {
       batPackKwh_2: { innerText: '', style: {} }
     };
 
-    const dummyNode = () => ({
-      innerText: '',
-      innerHTML: '',
-      style: { setProperty() {} },
-      classList: { add() {}, remove() {}, contains: () => false },
-      setAttribute() {},
-      getAttribute: () => '',
-      querySelector: () => null,
-      querySelectorAll: () => []
-    });
-
     card._nodes = new Proxy(domMap, {
       get(target, prop) {
         if (!(prop in target)) {
@@ -285,6 +285,75 @@ test('Energy Station Card - Theme & Language Customization', async (t) => {
     assert.match(domMap.batPackKwh_2.innerText, /~3,58/); // 5.12 * 70% = 3.58 kWh
     assert.strictEqual(domMap.batPackDeltaVal_2.innerText, '42 mV');
     assert.strictEqual(domMap.batPackDelta_2.style.color, '#fbbf24'); // Amber (26..50 mV)
+  });
+
+  await t.test('solar fields display installed capacity and live generation percentage, and total solar calculates percentage of installed power', () => {
+    assert.strictEqual(DEFAULT_CONFIG.solar.installed_power, 12.0);
+    assert.strictEqual(DEFAULT_CONFIG.solar.strings[0].capacity_kw, 4.0);
+
+    const card = new EnergyStationCard();
+    card._config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    card._config.solar.installed_power = 15.0; // 15 kWp total
+    card._config.solar.strings = [
+      { name: 'PV 01 - Дах Південь', capacity_kw: 6.0, power_entity: 'sensor.pv1_power' },
+      { name: 'PV 02 - Дах Захід', capacity_kw: 4.5, power_entity: 'sensor.pv2_power' },
+      { name: 'PV 03 - Навіс', capacity_kw: 4.5, power_entity: 'sensor.pv3_power' }
+    ];
+    card._language = 'uk';
+
+    const domMap = {};
+    card._nodes = new Proxy(domMap, {
+      get: (target, prop) => {
+        if (!(prop in target)) {
+          target[prop] = dummyNode();
+        }
+        return target[prop];
+      }
+    });
+
+    card.shadowRoot.getElementById = (id) => {
+      if (!domMap[id]) {
+        domMap[id] = dummyNode();
+      }
+      return domMap[id];
+    };
+
+    // Simulate PV generation:
+    // PV1: 4.5 kW out of 6.0 kWp = 75% (green)
+    // PV2: 1.8 kW out of 4.5 kWp = 40% (amber)
+    // PV3: 0.9 kW out of 4.5 kWp = 20% (gray)
+    // Total: 4.5 + 1.8 + 0.9 = 7.2 kW out of 15.0 kWp = 48.0% (amber)
+    card._hass = {
+      states: {
+        'sensor.pv1_power': { state: '4500', attributes: { unit_of_measurement: 'W' } },
+        'sensor.pv2_power': { state: '1800', attributes: { unit_of_measurement: 'W' } },
+        'sensor.pv3_power': { state: '900', attributes: { unit_of_measurement: 'W' } }
+      }
+    };
+
+    card._updateValues();
+
+    // 1. PV1: 6.0 kWp, 75% green
+    assert.strictEqual(domMap.pvCapVal_1.innerText, '6,0');
+    assert.strictEqual(domMap.pvPercent_1.innerText, '(75%)');
+    assert.strictEqual(domMap.pvPercent_1.style.color, '#34d399');
+
+    // 2. PV2: 4.5 kWp, 40% amber
+    assert.strictEqual(domMap.pvCapVal_2.innerText, '4,5');
+    assert.strictEqual(domMap.pvPercent_2.innerText, '(40%)');
+    assert.strictEqual(domMap.pvPercent_2.style.color, '#fbbf24');
+
+    // 3. PV3: 4.5 kWp, 20% gray
+    assert.strictEqual(domMap.pvCapVal_3.innerText, '4,5');
+    assert.strictEqual(domMap.pvPercent_3.innerText, '(20%)');
+    assert.strictEqual(domMap.pvPercent_3.style.color, '#94a3b8');
+
+    // 4. Station Total: 7.200 кВт, 48% (з 15.0 кВтп)
+    assert.strictEqual(domMap.totalPvPowerVal.innerText, '7.200 кВт');
+    assert.strictEqual(domMap.totalPvPercentBadge.innerText, '48%');
+    assert.strictEqual(domMap.totalPvPercentBadge.style.color, '#fbbf24');
+    assert.strictEqual(domMap.totalPvCapDetail.innerText, '48,0%');
+    assert.strictEqual(domMap.totalPvCapTotal.innerText, '(з 15,0 кВтп)');
   });
 
 });

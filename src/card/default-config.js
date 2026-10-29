@@ -26,6 +26,7 @@ export const DEFAULT_CONFIG = {
   solar: {
     show: true,
     pv_count: 3, // 1 to 16 strings/trackers
+    installed_power: 12.0, // kWp: загальна встановлена пікова потужність СЕС (якщо порожньо — сумує поля)
     total_power_entity: '', // Порожньо за замовчуванням — картка автоматично сумує потужність усіх стрінгів
     daily_yield_entity: 'sensor.deye_12k_inverter_daily_solar_energy',
     target_daily_yield: 55.0, // kWh
@@ -34,6 +35,7 @@ export const DEFAULT_CONFIG = {
       {
         id: 'pv1',
         name: 'PV 1',
+        capacity_kw: 4.0, // kWp встановлена потужність поля 1
         voltage_entity: 'sensor.deye_12k_inverter_pv1_voltage',
         current_entity: 'sensor.deye_12k_inverter_pv1_current',
         power_entity: 'sensor.deye_12k_inverter_pv1_power'
@@ -41,6 +43,7 @@ export const DEFAULT_CONFIG = {
       {
         id: 'pv2',
         name: 'PV 2',
+        capacity_kw: 4.0, // kWp встановлена потужність поля 2
         voltage_entity: 'sensor.deye_12k_inverter_pv2_voltage',
         current_entity: 'sensor.deye_12k_inverter_pv2_current',
         power_entity: 'sensor.deye_12k_inverter_pv2_power'
@@ -48,6 +51,7 @@ export const DEFAULT_CONFIG = {
       {
         id: 'pv3',
         name: 'PV 3',
+        capacity_kw: 4.0, // kWp встановлена потужність поля 3
         voltage_entity: 'sensor.deye_12k_inverter_pv3_voltage',
         current_entity: 'sensor.deye_12k_inverter_pv3_current',
         power_entity: 'sensor.deye_12k_inverter_pv3_power'
@@ -189,6 +193,7 @@ export const DEFAULT_CONFIG = {
   load: {
     show: true,
     auto_calculate: true, // Авторозрахунок споживання будинку за балансом енергії
+    separate_export: true, // Відокремлювати експорт від навантаження будинку (для Deye / Sunsynk)
     essential_power_entity: 'sensor.deye_12k_inverter_load_power',
     daily_house_entity: 'sensor.deye_12k_inverter_daily_load_energy',
     subloads: [

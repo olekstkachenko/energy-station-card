@@ -603,6 +603,37 @@ export class EnergyStationCard extends HTMLElement {
           font-weight: 800;
           color: #fbbf24;
         }
+        .es-pv-cap {
+          font-size: 10px;
+          color: #94a3b8;
+          margin-top: 2px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 2px;
+          white-space: nowrap;
+        }
+        .es-pv-percent-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1px 6px;
+          border-radius: 4px;
+          font-size: 11px;
+          font-weight: 800;
+          background: rgba(245, 158, 11, 0.15);
+          color: #fbbf24;
+          border: 1px solid rgba(245, 158, 11, 0.3);
+          vertical-align: middle;
+        }
+        .theme-light .es-pv-cap {
+          color: #64748b !important;
+        }
+        .theme-light .es-pv-percent-badge {
+          background: rgba(245, 158, 11, 0.12) !important;
+          color: #d97706 !important;
+          border-color: rgba(245, 158, 11, 0.35) !important;
+        }
 
         /* Bus */
         .es-bus-container {
@@ -673,10 +704,30 @@ export class EnergyStationCard extends HTMLElement {
         .es-node-icon {
           width: 24px;
           height: 24px;
+          min-width: 24px;
+          min-height: 24px;
+          max-width: 24px;
+          max-height: 24px;
           display: flex;
           align-items: center;
           justify-content: center;
           margin-bottom: 2px;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+        .es-node-icon svg,
+        .es-schematic-node .es-node-icon svg,
+        .es-pv-panel svg,
+        .es-inverter-icon-box svg,
+        .turbine-icon-box svg,
+        .es-subload-icon svg,
+        .es-aux-box svg {
+          width: 100% !important;
+          height: 100% !important;
+          max-width: 100% !important;
+          max-height: 100% !important;
+          display: block;
+          flex-shrink: 0;
         }
         .es-node-title {
           font-size: 13px;
@@ -1725,8 +1776,13 @@ export class EnergyStationCard extends HTMLElement {
           <div style="display: flex; flex-direction: column; align-items: center; margin-top: -2px;">
             <div style="width: 20px; height: 20px; color: #fbbf24; margin-bottom: 1px;">${ICONS.sun}</div>
             <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(245, 158, 11, 0.85); font-weight: 600;">${this._t('total_pv')}</span>
-            <div class="es-mono glow-solar clickable-node" id="totalPvPowerBadge" style="font-size: 20px; font-weight: 900; color: #fbbf24;">
-              12,000 ${this._language === 'en' ? 'kW' : 'кВт'}
+            <div class="es-mono glow-solar clickable-node" id="totalPvPowerBadge" style="font-size: 20px; font-weight: 900; color: #fbbf24; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <span id="totalPvPowerVal">12,000 ${this._language === 'en' ? 'kW' : 'кВт'}</span>
+              <span id="totalPvPercentBadge" class="es-pv-percent-badge" title="Поточна віддача від встановленої потужності СЕС">0%</span>
+            </div>
+            <div id="totalPvSubline" class="es-mono" style="font-size: 11px; color: #94a3b8; margin-top: 1px; display: flex; align-items: center; justify-content: center; gap: 3px;" title="Поточний відсоток та встановлена пікова потужність СЕС">
+              <span id="totalPvCapDetail" style="color: #fbbf24; font-weight: 700;">0.0%</span>
+              <span id="totalPvCapTotal" style="color: #64748b; font-size: 10px;">(з 12.0 кВтп)</span>
             </div>
           </div>
         </div>
@@ -1755,7 +1811,7 @@ export class EnergyStationCard extends HTMLElement {
 
             <!-- 1. Grid Node (Мережа) -->
             <div class="es-schematic-node glow-grid clickable-node" id="gridNode" style="border-color: rgba(56, 189, 248, 0.4);">
-              <div class="es-node-icon" style="color: #38bdf8;">${ICONS.grid_tower}</div>
+              <div class="es-node-icon" style="color: #38bdf8; width: 24px; height: 24px; max-width: 24px; max-height: 24px; overflow: hidden; display: flex; align-items: center; justify-content: center;">${ICONS.grid_tower}</div>
               <div class="es-node-title">${this._t('grid_title')}</div>
               <div class="es-mono es-node-power" id="gridPowerVal" style="color: #38bdf8;">2,000 ${this._language === 'en' ? 'kW' : 'кВт'}</div>
               <div class="es-mono es-node-dir" id="gridDirectionLabel" style="color: #34d399;">${this._t('grid_dir_export')}</div>
@@ -1763,14 +1819,14 @@ export class EnergyStationCard extends HTMLElement {
 
             <!-- 2. Non-essential Node (Негарантоване) -->
             <div class="es-schematic-node clickable-node ${(c.grid?.show_non_essential && c.grid?.non_essential_power_entity) ? '' : 'hidden'}" id="nonEssentialNode" style="border-color: rgba(56, 189, 248, 0.25);">
-              <div class="es-node-icon" style="color: #38bdf8;">${ICONS.house_outline || ICONS.house}</div>
+              <div class="es-node-icon" style="color: #38bdf8; width: 24px; height: 24px; max-width: 24px; max-height: 24px; overflow: hidden; display: flex; align-items: center; justify-content: center;">${ICONS.house_outline || ICONS.house}</div>
               <div class="es-node-title">${this._t('non_essential')}</div>
               <div class="es-mono es-node-power" id="nonEssentialPowerVal" style="color: #38bdf8;">0.000 ${this._language === 'en' ? 'kW' : 'кВт'}</div>
             </div>
 
             <!-- 3. Car Node (Авто) -->
             <div class="es-schematic-node clickable-node ${(c.grid?.show_car && c.grid?.car_power_entity) ? '' : 'hidden'}" id="carNode" style="border-color: rgba(56, 189, 248, 0.25);">
-              <div class="es-node-icon" style="color: #38bdf8;">${ICONS.car}</div>
+              <div class="es-node-icon" style="color: #38bdf8; width: 24px; height: 24px; max-width: 24px; max-height: 24px; overflow: hidden; display: flex; align-items: center; justify-content: center;">${ICONS.car}</div>
               <div class="es-node-title" id="carTitle">${c.grid?.car_title || this._t('car')}</div>
               <div class="es-mono es-node-power" id="carPowerVal" style="color: #38bdf8;">0.000 ${this._language === 'en' ? 'kW' : 'кВт'}</div>
             </div>
@@ -1829,7 +1885,7 @@ export class EnergyStationCard extends HTMLElement {
 
             <!-- Essential Loads Node (Гарантоване) -->
             <div class="es-schematic-node glow-load clickable-node" id="essentialNode" style="border-color: rgba(6, 182, 212, 0.4);">
-              <div class="es-node-icon" style="color: #22d3ee;">${ICONS.house}</div>
+              <div class="es-node-icon" style="color: #22d3ee; width: 24px; height: 24px; max-width: 24px; max-height: 24px; overflow: hidden; display: flex; align-items: center; justify-content: center;">${ICONS.house}</div>
               <div class="es-node-title">${this._t('house_title')}</div>
               <div class="es-mono es-node-power" id="essentialPowerVal" style="color: #22d3ee;">8,000 ${this._language === 'en' ? 'kW' : 'кВт'}</div>
             </div>
@@ -1929,6 +1985,11 @@ export class EnergyStationCard extends HTMLElement {
       solarProgressBar: root.getElementById('solarProgressBar'),
       solarSavingsDaily: root.getElementById('solarSavingsDaily'),
       totalPvPowerBadge: root.getElementById('totalPvPowerBadge'),
+      totalPvPowerVal: root.getElementById('totalPvPowerVal'),
+      totalPvPercentBadge: root.getElementById('totalPvPercentBadge'),
+      totalPvSubline: root.getElementById('totalPvSubline'),
+      totalPvCapDetail: root.getElementById('totalPvCapDetail'),
+      totalPvCapTotal: root.getElementById('totalPvCapTotal'),
       solarFlowCollector: root.getElementById('solarFlowCollector'),
 
       gridImportDaily: root.getElementById('gridImportDaily'),
@@ -2088,10 +2149,12 @@ export class EnergyStationCard extends HTMLElement {
 
     container.innerHTML = '';
     const count = c.solar?.pv_count || (c.solar?.strings?.length || 3);
+    const kwpUnit = this._language === 'en' ? 'kWp' : 'кВтп';
     for (let i = 1; i <= count; i++) {
       const idStr = i < 10 ? `0${i}` : `${i}`;
       const strConfig = c.solar?.strings?.[i - 1] || {};
       const strName = strConfig.name || `PV ${idStr}`;
+      const capKw = strConfig.capacity_kw !== undefined ? parseFloat(strConfig.capacity_kw) : 4.0;
 
       const div = document.createElement('div');
       div.className = 'es-pv-panel glow-solar clickable-node';
@@ -2102,7 +2165,10 @@ export class EnergyStationCard extends HTMLElement {
           <div style="width: 22px; height: 22px; color: #fbbf24;">${ICONS.pv_panel}</div>
         </div>
         <span class="es-pv-label es-mono">${strName}</span>
-        <span class="es-pv-val es-mono" id="pvVal_${i}">1,200 кВт</span>
+        <span class="es-pv-val es-mono" id="pvVal_${i}">0,000 кВт</span>
+        <div class="es-pv-cap es-mono" id="pvCap_${i}" title="Встановлена пікова потужність та відсоток генерації поля">
+          <span id="pvCapVal_${i}">${capKw.toFixed(1).replace('.', ',')}</span> <span style="font-size: 9px; color: #64748b;">${kwpUnit}</span> <span id="pvPercent_${i}" style="color: #fbbf24; font-weight: 700; margin-left: 2px;">(0%)</span>
+        </div>
       `;
       div.addEventListener('click', () => {
         const ent = strConfig.power_entity || strConfig.voltage_entity || strConfig.current_entity || c.solar?.total_power_entity;
@@ -2250,7 +2316,7 @@ export class EnergyStationCard extends HTMLElement {
         <div class="es-ctrl-tile" id="ctrlTileSell">
           <div class="es-ctrl-top">
             <div class="es-ctrl-label-wrap" id="ctrlLabelWrapSell" title="${sellEnt}">
-              <span class="es-ctrl-icon es-ctrl-sell">${ICONS.inverter}</span>
+              <span class="es-ctrl-icon es-ctrl-sell" style="width: 18px; height: 18px; max-width: 18px; max-height: 18px; overflow: hidden; display: inline-flex; align-items: center; justify-content: center;">${ICONS.inverter}</span>
               <span class="es-ctrl-label">${this._t('ctrl_sell_power')}</span>
             </div>
             <div class="es-ctrl-val es-mono" id="ctrlValSell">5 000 ${isEn ? 'W' : 'Вт'}</div>
@@ -2264,7 +2330,7 @@ export class EnergyStationCard extends HTMLElement {
         <div class="es-ctrl-tile" id="ctrlTileGrid">
           <div class="es-ctrl-top">
             <div class="es-ctrl-label-wrap" id="ctrlLabelWrapGrid" title="${gridEnt}">
-              <span class="es-ctrl-icon es-ctrl-grid">${ICONS.grid_tower}</span>
+              <span class="es-ctrl-icon es-ctrl-grid" style="width: 18px; height: 18px; max-width: 18px; max-height: 18px; overflow: hidden; display: inline-flex; align-items: center; justify-content: center;">${ICONS.grid_tower}</span>
               <span class="es-ctrl-label">${this._t('ctrl_grid_charge')}</span>
             </div>
             <div class="es-ctrl-val es-mono" id="ctrlValGrid">70 A</div>
@@ -2730,6 +2796,34 @@ export class EnergyStationCard extends HTMLElement {
       if (panelCurr) {
         panelCurr.innerText = `${currNum.toFixed(2)} A`;
       }
+
+      // Nominal capacity and generation % for this field / string
+      const strCap = strConfig?.capacity_kw !== undefined
+        ? parseFloat(strConfig.capacity_kw)
+        : (strConfig?.installed_power !== undefined
+            ? parseFloat(strConfig.installed_power)
+            : (hasConfiguredPvEntities ? 0 : 4.0));
+
+      const strPct = (strCap > 0 && kwNum > 0)
+        ? Math.min(100, Math.round((kwNum / strCap) * 100))
+        : 0;
+
+      const panelCapVal = this.shadowRoot.getElementById(`pvCapVal_${i}`);
+      const panelPercent = this.shadowRoot.getElementById(`pvPercent_${i}`);
+      const panelCapBox = this.shadowRoot.getElementById(`pvCap_${i}`);
+
+      if (panelCapVal) {
+        if (strCap > 0) {
+          panelCapVal.innerText = strCap.toFixed(1).replace('.', ',');
+          if (panelPercent) {
+            panelPercent.innerText = `(${strPct}%)`;
+            panelPercent.style.color = strPct >= 70 ? '#34d399' : (strPct >= 30 ? '#fbbf24' : '#94a3b8');
+          }
+          if (panelCapBox) panelCapBox.style.display = 'flex';
+        } else {
+          if (panelCapBox) panelCapBox.style.display = 'none';
+        }
+      }
     }
 
     // Total PV power: use sensor if available, otherwise automatically use sum of all strings
@@ -2740,7 +2834,57 @@ export class EnergyStationCard extends HTMLElement {
     } else {
       totalSolarKw = calculatedTotalPvKw;
     }
-    this._nodes.totalPvPowerBadge.innerText = `${totalSolarKw.toFixed(3)} ${unitStr}`;
+
+    // Total installed capacity of the station
+    let totalInstalledKw = c.solar?.installed_power !== undefined ? parseFloat(c.solar.installed_power) : 0;
+    if (isNaN(totalInstalledKw) || totalInstalledKw <= 0) {
+      let sumStrCap = 0;
+      for (let i = 0; i < count; i++) {
+        const s = c.solar?.strings?.[i];
+        const cap = s?.capacity_kw !== undefined ? parseFloat(s.capacity_kw) : (s?.installed_power !== undefined ? parseFloat(s.installed_power) : 0);
+        if (!isNaN(cap) && cap > 0) sumStrCap += cap;
+      }
+      totalInstalledKw = sumStrCap > 0 ? sumStrCap : (hasConfiguredPvEntities ? 0 : 12.0);
+    }
+
+    const totalPct = totalInstalledKw > 0 ? ((totalSolarKw / totalInstalledKw) * 100) : 0;
+    const roundedTotalPct = Math.min(100, Math.max(0, totalPct));
+    const kwpUnit = this._language === 'en' ? 'kWp' : 'кВтп';
+
+    if (this._nodes.totalPvPowerVal) {
+      this._nodes.totalPvPowerVal.innerText = `${totalSolarKw.toFixed(3)} ${unitStr}`;
+    }
+    if (this._nodes.totalPvPowerBadge) {
+      if (!this._nodes.totalPvPowerVal) {
+        this._nodes.totalPvPowerBadge.innerText = `${totalSolarKw.toFixed(3)} ${unitStr}`;
+      }
+    }
+
+    if (this._nodes.totalPvPercentBadge) {
+      if (totalInstalledKw > 0) {
+        this._nodes.totalPvPercentBadge.style.display = 'inline-flex';
+        this._nodes.totalPvPercentBadge.innerText = `${Math.round(roundedTotalPct)}%`;
+        this._nodes.totalPvPercentBadge.style.color = roundedTotalPct >= 70 ? '#34d399' : (roundedTotalPct >= 30 ? '#fbbf24' : '#94a3b8');
+        this._nodes.totalPvPercentBadge.style.borderColor = roundedTotalPct >= 70 ? 'rgba(52, 211, 153, 0.35)' : 'rgba(245, 158, 11, 0.35)';
+      } else {
+        this._nodes.totalPvPercentBadge.style.display = 'none';
+      }
+    }
+
+    if (this._nodes.totalPvSubline) {
+      if (totalInstalledKw > 0) {
+        this._nodes.totalPvSubline.style.display = 'flex';
+        if (this._nodes.totalPvCapDetail) {
+          this._nodes.totalPvCapDetail.innerText = `${roundedTotalPct.toFixed(1).replace('.', ',')}%`;
+          this._nodes.totalPvCapDetail.style.color = roundedTotalPct >= 70 ? '#34d399' : (roundedTotalPct >= 30 ? '#fbbf24' : '#94a3b8');
+        }
+        if (this._nodes.totalPvCapTotal) {
+          this._nodes.totalPvCapTotal.innerText = `(з ${totalInstalledKw.toFixed(1).replace('.', ',')} ${kwpUnit})`;
+        }
+      } else {
+        this._nodes.totalPvSubline.style.display = 'none';
+      }
+    }
 
     const sPvDaily = this._getEntityState(c.solar?.daily_yield_entity);
     const dailyKwh = sPvDaily ? sPvDaily.val : (hasConfiguredPvEntities ? 0 : 48.6);
@@ -3221,9 +3365,23 @@ export class EnergyStationCard extends HTMLElement {
     // Net remaining power available for House load and Inverter self-consumption
     const netAvailableKw = Math.max(0, totalInflowKw - totalOutflowKnownKw);
 
+    // Subloads - calculate first so minimum essential load is known
+    let subloadsTotalKw = 0;
+    (c.load?.subloads || []).forEach((sub, idx) => {
+      const subVal = this.shadowRoot.getElementById(`subloadVal_${idx}`);
+      const sSub = this._getEntityState(sub.entity);
+      const formatted = this._formatPower(sSub, 0);
+      subloadsTotalKw += formatted.kw;
+      if (subVal) {
+        subVal.innerText = formatted.str;
+      }
+    });
+
     // Inverter Self-Consumption & Essential House Load
     const sSelf = this._getEntityState(c.inverter?.self_consumption_entity);
-    let selfConsumptionKw = 0;
+    const measuredSelfKw = (sSelf && typeof sSelf.val === 'number' && !isNaN(sSelf.val))
+      ? Math.max(0, sSelf.unit === 'W' ? sSelf.val / 1000 : sSelf.val)
+      : null;
 
     let sEss = this._getEntityState(c.load?.essential_power_entity);
     if (!sEss && (!c.load?.essential_power_entity || c.load?.essential_power_entity === 'sensor.deye_12k_inverter_essential_load_power' || c.load?.essential_power_entity === 'sensor.deye_12k_inverter_load_power')) {
@@ -3234,29 +3392,51 @@ export class EnergyStationCard extends HTMLElement {
              this._getEntityState('sensor.solarman_essential_load');
     }
 
-    const hasValidPositiveSensor = Boolean(sEss && typeof sEss.val === 'number' && !isNaN(sEss.val) && sEss.val > 0);
+    const rawSensorKw = (sEss && typeof sEss.val === 'number' && !isNaN(sEss.val))
+      ? Math.max(0, sEss.unit === 'W' ? sEss.val / 1000 : sEss.val)
+      : 0;
+    const hasValidPositiveSensor = Boolean(sEss && rawSensorKw > 0);
+
+    const shouldSeparateExport = c.load?.separate_export !== false;
+    const isAutoCalculateHouse = c.load?.auto_calculate !== false;
+
+    // Separate export power from the house load sensor if exporting
+    // (In Deye / Sunsynk inverters, Inverter Power / Load Power includes grid export during selling)
+    let separatedSensorKw = rawSensorKw;
+    if (shouldSeparateExport && isExport && gridOutKw > 0) {
+      if (rawSensorKw >= (gridOutKw - 0.05)) {
+        // Sensor reading contains the export power: cleanly separate it!
+        separatedSensorKw = Math.max(0, rawSensorKw - gridOutKw);
+      }
+    }
+
+    const standbyWatts = (c.inverter?.standby_power !== undefined) ? c.inverter.standby_power : 100;
+    const nominalLossKw = standbyWatts / 1000;
 
     let essentialKw = 0;
-    if (hasValidPositiveSensor) {
-      // Physical sensor is valid and positive: use the measured load!
-      essentialKw = Math.max(0, sEss.unit === 'W' ? sEss.val / 1000 : sEss.val);
+    let selfConsumptionKw = 0;
 
-      if (sSelf && typeof sSelf.val === 'number' && !isNaN(sSelf.val)) {
-        selfConsumptionKw = Math.max(0, sSelf.unit === 'W' ? sSelf.val / 1000 : sSelf.val);
+    if (hasValidPositiveSensor && (!isAutoCalculateHouse || separatedSensorKw > 0)) {
+      // Physical sensor is valid and provides a positive distinct house load (or auto-calc is off)
+      let candidateHouseKw = Math.max(subloadsTotalKw, separatedSensorKw);
+      // Essential house load cannot physically exceed net remaining available inflow
+      candidateHouseKw = Math.min(netAvailableKw, candidateHouseKw);
+
+      essentialKw = candidateHouseKw;
+
+      if (measuredSelfKw !== null) {
+        selfConsumptionKw = measuredSelfKw;
       } else {
-        // Inverter loss is dynamic residue: Net Available - Measured House Load
         selfConsumptionKw = Math.max(0, netAvailableKw - essentialKw);
       }
     } else {
-      // Auto-calculate from balance when sensor is missing, 0, or negative (e.g. charging artifact):
-      if (sSelf && typeof sSelf.val === 'number' && !isNaN(sSelf.val)) {
-        selfConsumptionKw = Math.max(0, sSelf.unit === 'W' ? sSelf.val / 1000 : sSelf.val);
+      // Auto-calculate from balance when sensor is missing, 0, or negative / artifact:
+      if (measuredSelfKw !== null) {
+        selfConsumptionKw = measuredSelfKw;
       } else {
-        const standbyWatts = (c.inverter?.standby_power !== undefined) ? c.inverter.standby_power : 100;
-        const nominalLossKw = standbyWatts / 1000;
         selfConsumptionKw = Math.min(netAvailableKw, nominalLossKw);
       }
-      essentialKw = Math.max(0, netAvailableKw - selfConsumptionKw);
+      essentialKw = Math.max(subloadsTotalKw, Math.max(0, netAvailableKw - selfConsumptionKw));
     }
 
     // Update Inverter Self-Consumption display
@@ -3278,18 +3458,6 @@ export class EnergyStationCard extends HTMLElement {
 
     const sHouseDaily = this._getEntityState(c.load?.daily_house_entity);
     this._nodes.dailyHouseKwh.innerText = sHouseDaily ? `${sHouseDaily.val.toFixed(2)} kWh` : '12,40 kWh';
-
-    // Subloads
-    let subloadsTotalKw = 0;
-    (c.load?.subloads || []).forEach((sub, idx) => {
-      const subVal = this.shadowRoot.getElementById(`subloadVal_${idx}`);
-      const sSub = this._getEntityState(sub.entity);
-      const formatted = this._formatPower(sSub, 2.0);
-      subloadsTotalKw += formatted.kw;
-      if (subVal) {
-        subVal.innerText = formatted.str;
-      }
-    });
 
     // Total battery capacity
     const batCount = c.battery?.parallel_batteries || (c.battery?.modules?.length || 2);

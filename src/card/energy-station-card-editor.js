@@ -120,6 +120,8 @@ export class EnergyStationCardEditor extends HTMLElement {
       this._config.grid.power_entity = 'sensor.deye_12k_inverter_total_grid_power';
       this._config.grid.import_daily_entity = 'sensor.deye_12k_inverter_daily_energy_bought';
       this._config.grid.export_daily_entity = 'sensor.deye_12k_inverter_daily_energy_sold';
+      this._config.load.auto_calculate = true;
+      this._config.load.separate_export = true;
       this._config.load.essential_power_entity = 'sensor.deye_12k_inverter_load_power';
       this._config.load.daily_house_entity = 'sensor.deye_12k_inverter_daily_load_energy';
     } else if (presetName === 'deye_solarman') {
@@ -147,6 +149,8 @@ export class EnergyStationCardEditor extends HTMLElement {
       this._config.battery.soc_entity = 'sensor.solarman_battery_soc';
       this._config.battery.power_entity = 'sensor.solarman_battery_power';
       this._config.grid.power_entity = 'sensor.solarman_grid_external_power';
+      this._config.load.auto_calculate = true;
+      this._config.load.separate_export = true;
       this._config.load.essential_power_entity = 'sensor.solarman_essential_load';
     }
 
@@ -405,6 +409,11 @@ export class EnergyStationCardEditor extends HTMLElement {
             <label>Ціль генерації на день (kWh):</label>
             <input type="number" id="solarTargetDaily" value="${c.solar?.target_daily_yield || 55}">
           </div>
+          <div class="field-row">
+            <label>Встановлена пікова потужність СЕС (kWp / кВт):</label>
+            <input type="number" step="0.1" id="solarInstalledPower" value="${c.solar?.installed_power !== undefined ? c.solar.installed_power : 12.0}" placeholder="12.0">
+            <span style="font-size: 10px; color: #94a3b8;">Повна встановлена потужність усіх сонячних панелей для розрахунку % поточної генерації СЕС. Якщо не вказано — сумує потужність окремих полів.</span>
+          </div>
         </div>
 
         <!-- PV Strings Voltage & Current Configuration Section -->
@@ -444,9 +453,15 @@ export class EnergyStationCardEditor extends HTMLElement {
                     </div>
                   </div>
 
-                  <div class="field-row" style="margin-top: 6px; margin-bottom: 0;">
-                    <label style="color: #cbd5e1; font-size: 10px;">PV${num} Потужність (Power, опціонально):</label>
-                    <input type="text" class="pv-str-power-inp" data-idx="${idx}" value="${s.power_entity !== undefined ? s.power_entity : defaultPower}" placeholder="${defaultPower} (залиште пустим для авто P = U × I)">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
+                    <div class="field-row" style="margin-bottom: 0;">
+                      <label style="color: #f59e0b; font-size: 10px; font-weight: 600;">PV${num} Потужність поля (kWp / кВт):</label>
+                      <input type="number" step="0.1" class="pv-str-cap-inp" data-idx="${idx}" value="${s.capacity_kw !== undefined ? s.capacity_kw : 4.0}" placeholder="4.0">
+                    </div>
+                    <div class="field-row" style="margin-bottom: 0;">
+                      <label style="color: #cbd5e1; font-size: 10px;">PV${num} Потужність (Power сенсор, опц.):</label>
+                      <input type="text" class="pv-str-power-inp" data-idx="${idx}" value="${s.power_entity !== undefined ? s.power_entity : defaultPower}" placeholder="${defaultPower} (авто P = U × I)">
+                    </div>
                   </div>
                 </div>
               `;
@@ -820,6 +835,16 @@ export class EnergyStationCardEditor extends HTMLElement {
             </div>
           </div>
           <div class="field-row">
+            <label>Відокремлювати експорт від навантаження будинку:</label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="loadSeparateExport" ${c.load?.separate_export !== false ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #06b6d4;">
+              <span style="font-size: 11px;">Віднімати експорт у мережу від показників сенсора навантаження (Deye / Sunsynk)</span>
+            </div>
+            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
+              У гібридних інверторах Deye сенсор Load Power або Inverter Power під час продажу в мережу підсумовує експорт з навантаженням будинку. Ця опція гарантує коректне розділення.
+            </div>
+          </div>
+          <div class="field-row">
             <label>Essential потужність будинку (сенсор, опціонально):</label>
             <input type="text" id="loadEssential" value="${c.load?.essential_power_entity || ''}" placeholder="Залиште порожнім або вкажіть сенсор навантаження">
           </div>
@@ -1015,6 +1040,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         this._config.solar.strings.push({
           id: `pv${i}`,
           name: `PV ${i}`,
+          capacity_kw: 4.0,
           voltage_entity: `sensor.deye_12k_inverter_pv${i}_voltage`,
           current_entity: `sensor.deye_12k_inverter_pv${i}_current`,
           power_entity: `sensor.deye_12k_inverter_pv${i}_power`
@@ -1066,9 +1092,20 @@ export class EnergyStationCardEditor extends HTMLElement {
       });
     });
 
+    root.querySelectorAll('.pv-str-cap-inp').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const idx = parseInt(e.target.dataset.idx);
+        if (!this._config.solar.strings) this._config.solar.strings = [];
+        if (!this._config.solar.strings[idx]) this._config.solar.strings[idx] = {};
+        this._config.solar.strings[idx].capacity_kw = parseFloat(e.target.value) || 0;
+        this._valueChanged('solar.strings', this._config.solar.strings);
+      });
+    });
+
     bindInput('solarTotalPower', 'solar.total_power_entity');
     bindInput('solarDailyYield', 'solar.daily_yield_entity');
     bindNumber('solarTargetDaily', 'solar.target_daily_yield');
+    bindNumber('solarInstalledPower', 'solar.installed_power');
 
     bindInput('invModel', 'inverter.model_name');
     bindInput('invPower', 'inverter.power_entity');
@@ -1313,6 +1350,7 @@ export class EnergyStationCardEditor extends HTMLElement {
     bindInput('gridCarPower', 'grid.car_power_entity');
 
     bindCheckbox('loadAutoCalculate', 'load.auto_calculate');
+    bindCheckbox('loadSeparateExport', 'load.separate_export');
     bindInput('loadEssential', 'load.essential_power_entity');
     bindInput('loadDailyHouse', 'load.daily_house_entity');
 
