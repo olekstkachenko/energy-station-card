@@ -31,6 +31,7 @@ export const DEFAULT_CONFIG = {
     daily_yield_entity: 'sensor.deye_12k_inverter_daily_solar_energy',
     target_daily_yield: 55.0, // kWh
     auto_distribute_power: true,
+    show_metrics: true, // Показувати струм (А) та напругу (В) для кожного поля
     strings: [
       {
         id: 'pv1',

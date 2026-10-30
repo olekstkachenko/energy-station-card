@@ -603,6 +603,43 @@ export class EnergyStationCard extends HTMLElement {
           font-weight: 800;
           color: #fbbf24;
         }
+        .es-pv-metrics {
+          font-size: 10px;
+          color: #94a3b8;
+          margin-top: 3px;
+          padding-top: 3px;
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          width: 100%;
+          justify-content: center;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          white-space: nowrap;
+        }
+        .es-pv-metrics .volt {
+          color: #38bdf8;
+          font-weight: 600;
+          cursor: pointer;
+          transition: opacity 0.2s ease;
+        }
+        .es-pv-metrics .volt:hover {
+          opacity: 0.8;
+          text-decoration: underline;
+        }
+        .es-pv-metrics .sep {
+          color: rgba(255, 255, 255, 0.25);
+          font-size: 8px;
+        }
+        .es-pv-metrics .curr {
+          color: #34d399;
+          font-weight: 600;
+          cursor: pointer;
+          transition: opacity 0.2s ease;
+        }
+        .es-pv-metrics .curr:hover {
+          opacity: 0.8;
+          text-decoration: underline;
+        }
         .es-pv-cap {
           font-size: 10px;
           color: #94a3b8;
@@ -625,6 +662,18 @@ export class EnergyStationCard extends HTMLElement {
           color: #fbbf24;
           border: 1px solid rgba(245, 158, 11, 0.3);
           vertical-align: middle;
+        }
+        .theme-light .es-pv-metrics {
+          border-top-color: rgba(0, 0, 0, 0.08) !important;
+        }
+        .theme-light .es-pv-metrics .volt {
+          color: #0284c7 !important;
+        }
+        .theme-light .es-pv-metrics .sep {
+          color: rgba(0, 0, 0, 0.25) !important;
+        }
+        .theme-light .es-pv-metrics .curr {
+          color: #059669 !important;
         }
         .theme-light .es-pv-cap {
           color: #64748b !important;
@@ -2150,11 +2199,15 @@ export class EnergyStationCard extends HTMLElement {
     container.innerHTML = '';
     const count = c.solar?.pv_count || (c.solar?.strings?.length || 3);
     const kwpUnit = this._language === 'en' ? 'kWp' : 'кВтп';
+    const showMetrics = c.solar?.show_metrics !== false;
+
     for (let i = 1; i <= count; i++) {
       const idStr = i < 10 ? `0${i}` : `${i}`;
       const strConfig = c.solar?.strings?.[i - 1] || {};
       const strName = strConfig.name || `PV ${idStr}`;
       const capKw = strConfig.capacity_kw !== undefined ? parseFloat(strConfig.capacity_kw) : 4.0;
+      const voltEnt = strConfig.voltage_entity || (i <= 3 ? `sensor.deye_12k_inverter_pv${i}_voltage` : '');
+      const currEnt = strConfig.current_entity || (i <= 3 ? `sensor.deye_12k_inverter_pv${i}_current` : '');
 
       const div = document.createElement('div');
       div.className = 'es-pv-panel glow-solar clickable-node';
@@ -2166,14 +2219,38 @@ export class EnergyStationCard extends HTMLElement {
         </div>
         <span class="es-pv-label es-mono">${strName}</span>
         <span class="es-pv-val es-mono" id="pvVal_${i}">0,000 кВт</span>
+        <div class="es-pv-metrics es-mono" id="pvMetrics_${i}" style="${showMetrics ? 'display: flex;' : 'display: none;'}">
+          <span class="volt" id="pvVolt_${i}" title="${this._language === 'en' ? 'PV Voltage' : 'Напруга поля'}">0.0 V</span>
+          <span class="sep">•</span>
+          <span class="curr" id="pvCurr_${i}" title="${this._language === 'en' ? 'PV Current' : 'Струм поля'}">0.00 A</span>
+        </div>
         <div class="es-pv-cap es-mono" id="pvCap_${i}" title="Встановлена пікова потужність та відсоток генерації поля">
           <span id="pvCapVal_${i}">${capKw.toFixed(1).replace('.', ',')}</span> <span style="font-size: 9px; color: #64748b;">${kwpUnit}</span> <span id="pvPercent_${i}" style="color: #fbbf24; font-weight: 700; margin-left: 2px;">(0%)</span>
         </div>
       `;
       div.addEventListener('click', () => {
-        const ent = strConfig.power_entity || strConfig.voltage_entity || strConfig.current_entity || c.solar?.total_power_entity;
+        const ent = strConfig.power_entity || voltEnt || currEnt || c.solar?.total_power_entity;
         this._fireMoreInfo(ent);
       });
+
+      const voltEl = div.querySelector(`#pvVolt_${i}`);
+      if (voltEl) {
+        voltEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (voltEnt) this._fireMoreInfo(voltEnt);
+          else if (strConfig.power_entity) this._fireMoreInfo(strConfig.power_entity);
+        });
+      }
+
+      const currEl = div.querySelector(`#pvCurr_${i}`);
+      if (currEl) {
+        currEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (currEnt) this._fireMoreInfo(currEnt);
+          else if (strConfig.power_entity) this._fireMoreInfo(strConfig.power_entity);
+        });
+      }
+
       container.appendChild(div);
     }
   }
@@ -2727,6 +2804,7 @@ export class EnergyStationCard extends HTMLElement {
     // 1. Solar
     const pvCount = c.solar?.pv_count || (c.solar?.strings?.length || 3);
     let calculatedTotalPvKw = 0;
+    let totalSolarCurr = 0;
     let hasConfiguredPvEntities = false;
 
     // Check if any real entities are present in Home Assistant
@@ -2786,6 +2864,7 @@ export class EnergyStationCard extends HTMLElement {
       }
 
       calculatedTotalPvKw += kwNum;
+      totalSolarCurr += currNum;
 
       if (panelVal) {
         panelVal.innerText = `${kwNum.toFixed(3)} ${unitStr}`;
@@ -2795,6 +2874,13 @@ export class EnergyStationCard extends HTMLElement {
       }
       if (panelCurr) {
         panelCurr.innerText = `${currNum.toFixed(2)} A`;
+      }
+
+      const panelMetrics = this.shadowRoot.getElementById(`pvMetrics_${i}`);
+      if (panelMetrics) {
+        const showMetrics = c.solar?.show_metrics !== false;
+        const hasData = Boolean(sVolt || sCurr || !hasConfiguredPvEntities || strConfig?.voltage_entity || strConfig?.current_entity || voltNum > 0 || currNum > 0);
+        panelMetrics.style.display = (showMetrics && hasData) ? 'flex' : 'none';
       }
 
       // Nominal capacity and generation % for this field / string
@@ -2839,7 +2925,7 @@ export class EnergyStationCard extends HTMLElement {
     let totalInstalledKw = c.solar?.installed_power !== undefined ? parseFloat(c.solar.installed_power) : 0;
     if (isNaN(totalInstalledKw) || totalInstalledKw <= 0) {
       let sumStrCap = 0;
-      for (let i = 0; i < count; i++) {
+      for (let i = 0; i < pvCount; i++) {
         const s = c.solar?.strings?.[i];
         const cap = s?.capacity_kw !== undefined ? parseFloat(s.capacity_kw) : (s?.installed_power !== undefined ? parseFloat(s.installed_power) : 0);
         if (!isNaN(cap) && cap > 0) sumStrCap += cap;
@@ -2858,6 +2944,9 @@ export class EnergyStationCard extends HTMLElement {
       if (!this._nodes.totalPvPowerVal) {
         this._nodes.totalPvPowerBadge.innerText = `${totalSolarKw.toFixed(3)} ${unitStr}`;
       }
+      this._nodes.totalPvPowerBadge.title = this._language === 'en'
+        ? `Total PV current: ${totalSolarCurr.toFixed(2)} A`
+        : `Сумарний струм СЕС: ${totalSolarCurr.toFixed(2)} A`;
     }
 
     if (this._nodes.totalPvPercentBadge) {
@@ -2880,6 +2969,15 @@ export class EnergyStationCard extends HTMLElement {
         }
         if (this._nodes.totalPvCapTotal) {
           this._nodes.totalPvCapTotal.innerText = `(з ${totalInstalledKw.toFixed(1).replace('.', ',')} ${kwpUnit})`;
+        }
+      } else if (totalSolarCurr > 0 && c.solar?.show_metrics !== false) {
+        this._nodes.totalPvSubline.style.display = 'flex';
+        if (this._nodes.totalPvCapDetail) {
+          this._nodes.totalPvCapDetail.innerText = `${totalSolarCurr.toFixed(2)} A`;
+          this._nodes.totalPvCapDetail.style.color = '#34d399';
+        }
+        if (this._nodes.totalPvCapTotal) {
+          this._nodes.totalPvCapTotal.innerText = this._language === 'en' ? '(current)' : '(струм)';
         }
       } else {
         this._nodes.totalPvSubline.style.display = 'none';

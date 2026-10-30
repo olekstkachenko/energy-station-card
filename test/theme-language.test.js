@@ -356,6 +356,63 @@ test('Energy Station Card - Theme & Language Customization', async (t) => {
     assert.strictEqual(domMap.totalPvCapTotal.innerText, '(з 15,0 кВтп)');
   });
 
+  await t.test('solar strings display voltage, current, and metrics row with interactive telemetry', () => {
+    const card = new EnergyStationCard();
+    card._config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    card._config.solar.pv_count = 2;
+    card._config.solar.installed_power = 0; // Test total current subline when installed kW is 0
+    card._config.solar.strings = [
+      { name: 'PV 1', voltage_entity: 'sensor.pv1_volt', current_entity: 'sensor.pv1_curr', power_entity: 'sensor.pv1_pwr' },
+      { name: 'PV 2', voltage_entity: 'sensor.pv2_volt', current_entity: 'sensor.pv2_curr', power_entity: 'sensor.pv2_pwr' }
+    ];
+    card._language = 'uk';
+
+    const domMap = {};
+    card._nodes = new Proxy(domMap, {
+      get: (target, prop) => {
+        if (!(prop in target)) target[prop] = dummyNode();
+        return target[prop];
+      }
+    });
+
+    card.shadowRoot.getElementById = (id) => {
+      if (!domMap[id]) domMap[id] = dummyNode();
+      return domMap[id];
+    };
+
+    card._hass = {
+      states: {
+        'sensor.pv1_volt': { state: '382.4', attributes: { unit_of_measurement: 'V' } },
+        'sensor.pv1_curr': { state: '3.25', attributes: { unit_of_measurement: 'A' } },
+        'sensor.pv1_pwr': { state: '1243', attributes: { unit_of_measurement: 'W' } },
+        'sensor.pv2_volt': { state: '376.1', attributes: { unit_of_measurement: 'V' } },
+        'sensor.pv2_curr': { state: '2.80', attributes: { unit_of_measurement: 'A' } },
+        'sensor.pv2_pwr': { state: '1053', attributes: { unit_of_measurement: 'W' } }
+      }
+    };
+
+    card._updateValues();
+
+    // Verify individual string voltages and currents
+    assert.strictEqual(domMap.pvVolt_1.innerText, '382.4 V');
+    assert.strictEqual(domMap.pvCurr_1.innerText, '3.25 A');
+    assert.strictEqual(domMap.pvVolt_2.innerText, '376.1 V');
+    assert.strictEqual(domMap.pvCurr_2.innerText, '2.80 A');
+    assert.strictEqual(domMap.pvMetrics_1.style.display, 'flex');
+    assert.strictEqual(domMap.pvMetrics_2.style.display, 'flex');
+
+    // Total solar current subline when installed capacity is not set: 3.25 + 2.80 = 6.05 A
+    assert.strictEqual(domMap.totalPvCapDetail.innerText, '6.05 A');
+    assert.strictEqual(domMap.totalPvCapTotal.innerText, '(струм)');
+    assert.match(domMap.totalPvPowerBadge.title, /6\.05 A/);
+
+    // Test show_metrics = false toggle
+    card._config.solar.show_metrics = false;
+    card._updateValues();
+    assert.strictEqual(domMap.pvMetrics_1.style.display, 'none');
+    assert.strictEqual(domMap.pvMetrics_2.style.display, 'none');
+  });
+
   await t.test('end-to-end DOM verification: matches physical Deye LCD 13:09:24 ground truth', () => {
     const card = new EnergyStationCard();
     card._config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));

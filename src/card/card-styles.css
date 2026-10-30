@@ -318,7 +318,7 @@
   color: #94a3b8;
   margin-top: 3px;
   padding-top: 3px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   width: 100%;
   justify-content: center;
   display: flex;
@@ -329,6 +329,12 @@
 .es-pv-metrics span.volt {
   color: #38bdf8;
   font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+.es-pv-metrics span.volt:hover {
+  opacity: 0.8;
+  text-decoration: underline;
 }
 .es-pv-metrics span.sep {
   color: rgba(255, 255, 255, 0.25);
@@ -337,6 +343,25 @@
 .es-pv-metrics span.curr {
   color: #34d399;
   font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+.es-pv-metrics span.curr:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.theme-light .es-pv-metrics {
+  border-top-color: rgba(0, 0, 0, 0.08) !important;
+}
+.theme-light .es-pv-metrics span.volt {
+  color: #0284c7 !important;
+}
+.theme-light .es-pv-metrics span.sep {
+  color: rgba(0, 0, 0, 0.25) !important;
+}
+.theme-light .es-pv-metrics span.curr {
+  color: #059669 !important;
 }
 
 /* Solar Bus Trunk */

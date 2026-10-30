@@ -414,6 +414,10 @@ export class EnergyStationCardEditor extends HTMLElement {
             <input type="number" step="0.1" id="solarInstalledPower" value="${c.solar?.installed_power !== undefined ? c.solar.installed_power : 12.0}" placeholder="12.0">
             <span style="font-size: 10px; color: #94a3b8;">Повна встановлена потужність усіх сонячних панелей для розрахунку % поточної генерації СЕС. Якщо не вказано — сумує потужність окремих полів.</span>
           </div>
+          <div class="field-row checkbox-row">
+            <input type="checkbox" id="solarShowMetrics" ${c.solar?.show_metrics !== false ? 'checked' : ''}>
+            <label for="solarShowMetrics">Відображати напругу (V) та струм (A) стрінгів</label>
+          </div>
         </div>
 
         <!-- PV Strings Voltage & Current Configuration Section -->
@@ -1114,6 +1118,7 @@ export class EnergyStationCardEditor extends HTMLElement {
     bindInput('solarDailyYield', 'solar.daily_yield_entity');
     bindNumber('solarTargetDaily', 'solar.target_daily_yield');
     bindNumber('solarInstalledPower', 'solar.installed_power');
+    bindCheckbox('solarShowMetrics', 'solar.show_metrics');
 
     bindInput('invModel', 'inverter.model_name');
     bindInput('invPower', 'inverter.power_entity');
