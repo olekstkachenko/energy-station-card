@@ -510,16 +510,37 @@ test('Energy Station Card - Theme & Language Customization', async (t) => {
     assert.strictEqual(domMap.essentialPowerVal.innerText, '1.171 кВт');
     assert.match(domMap.masterBatteryFlowHint.innerHTML, /1\.866 кВт/);
 
-    // 2. Dynamic external CT discovery: if ESP32 / HA has an external CT sensor (e.g. 3500 W / 3.5 kW)
-    card._hass.states['sensor.esp32_deye_inverter_external_power'] = { state: '3500', attributes: { unit_of_measurement: 'W' } };
+    // 2. Unconnected external CT clamp reading 0 W or floating noise (1 W):
+    // Must NOT zero out grid import! It must reject the inactive CT and keep reconciled grid import.
+    card._hass.states['sensor.esp32_deye_inverter_external_power'] = { state: '0', attributes: { unit_of_measurement: 'W' } };
+    card._updateValues();
+    assert.strictEqual(domMap.gridPowerVal.innerText, '3.308 кВт');
+    assert.strictEqual(domMap.gridDirectionLabel.innerText, '→ Імпорт');
 
+    card._hass.states['sensor.esp32_deye_inverter_external_power'] = { state: '1', attributes: { unit_of_measurement: 'W' } };
+    card._updateValues();
+    assert.strictEqual(domMap.gridPowerVal.innerText, '3.308 кВт');
+    assert.strictEqual(domMap.gridDirectionLabel.innerText, '→ Імпорт');
+
+    // 3. Subload-only scenario (user setup with Boiler as subload):
+    card._config.load.essential_power_entity = 'sensor.boiler_power';
+    card._config.load.subloads = [{ name: 'Бойлер', entity: 'sensor.boiler_power' }];
+    card._hass.states['sensor.boiler_power'] = { state: '1113', attributes: { unit_of_measurement: 'W' } };
+    delete card._hass.states['sensor.deye_12k_inverter_load_power'];
+    delete card._hass.states['sensor.esp32_deye_inverter_external_power'];
+    card._updateValues();
+    // 2.137 + 1.113 = 3.250 kW
+    assert.strictEqual(domMap.gridPowerVal.innerText, '3.250 кВт');
+    assert.strictEqual(domMap.essentialPowerVal.innerText, '1.113 кВт');
+
+    // 4. Dynamic external CT discovery: if ESP32 / HA has a REAL physical CT clamp reading 3500 W (3.5 kW)
+    card._hass.states['sensor.esp32_deye_inverter_external_power'] = { state: '3500', attributes: { unit_of_measurement: 'W' } };
     card._updateValues();
 
     // With physical CT clamp discovered, grid displays exact street import (3.500 kW)
     assert.strictEqual(domMap.gridPowerVal.innerText, '3.500 кВт');
     assert.strictEqual(domMap.gridDirectionLabel.innerText, '→ Імпорт');
-    assert.strictEqual(domMap.essentialPowerVal.innerText, '1.171 кВт');
-    assert.match(domMap.masterBatteryFlowHint.innerHTML, /1\.866 кВт/);
+    assert.strictEqual(domMap.essentialPowerVal.innerText, '1.113 кВт');
   });
 
 });

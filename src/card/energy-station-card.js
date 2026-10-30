@@ -3380,6 +3380,10 @@ export class EnergyStationCard extends HTMLElement {
     }
 
     if (!sGridPower) {
+      const sPrimary = this._getEntityState(c.grid?.power_entity);
+      const rawPrimaryKw = sPrimary ? (sPrimary.unit === 'W' ? sPrimary.val / 1000 : sPrimary.val) : 0;
+      const totalGenKw = totalSolarKw + totalWindKw + (auxKw > 0 ? auxKw : 0) + batOutKw;
+
       const candidateExternalEntities = [
         'sensor.deye_12k_inverter_external_power',
         'sensor.deye_12k_inverter_external_ct_power',
@@ -3393,40 +3397,52 @@ export class EnergyStationCard extends HTMLElement {
         'sensor.external_power',
         'sensor.grid_external_power'
       ];
-      for (const ent of candidateExternalEntities) {
-        const sCand = this._getEntityState(ent);
-        if (sCand && typeof sCand.val === 'number' && !isNaN(sCand.val)) {
-          sGridPower = sCand;
-          isExternalCt = true;
-          break;
-        }
-      }
-    }
 
-    if (!sGridPower) {
       // Check 3-phase external CT sum (L1 + L2 + L3)
       const p1 = this._getEntityState('sensor.deye_12k_inverter_external_ct_l1_power') || this._getEntityState('sensor.solarman_external_power_l1');
       const p2 = this._getEntityState('sensor.deye_12k_inverter_external_ct_l2_power') || this._getEntityState('sensor.solarman_external_power_l2');
       const p3 = this._getEntityState('sensor.deye_12k_inverter_external_ct_l3_power') || this._getEntityState('sensor.solarman_external_power_l3');
+      let detectedExtCand = null;
       if (p1 && p2 && p3 && !isNaN(p1.val) && !isNaN(p2.val) && !isNaN(p3.val)) {
         const sumVal = (p1.unit === 'kW' ? p1.val * 1000 : p1.val) +
                        (p2.unit === 'kW' ? p2.val * 1000 : p2.val) +
                        (p3.unit === 'kW' ? p3.val * 1000 : p3.val);
-        sGridPower = { val: sumVal, unit: 'W', raw: String(sumVal) };
-        isExternalCt = true;
+        detectedExtCand = { val: sumVal, unit: 'W', raw: String(sumVal) };
       }
-    }
 
-    if (!sGridPower && this._hass?.states) {
-      const stateKeys = Object.keys(this._hass.states);
-      const dynamicExtKey = stateKeys.find(k =>
-        /(external_power|external_ct|ct1_power|grid_external_power)/i.test(k) &&
-        !/(daily|monthly|total_energy|energy|yesterday|status|voltage|current|freq)/i.test(k)
-      );
-      if (dynamicExtKey) {
-        const sCand = this._getEntityState(dynamicExtKey);
-        if (sCand && typeof sCand.val === 'number' && !isNaN(sCand.val) && Math.abs(sCand.val) > 0) {
-          sGridPower = sCand;
+      if (!detectedExtCand) {
+        for (const ent of candidateExternalEntities) {
+          const sCand = this._getEntityState(ent);
+          if (sCand && typeof sCand.val === 'number' && !isNaN(sCand.val)) {
+            detectedExtCand = sCand;
+            break;
+          }
+        }
+      }
+
+      if (!detectedExtCand && this._hass?.states) {
+        const stateKeys = Object.keys(this._hass.states);
+        const dynamicExtKey = stateKeys.find(k =>
+          /(external_power|external_ct|ct1_power|grid_external_power)/i.test(k) &&
+          !/(daily|monthly|total_energy|energy|yesterday|status|voltage|current|freq)/i.test(k)
+        );
+        if (dynamicExtKey) {
+          const sCand = this._getEntityState(dynamicExtKey);
+          if (sCand && typeof sCand.val === 'number' && !isNaN(sCand.val)) {
+            detectedExtCand = sCand;
+          }
+        }
+      }
+
+      // Validate candidate external CT:
+      // In Deye inverters without an external CT installed, register 0x0234 is perpetually 0.
+      // If candidate reports near 0 (< 30 W) while primary grid port or battery charger is drawing power without local generation,
+      // the CT clamp is physically unconnected! Never adopt it over the primary grid sensor.
+      if (detectedExtCand) {
+        const candKw = Math.abs(detectedExtCand.unit === 'kW' ? detectedExtCand.val : detectedExtCand.val / 1000);
+        const isUnconnectedCt = (candKw < 0.03) && ((batInKw > 0.2 && totalGenKw < 0.1) || (rawPrimaryKw > 0.1 && totalGenKw < 0.1));
+        if (!isUnconnectedCt) {
+          sGridPower = detectedExtCand;
           isExternalCt = true;
         }
       }
@@ -3523,10 +3539,11 @@ export class EnergyStationCard extends HTMLElement {
         // If auto_calculate is enabled (default), add the unmeasured house load to grid import.
         const shouldAutoCalculateGrid = c.grid?.auto_calculate !== false;
         if (shouldAutoCalculateGrid && isImport) {
+          const houseLoadKw = Math.max(rawSensorKw, subloadsTotalKw);
           const totalGenKw = totalSolarKw + totalWindKw + (auxKw > 0 ? auxKw : 0) + batOutKw;
-          const totalInternalLoadKw = batInKw + rawSensorKw + nonEssKw + carKw;
+          const totalInternalLoadKw = batInKw + houseLoadKw + nonEssKw + carKw;
           if (totalInternalLoadKw > (totalGenKw + absGridKw + 0.1)) {
-            absGridKw = absGridKw + rawSensorKw;
+            absGridKw = absGridKw + houseLoadKw;
           }
         }
       }
