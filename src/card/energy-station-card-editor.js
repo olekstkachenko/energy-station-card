@@ -776,6 +776,17 @@ export class EnergyStationCardEditor extends HTMLElement {
           </div>
 
           <div class="field-row">
+            <label>Автоматичний розрахунок вводу мережі (Grid Import Reconcile):</label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="gridAutoCalculate" ${c.grid?.auto_calculate !== false ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #0284c7;">
+              <span style="font-size: 11px;">Сумувати заряд АКБ та навантаження будинку, якщо інвертор вимірює лише зарядне</span>
+            </div>
+            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
+              Якщо зовнішній CT відсутній, а інвертор (Deye) у Grid Power обліковує лише ввід на заряд АКБ, картка автоматично додає споживання будинку для відображення реального вводу з вулиці.
+            </div>
+          </div>
+
+          <div class="field-row">
             <label>Знак потужності (Напрямок перетоку за сенсором):</label>
             <select id="gridPowerSign">
               <option value="deye" ${c.grid?.power_sign !== 'inverted' ? 'selected' : ''}>Стандарт Deye / Sunsynk / Solarman (+ Імпорт, - Експорт)</option>
@@ -1351,6 +1362,7 @@ export class EnergyStationCardEditor extends HTMLElement {
     });
 
     bindCheckbox('gridSellingEnabled', 'grid.selling_enabled');
+    bindCheckbox('gridAutoCalculate', 'grid.auto_calculate');
     bindInput('gridPower', 'grid.power_entity');
     bindInput('gridExternalPower', 'grid.external_power_entity');
     bindInput('gridVoltage', 'grid.voltage_entity');

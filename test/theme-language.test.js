@@ -468,6 +468,60 @@ test('Energy Station Card - Theme & Language Customization', async (t) => {
     assert.strictEqual(domMap.gridPowerVal.innerText, '0.030 кВт');
   });
 
+  await t.test('auto-reconciliation & CT clamp discovery: reconciles 3.5 kW grid import with house load and battery charge', () => {
+    const card = new EnergyStationCard();
+    card._config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    card._config.load.essential_power_entity = 'sensor.deye_12k_inverter_load_power';
+    card._config.grid.power_entity = 'sensor.deye_12k_inverter_total_grid_power';
+    card._config.grid.external_power_entity = ''; // no external CT configured explicitly
+    card._config.grid.auto_calculate = true;
+    card._language = 'uk';
+
+    const domMap = {};
+    card._nodes = new Proxy(domMap, {
+      get: (target, prop) => {
+        if (!(prop in target)) target[prop] = dummyNode();
+        return target[prop];
+      }
+    });
+
+    card.shadowRoot.getElementById = (id) => {
+      if (!domMap[id]) domMap[id] = dummyNode();
+      return domMap[id];
+    };
+
+    // User Scenario: Night time charging (Solar = 0, Battery = 1866 W charge, House = 1171 W, Grid Port = 2137 W)
+    card._hass = {
+      states: {
+        'sensor.deye_12k_inverter_pv1_power': { state: '0', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_12k_inverter_pv2_power': { state: '0', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_12k_inverter_pv3_power': { state: '0', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_12k_inverter_total_grid_power': { state: '2137', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_12k_inverter_load_power': { state: '1171', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_12k_inverter_battery_power': { state: '-1866', attributes: { unit_of_measurement: 'W' } }
+      }
+    };
+
+    card._updateValues();
+
+    // 1. Inverter grid port (2.137 kW) is reconciled with house load (1.171 kW) -> 3.308 kW
+    assert.strictEqual(domMap.gridPowerVal.innerText, '3.308 кВт');
+    assert.strictEqual(domMap.gridDirectionLabel.innerText, '→ Імпорт');
+    assert.strictEqual(domMap.essentialPowerVal.innerText, '1.171 кВт');
+    assert.match(domMap.masterBatteryFlowHint.innerHTML, /1\.866 кВт/);
+
+    // 2. Dynamic external CT discovery: if ESP32 / HA has an external CT sensor (e.g. 3500 W / 3.5 kW)
+    card._hass.states['sensor.esp32_deye_inverter_external_power'] = { state: '3500', attributes: { unit_of_measurement: 'W' } };
+
+    card._updateValues();
+
+    // With physical CT clamp discovered, grid displays exact street import (3.500 kW)
+    assert.strictEqual(domMap.gridPowerVal.innerText, '3.500 кВт');
+    assert.strictEqual(domMap.gridDirectionLabel.innerText, '→ Імпорт');
+    assert.strictEqual(domMap.essentialPowerVal.innerText, '1.171 кВт');
+    assert.match(domMap.masterBatteryFlowHint.innerHTML, /1\.866 кВт/);
+  });
+
 });
 
 

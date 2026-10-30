@@ -3200,7 +3200,8 @@ export class EnergyStationCard extends HTMLElement {
       } else {
         auxNode.classList.remove('hidden');
         const sAux = this._getEntityState(c.aux?.power_entity);
-        const auxFormatted = this._formatPower(sAux, 2.0);
+        const fallbackKw = this._hass ? 0 : 2.0;
+        const auxFormatted = this._formatPower(sAux, fallbackKw);
         auxKw = auxFormatted.kw;
         if (this._nodes.auxPowerVal) this._nodes.auxPowerVal.innerText = auxFormatted.str;
         
@@ -3416,6 +3417,21 @@ export class EnergyStationCard extends HTMLElement {
       }
     }
 
+    if (!sGridPower && this._hass?.states) {
+      const stateKeys = Object.keys(this._hass.states);
+      const dynamicExtKey = stateKeys.find(k =>
+        /(external_power|external_ct|ct1_power|grid_external_power)/i.test(k) &&
+        !/(daily|monthly|total_energy|energy|yesterday|status|voltage|current|freq)/i.test(k)
+      );
+      if (dynamicExtKey) {
+        const sCand = this._getEntityState(dynamicExtKey);
+        if (sCand && typeof sCand.val === 'number' && !isNaN(sCand.val) && Math.abs(sCand.val) > 0) {
+          sGridPower = sCand;
+          isExternalCt = true;
+        }
+      }
+    }
+
     if (!sGridPower) {
       sGridPower = this._getEntityState(c.grid?.power_entity);
     }
@@ -3497,6 +3513,20 @@ export class EnergyStationCard extends HTMLElement {
               absGridKw = 0;
               isExport = false;
             }
+          }
+        }
+
+        // Auto-reconcile Grid Import when internal grid port only accounts for inverter charger draw:
+        // In Deye/Sunsynk, when charging from grid, grid_power measures only the inverter charger bridge.
+        // If the house is drawing power and internal generation is 0 (or less than charging + load),
+        // the grid port does not include the house load.
+        // If auto_calculate is enabled (default), add the unmeasured house load to grid import.
+        const shouldAutoCalculateGrid = c.grid?.auto_calculate !== false;
+        if (shouldAutoCalculateGrid && isImport) {
+          const totalGenKw = totalSolarKw + totalWindKw + (auxKw > 0 ? auxKw : 0) + batOutKw;
+          const totalInternalLoadKw = batInKw + rawSensorKw + nonEssKw + carKw;
+          if (totalInternalLoadKw > (totalGenKw + absGridKw + 0.1)) {
+            absGridKw = absGridKw + rawSensorKw;
           }
         }
       }
