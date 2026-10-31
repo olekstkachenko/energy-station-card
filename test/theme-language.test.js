@@ -533,11 +533,12 @@ test('Energy Station Card - Theme & Language Customization', async (t) => {
     assert.strictEqual(domMap.gridPowerVal.innerText, '3.250 кВт');
     assert.strictEqual(domMap.essentialPowerVal.innerText, '1.113 кВт');
 
-    // 4. Dynamic external CT discovery: if ESP32 / HA has a REAL physical CT clamp reading 3500 W (3.5 kW)
+    // 4. Physical external CT / Smart Meter entity configured by user (reading 3500 W / 3.5 kW)
+    card._config.grid.external_power_entity = 'sensor.esp32_deye_inverter_external_power';
     card._hass.states['sensor.esp32_deye_inverter_external_power'] = { state: '3500', attributes: { unit_of_measurement: 'W' } };
     card._updateValues();
 
-    // With physical CT clamp discovered, grid displays exact street import (3.500 kW)
+    // With physical CT clamp configured, grid displays exact street import (3.500 kW)
     assert.strictEqual(domMap.gridPowerVal.innerText, '3.500 кВт');
     assert.strictEqual(domMap.gridDirectionLabel.innerText, '→ Імпорт');
     assert.strictEqual(domMap.essentialPowerVal.innerText, '1.113 кВт');

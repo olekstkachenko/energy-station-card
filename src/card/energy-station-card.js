@@ -3384,66 +3384,74 @@ export class EnergyStationCard extends HTMLElement {
       const rawPrimaryKw = sPrimary ? (sPrimary.unit === 'W' ? sPrimary.val / 1000 : sPrimary.val) : 0;
       const totalGenKw = totalSolarKw + totalWindKw + (auxKw > 0 ? auxKw : 0) + batOutKw;
 
-      const candidateExternalEntities = [
-        'sensor.deye_12k_inverter_external_power',
-        'sensor.deye_12k_inverter_external_ct_power',
-        'sensor.deye_12k_inverter_external_ct_total_power',
-        'sensor.deye_12k_inverter_grid_external_power',
-        'sensor.solarman_grid_external_power',
-        'sensor.solarman_external_power',
-        'sensor.solarman_total_grid_external_power',
-        'sensor.sunsynk_external_grid_power',
-        'sensor.sunsynk_grid_external_power',
-        'sensor.external_power',
-        'sensor.grid_external_power'
-      ];
+      // If primary grid sensor is importing power (e.g. charging battery or supplying loads),
+      // adopt primary sensor directly unless user explicitly configured an external CT entity!
+      // This prevents inactive/disconnected CT sensors (reading 0 or floating noise) from hijacking grid import.
+      if (sPrimary && rawPrimaryKw > 0.05) {
+        sGridPower = sPrimary;
+        isExternalCt = false;
+      } else {
+        const candidateExternalEntities = [
+          'sensor.deye_12k_inverter_external_power',
+          'sensor.deye_12k_inverter_external_ct_power',
+          'sensor.deye_12k_inverter_external_ct_total_power',
+          'sensor.deye_12k_inverter_grid_external_power',
+          'sensor.solarman_grid_external_power',
+          'sensor.solarman_external_power',
+          'sensor.solarman_total_grid_external_power',
+          'sensor.sunsynk_external_grid_power',
+          'sensor.sunsynk_grid_external_power',
+          'sensor.external_power',
+          'sensor.grid_external_power'
+        ];
 
-      // Check 3-phase external CT sum (L1 + L2 + L3)
-      const p1 = this._getEntityState('sensor.deye_12k_inverter_external_ct_l1_power') || this._getEntityState('sensor.solarman_external_power_l1');
-      const p2 = this._getEntityState('sensor.deye_12k_inverter_external_ct_l2_power') || this._getEntityState('sensor.solarman_external_power_l2');
-      const p3 = this._getEntityState('sensor.deye_12k_inverter_external_ct_l3_power') || this._getEntityState('sensor.solarman_external_power_l3');
-      let detectedExtCand = null;
-      if (p1 && p2 && p3 && !isNaN(p1.val) && !isNaN(p2.val) && !isNaN(p3.val)) {
-        const sumVal = (p1.unit === 'kW' ? p1.val * 1000 : p1.val) +
-                       (p2.unit === 'kW' ? p2.val * 1000 : p2.val) +
-                       (p3.unit === 'kW' ? p3.val * 1000 : p3.val);
-        detectedExtCand = { val: sumVal, unit: 'W', raw: String(sumVal) };
-      }
+        // Check 3-phase external CT sum (L1 + L2 + L3)
+        const p1 = this._getEntityState('sensor.deye_12k_inverter_external_ct_l1_power') || this._getEntityState('sensor.solarman_external_power_l1');
+        const p2 = this._getEntityState('sensor.deye_12k_inverter_external_ct_l2_power') || this._getEntityState('sensor.solarman_external_power_l2');
+        const p3 = this._getEntityState('sensor.deye_12k_inverter_external_ct_l3_power') || this._getEntityState('sensor.solarman_external_power_l3');
+        let detectedExtCand = null;
+        if (p1 && p2 && p3 && !isNaN(p1.val) && !isNaN(p2.val) && !isNaN(p3.val)) {
+          const sumVal = (p1.unit === 'kW' ? p1.val * 1000 : p1.val) +
+                         (p2.unit === 'kW' ? p2.val * 1000 : p2.val) +
+                         (p3.unit === 'kW' ? p3.val * 1000 : p3.val);
+          detectedExtCand = { val: sumVal, unit: 'W', raw: String(sumVal) };
+        }
 
-      if (!detectedExtCand) {
-        for (const ent of candidateExternalEntities) {
-          const sCand = this._getEntityState(ent);
-          if (sCand && typeof sCand.val === 'number' && !isNaN(sCand.val)) {
-            detectedExtCand = sCand;
-            break;
+        if (!detectedExtCand) {
+          for (const ent of candidateExternalEntities) {
+            const sCand = this._getEntityState(ent);
+            if (sCand && typeof sCand.val === 'number' && !isNaN(sCand.val)) {
+              detectedExtCand = sCand;
+              break;
+            }
           }
         }
-      }
 
-      if (!detectedExtCand && this._hass?.states) {
-        const stateKeys = Object.keys(this._hass.states);
-        const dynamicExtKey = stateKeys.find(k =>
-          /(external_power|external_ct|ct1_power|grid_external_power)/i.test(k) &&
-          !/(daily|monthly|total_energy|energy|yesterday|status|voltage|current|freq)/i.test(k)
-        );
-        if (dynamicExtKey) {
-          const sCand = this._getEntityState(dynamicExtKey);
-          if (sCand && typeof sCand.val === 'number' && !isNaN(sCand.val)) {
-            detectedExtCand = sCand;
+        if (!detectedExtCand && this._hass?.states) {
+          const stateKeys = Object.keys(this._hass.states);
+          const dynamicExtKey = stateKeys.find(k =>
+            /(external_power|external_ct|ct1_power|grid_external_power)/i.test(k) &&
+            !/(daily|monthly|total_energy|energy|yesterday|status|voltage|current|freq)/i.test(k)
+          );
+          if (dynamicExtKey) {
+            const sCand = this._getEntityState(dynamicExtKey);
+            if (sCand && typeof sCand.val === 'number' && !isNaN(sCand.val)) {
+              detectedExtCand = sCand;
+            }
           }
         }
-      }
 
-      // Validate candidate external CT:
-      // In Deye inverters without an external CT installed, register 0x0234 is perpetually 0.
-      // If candidate reports near 0 (< 30 W) while primary grid port or battery charger is drawing power without local generation,
-      // the CT clamp is physically unconnected! Never adopt it over the primary grid sensor.
-      if (detectedExtCand) {
-        const candKw = Math.abs(detectedExtCand.unit === 'kW' ? detectedExtCand.val : detectedExtCand.val / 1000);
-        const isUnconnectedCt = (candKw < 0.03) && ((batInKw > 0.2 && totalGenKw < 0.1) || (rawPrimaryKw > 0.1 && totalGenKw < 0.1));
-        if (!isUnconnectedCt) {
-          sGridPower = detectedExtCand;
-          isExternalCt = true;
+        // Validate candidate external CT:
+        // In Deye inverters without an external CT installed, register 0x0234 is perpetually 0.
+        // If candidate reports near 0 (< 30 W) while primary grid port or battery charger is drawing power without local generation,
+        // the CT clamp is physically unconnected! Never adopt it over the primary grid sensor.
+        if (detectedExtCand) {
+          const candKw = Math.abs(detectedExtCand.unit === 'kW' ? detectedExtCand.val : detectedExtCand.val / 1000);
+          const isUnconnectedCt = (candKw < 0.03) && ((batInKw > 0.2 && totalGenKw < 0.1) || (rawPrimaryKw > 0.1 && totalGenKw < 0.1));
+          if (!isUnconnectedCt) {
+            sGridPower = detectedExtCand;
+            isExternalCt = true;
+          }
         }
       }
     }
