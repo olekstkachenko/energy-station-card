@@ -60,6 +60,7 @@ export const I18N = {
     solar_saved: 'Заощаджено',
     bat_delta: 'Розбаланс',
     bat_remaining: 'Залишок',
+    edit_card: 'Редагувати',
     kwh_unit: 'кВт·год'
   },
   en: {
@@ -119,6 +120,7 @@ export const I18N = {
     solar_saved: 'Saved',
     bat_delta: 'Cell Delta',
     bat_remaining: 'Remaining',
+    edit_card: 'Edit',
     kwh_unit: 'kWh'
   }
 };
@@ -141,12 +143,105 @@ export class EnergyStationCard extends HTMLElement {
 
   connectedCallback() {
     this._setupResizeObserver();
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('energy_station_auto_edit') === '1') {
+      try {
+        sessionStorage.removeItem('energy_station_auto_edit');
+      } catch (e) {}
+      setTimeout(() => this._openCardEditor(), 350);
+    }
   }
 
   disconnectedCallback() {
     if (this._resizeObserver) {
       this._resizeObserver.disconnect();
       this._resizeObserver = null;
+    }
+  }
+
+  _openCardEditor() {
+    let curr = this;
+    let huiCardOptions = null;
+    while (curr) {
+      if (curr.tagName && (
+        curr.tagName.toLowerCase() === 'hui-card-options' ||
+        curr.tagName.toLowerCase() === 'hui-card-edit-mode'
+      )) {
+        huiCardOptions = curr;
+        break;
+      }
+      if (curr.parentElement) {
+        curr = curr.parentElement;
+      } else if (curr.parentNode) {
+        curr = curr.parentNode;
+      } else if (curr.getRootNode && curr.getRootNode().host) {
+        curr = curr.getRootNode().host;
+      } else {
+        break;
+      }
+    }
+
+    if (!huiCardOptions && typeof document !== 'undefined') {
+      const allOptions = document.querySelectorAll('hui-card-options, hui-card-edit-mode');
+      for (const opt of allOptions) {
+        if (opt.contains(this) || opt.shadowRoot?.contains(this) || allOptions.length === 1) {
+          huiCardOptions = opt;
+          break;
+        }
+      }
+    }
+
+    if (huiCardOptions) {
+      if (typeof huiCardOptions._editCard === 'function') {
+        huiCardOptions._editCard();
+        return;
+      }
+      const btn = huiCardOptions.shadowRoot?.querySelector('mwc-button, ha-button, button') ||
+                  huiCardOptions.querySelector('mwc-button, ha-button, button');
+      if (btn) {
+        btn.click();
+        return;
+      }
+      if (huiCardOptions.path !== undefined) {
+        const ev = new CustomEvent('ll-edit-card', {
+          bubbles: true,
+          composed: true,
+          detail: { path: huiCardOptions.path }
+        });
+        huiCardOptions.dispatchEvent(ev);
+        return;
+      }
+    }
+
+    // Fallback: If not currently in edit mode or options wrapper not yet loaded in DOM
+    if (typeof window !== 'undefined') {
+      try {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('energy_station_auto_edit', '1');
+        }
+      } catch (e) {}
+      const url = new URL(window.location.href);
+      if (!url.searchParams.has('edit')) {
+        url.searchParams.set('edit', '1');
+        window.location.href = url.toString();
+      } else {
+        setTimeout(() => {
+          const allOpts = document.querySelectorAll('hui-card-options, hui-card-edit-mode');
+          for (const opt of allOpts) {
+            if (opt.contains(this) || opt.shadowRoot?.contains(this) || allOpts.length === 1) {
+              if (typeof opt._editCard === 'function') {
+                opt._editCard();
+                return;
+              }
+              const btn = opt.shadowRoot?.querySelector('mwc-button, ha-button, button') ||
+                          opt.querySelector('mwc-button, ha-button, button');
+              if (btn) {
+                btn.click();
+                return;
+              }
+            }
+          }
+        }, 500);
+      }
     }
   }
 
@@ -1523,6 +1618,20 @@ export class EnergyStationCard extends HTMLElement {
           background: rgba(14, 165, 233, 0.15);
           transform: translateY(-1px);
         }
+        .es-header-edit-btn {
+          background: rgba(2, 132, 199, 0.18) !important;
+          border-color: rgba(56, 189, 248, 0.45) !important;
+          color: #38bdf8 !important;
+          gap: 5px;
+          padding: 3px 10px;
+          font-weight: 700;
+        }
+        .es-header-edit-btn:hover {
+          background: rgba(2, 132, 199, 0.35) !important;
+          border-color: #38bdf8 !important;
+          color: #ffffff !important;
+          box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+        }
 
         /* LIGHT THEME STYLING OVERRIDES */
         .energy-station-container.theme-light {
@@ -1548,6 +1657,16 @@ export class EnergyStationCard extends HTMLElement {
           background: #ffffff;
           border-color: #0284c7;
           color: #0284c7;
+        }
+        .theme-light .es-header-edit-btn {
+          background: rgba(2, 132, 199, 0.12) !important;
+          border-color: rgba(2, 132, 199, 0.35) !important;
+          color: #0284c7 !important;
+        }
+        .theme-light .es-header-edit-btn:hover {
+          background: rgba(2, 132, 199, 0.22) !important;
+          border-color: #0284c7 !important;
+          color: #0369a1 !important;
         }
         .theme-light .flow-track {
           stroke: rgba(203, 213, 225, 0.85) !important;
@@ -1777,6 +1896,10 @@ export class EnergyStationCard extends HTMLElement {
             <span class="es-header-badge">PRO FLOW</span>
           </div>
           <div class="es-header-controls">
+            <button class="es-header-pill-btn es-header-edit-btn" id="headerEditCard" title="${this._t('edit_card')}">
+              <span>⚙️</span>
+              <span>${this._t('edit_card')}</span>
+            </button>
             <div class="es-zoom-control" style="display: flex; align-items: center; background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 20px; padding: 1px 4px; gap: 2px;">
               <button class="es-header-pill-btn" id="headerZoomOut" title="Зменшити масштаб" style="border: none; background: transparent; padding: 2px 6px; font-weight: 800; font-size: 13px; line-height: 1;">−</button>
               <span class="es-mono" id="headerZoomVal" style="font-size: 11px; min-width: 36px; text-align: center; color: #38bdf8; font-weight: 700; cursor: pointer; user-select: none;" title="Скинути до 100%">${Math.round(this._scale * 100)}%</span>
@@ -2365,6 +2488,9 @@ export class EnergyStationCard extends HTMLElement {
           <span class="es-qs-title">${this._t('ctrl_title')}</span>
         </div>
         <div class="es-qs-actions">
+          <button class="es-qs-mini-btn" id="btnEditCardQs" title="${this._t('edit_card')}" style="color: #38bdf8; border-color: rgba(56, 189, 248, 0.4); background: rgba(2, 132, 199, 0.18);">
+            <span>⚙️</span>
+          </button>
           <button class="es-qs-mini-btn" id="btnThemeToggle" title="${this._t('theme_label')}">
             <span class="es-qs-mini-icon">${isLight ? ICONS.sun_mode : ICONS.moon}</span>
           </button>
@@ -2419,7 +2545,11 @@ export class EnergyStationCard extends HTMLElement {
       </div>
     `;
 
-    // Theme & Language toggles
+    // Theme, Language & Edit toggles
+    card.querySelector('#btnEditCardQs')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._openCardEditor();
+    });
     card.querySelector('#btnThemeToggle')?.addEventListener('click', (e) => {
       e.stopPropagation();
       this._toggleTheme();
@@ -2550,6 +2680,10 @@ export class EnergyStationCard extends HTMLElement {
     const root = this.shadowRoot;
     const c = this._config || DEFAULT_CONFIG;
 
+    root.getElementById('headerEditCard')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._openCardEditor();
+    });
     root.getElementById('headerThemeToggle')?.addEventListener('click', (e) => {
       e.stopPropagation();
       this._toggleTheme();

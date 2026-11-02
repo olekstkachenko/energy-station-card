@@ -35,6 +35,14 @@ if (typeof globalThis.localStorage === 'undefined') {
     removeItem: (k) => { delete store[k]; }
   };
 }
+if (typeof globalThis.sessionStorage === 'undefined') {
+  const sStore = {};
+  globalThis.sessionStorage = {
+    getItem: (k) => sStore[k] || null,
+    setItem: (k, v) => { sStore[k] = String(v); },
+    removeItem: (k) => { delete sStore[k]; }
+  };
+}
 if (typeof globalThis.requestAnimationFrame === 'undefined') {
   globalThis.requestAnimationFrame = (cb) => setTimeout(cb, 0);
 }
@@ -564,6 +572,24 @@ test('Energy Station Card - Theme & Language Customization', async (t) => {
     assert.strictEqual(domMap.gridDirectionLabel.innerText, '→ Імпорт');
     assert.strictEqual(domMap.essentialPowerVal.innerText, '1.125 кВт');
     assert.strictEqual(domMap.inverterSelfConsumptionVal.innerText, '100 Вт');
+  });
+
+  await t.test('dedicated edit button opens card editor via hui-card-options or redirects to ?edit=1', () => {
+    const card = new EnergyStationCard();
+    let editCalled = false;
+    card.parentElement = {
+      tagName: 'HUI-CARD-OPTIONS',
+      _editCard: () => { editCalled = true; }
+    };
+    card._openCardEditor();
+    assert.strictEqual(editCalled, true, '_editCard should be called on hui-card-options');
+
+    // Test fallback when not enclosed in hui-card-options
+    const standaloneCard = new EnergyStationCard();
+    globalThis.location = { href: 'http://homeassistant.local:8123/lovelace/solar' };
+    standaloneCard._openCardEditor();
+    assert.strictEqual(globalThis.sessionStorage.getItem('energy_station_auto_edit'), '1');
+    assert.ok(globalThis.location.href.includes('edit=1'), 'Should redirect to edit mode URL');
   });
 
 });
