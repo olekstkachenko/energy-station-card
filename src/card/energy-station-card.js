@@ -1,3 +1,8 @@
+console.info(
+  '%c⚡ Energy Station Card v1.4.5 Loaded ⚡',
+  'background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
+);
+
 import { DEFAULT_CONFIG } from './default-config.js';
 import { ICONS, getSvgIcon } from './svg-helpers.js';
 import './energy-station-card-editor.js';
@@ -1940,7 +1945,7 @@ export class EnergyStationCard extends HTMLElement {
         <div class="es-header">
           <div class="es-header-title">
             <span>${c.title || 'Energy Station'}</span>
-            <span class="es-header-badge">PRO FLOW</span>
+            <span class="es-header-badge">PRO FLOW v1.4.5</span>
           </div>
           <div class="es-header-controls">
             <button class="es-header-pill-btn es-header-edit-btn" id="headerEditCard" title="${this._t('edit_card')}">
@@ -3798,8 +3803,20 @@ export class EnergyStationCard extends HTMLElement {
       // If primary grid power sensor is missing, 0, or reporting less than the battery charge:
       // Derive active grid import from Inverter Mains telemetry (V * I * cos(phi)) or energy balance.
       if (cannotBeExporting) {
-        const sMainsVolt = this._getEntityState(c.grid?.voltage_entity || c.inverter?.voltage_entity);
-        const sMainsCurr = this._getEntityState(c.inverter?.current_entity || 'sensor.deye_12k_inverter_grid_current');
+        const sMainsVolt = this._getEntityState(c.grid?.voltage_entity) ||
+                           this._getEntityState(c.inverter?.voltage_entity) ||
+                           this._getEntityState('sensor.inverter_12_kvt_grid_voltage') ||
+                           this._getEntityState('sensor.esp32_deye_inverter_grid_voltage') ||
+                           this._getEntityState('sensor.deye_12k_inverter_grid_voltage');
+
+        const sMainsCurr = this._getEntityState(c.inverter?.current_entity) ||
+                           this._getEntityState(c.grid?.current_entity) ||
+                           this._getEntityState('sensor.inverter_12_kvt_grid_current') ||
+                           this._getEntityState('sensor.inverter_12_kvt_current_l1') ||
+                           this._getEntityState('sensor.esp32_deye_inverter_grid_current') ||
+                           this._getEntityState('sensor.deye_12k_inverter_grid_current') ||
+                           this._getEntityState('sensor.grid_current');
+
         const mainsV = (sMainsVolt && typeof sMainsVolt.val === 'number' && !isNaN(sMainsVolt.val)) ? sMainsVolt.val : 0;
         const mainsI = (sMainsCurr && typeof sMainsCurr.val === 'number' && !isNaN(sMainsCurr.val)) ? sMainsCurr.val : 0;
 

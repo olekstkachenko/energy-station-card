@@ -1,3 +1,8 @@
+console.info(
+  '%c⚡ Energy Station Panel v1.4.5 Loaded ⚡',
+  'background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
+);
+
 import { load as yamlLoad, dump as yamlDump } from 'js-yaml';
 import { DEFAULT_CONFIG } from '../card/default-config.js';
 import '../card/energy-station-card-editor.js';
@@ -652,7 +657,7 @@ export class EnergyStationPanel extends HTMLElement {
           <div>
             <div class="panel-brand-title">
               <span>Energy Station</span>
-              <span class="panel-brand-badge">PRO APP</span>
+              <span class="panel-brand-badge">PRO APP v1.4.5</span>
             </div>
           </div>
         </div>
