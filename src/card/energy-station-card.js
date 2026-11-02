@@ -454,6 +454,8 @@ export class EnergyStationCard extends HTMLElement {
 
         :host {
           display: block;
+          width: 100%;
+          box-sizing: border-box;
           font-family: var(--es-font-family, ${fontMap[app.font_family] || fontMap['Inter']});
           color: #e2e8f0;
           user-select: none;

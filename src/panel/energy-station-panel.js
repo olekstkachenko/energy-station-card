@@ -28,6 +28,11 @@ export class EnergyStationPanel extends HTMLElement {
     if (this._hass && this._cardNode) {
       this._cardNode.hass = this._hass;
     }
+    setTimeout(() => {
+      if (this._cardNode && typeof this._cardNode._updateFlowPaths === 'function') {
+        this._cardNode._updateFlowPaths();
+      }
+    }, 120);
   }
 
   _loadConfig() {
@@ -199,11 +204,22 @@ export class EnergyStationPanel extends HTMLElement {
         /* MAIN CONTENT VIEWPORT */
         .panel-viewport {
           width: 100%;
+          box-sizing: border-box;
           padding: 20px 24px 60px 24px;
           display: flex;
           justify-content: center;
           align-items: flex-start;
           transition: margin-right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        energy-station-card,
+        #stationCard {
+          display: block;
+          width: 100%;
+          max-width: 1600px;
+          min-width: 0;
+          flex: 1 1 100%;
+          box-sizing: border-box;
         }
 
         /* SETTINGS DRAWER OVERLAY */
@@ -1241,3 +1257,4 @@ export class EnergyStationPanel extends HTMLElement {
 if (typeof customElements !== 'undefined' && !customElements.get('energy-station-panel')) {
   customElements.define('energy-station-panel', EnergyStationPanel);
 }
+

@@ -994,6 +994,8 @@
 
         :host {
           display: block;
+          width: 100%;
+          box-sizing: border-box;
           font-family: var(--es-font-family, ${n[t.font_family]||n.Inter});
           color: #e2e8f0;
           user-select: none;

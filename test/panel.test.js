@@ -77,3 +77,4 @@ test('Energy Station Standalone Panel - Initialization & Typography', async (t) 
   });
 
 });
+

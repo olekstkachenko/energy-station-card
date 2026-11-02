@@ -272,8 +272,8 @@ const re = {
     show_solar_savings: !0
     // показувати суму заощаджень від сонця
   }
-}, se = 'width="24" height="24" style="width: 24px; height: 24px; max-width: 24px; max-height: 24px; display: block; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor"', oe = {
-  sun: `<svg ${se} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+}, oe = 'width="24" height="24" style="width: 24px; height: 24px; max-width: 24px; max-height: 24px; display: block; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor"', se = {
+  sun: `<svg ${oe} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="12" cy="12" r="5"></circle>
     <line x1="12" y1="1" x2="12" y2="3"></line>
     <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -284,61 +284,61 @@ const re = {
     <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
     <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
   </svg>`,
-  pv_panel: `<svg ${se} stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  pv_panel: `<svg ${oe} stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <path d="M12 3v18m9-9H3m14.5-6.5l-13 13m0-13l13 13"></path>
   </svg>`,
-  inverter: `<svg ${se} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  inverter: `<svg ${oe} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M13 10V3L4 14h7v7l9-11h-7z"></path>
   </svg>`,
-  grid: `<svg ${se} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  grid: `<svg ${oe} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M13 10V3L4 14h7v7l9-11h-7z"></path>
   </svg>`,
-  grid_tower: `<svg ${se} stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  grid_tower: `<svg ${oe} stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <path d="M12 2l4 18M12 2L8 20M4 7h16M2 13h20M6 18h12M10 2v20M14 2v20"></path>
   </svg>`,
-  car: `<svg ${se} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  car: `<svg ${oe} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 3.1C2 11.4 2 11.7 2 12v4c0 .6.4 1 1 1h2"></path>
     <circle cx="7" cy="17" r="2"></circle>
     <path d="M9 17h6"></path>
     <circle cx="17" cy="17" r="2"></circle>
   </svg>`,
-  house: `<svg ${se} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  house: `<svg ${oe} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
   </svg>`,
-  battery: `<svg ${se} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  battery: `<svg ${oe} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <rect x="2" y="7" width="16" height="10" rx="2" ry="2"></rect>
     <line x1="22" y1="11" x2="22" y2="13"></line>
   </svg>`,
-  boiler: `<svg ${se} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  boiler: `<svg ${oe} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
   </svg>`,
-  heat_pump: `<svg ${se} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  heat_pump: `<svg ${oe} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="12" cy="12" r="9"></circle>
     <path d="M12 7v5l3 3"></path>
     <path d="M8 12h.01M16 12h.01"></path>
   </svg>`,
-  air_conditioner: `<svg ${se} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  air_conditioner: `<svg ${oe} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <rect x="2" y="3" width="20" height="10" rx="2"></rect>
     <path d="M6 9h12M6 17c1.5-2 3.5-2 5 0s3.5 2 5 0M9 21c1-1.3 2.5-1.3 3.5 0"></path>
   </svg>`,
-  washing_machine: `<svg ${se} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  washing_machine: `<svg ${oe} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <rect x="3" y="2" width="18" height="20" rx="2"></rect>
     <circle cx="12" cy="13" r="5"></circle>
     <path d="M12 15a2 2 0 100-4 2 2 0 000 4zM6 6h.01M9 6h4"></path>
   </svg>`,
-  other: `<svg ${se} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  other: `<svg ${oe} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
   </svg>`,
-  microinverter: `<svg ${se} stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  microinverter: `<svg ${oe} stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <rect x="2" y="5" width="20" height="14" rx="2"></rect>
     <path d="M7 5v14M17 5v14M2 12h20M11 9l2 3h-2l2 3"></path>
   </svg>`,
-  generator: `<svg ${se} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  generator: `<svg ${oe} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <rect x="3" y="6" width="18" height="12" rx="2"></rect>
     <circle cx="9" cy="12" r="3"></circle>
     <path d="M15 9h3v6h-3"></path>
   </svg>`,
-  wind: `<svg ${se} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  wind: `<svg ${oe} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"></path>
   </svg>`,
   wind_turbine: `<svg width="24" height="24" style="width: 24px; height: 24px; max-width: 24px; max-height: 24px; display: block; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -353,24 +353,24 @@ const re = {
       <path d="M12 10 L5.1 14 C6.2 11.6 8.5 11.2 11.5 10.5 Z" fill="currentColor" stroke="none"/>
     </g>
   </svg>`,
-  settings: `<svg ${se} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  settings: `<svg ${oe} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"></path>
     <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path>
   </svg>`,
-  fullscreen: `<svg ${se} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  fullscreen: `<svg ${oe} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"></path>
   </svg>`,
-  house_outline: `<svg ${se} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  house_outline: `<svg ${oe} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M3 10l9-7 9 7v10a1 1 0 01-1 1H4a1 1 0 01-1-1V10z"></path>
   </svg>`,
-  battery_vertical: `<svg ${se} stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  battery_vertical: `<svg ${oe} stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <rect x="6" y="6" width="12" height="15" rx="2" ry="2"></rect>
     <line x1="9" y1="3" x2="15" y2="3"></line>
   </svg>`,
-  moon: `<svg ${se} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  moon: `<svg ${oe} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
   </svg>`,
-  sun_mode: `<svg ${se} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  sun_mode: `<svg ${oe} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="12" cy="12" r="5"></circle>
     <line x1="12" y1="1" x2="12" y2="3"></line>
     <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -381,7 +381,7 @@ const re = {
     <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
     <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
   </svg>`,
-  globe: `<svg ${se} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  globe: `<svg ${oe} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="12" cy="12" r="10"></circle>
     <line x1="2" y1="12" x2="22" y2="12"></line>
     <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"></path>
@@ -426,11 +426,11 @@ class Fa extends HTMLElement {
       const t = document.querySelector("hui-dialog-edit-card") || document.querySelector("ha-dialog-edit-card");
       if (t) return t;
       try {
-        const o = document.querySelector("home-assistant");
-        if (o != null && o.shadowRoot) {
-          const p = o.shadowRoot.querySelector("hui-dialog-edit-card") || o.shadowRoot.querySelector("ha-dialog-edit-card");
+        const s = document.querySelector("home-assistant");
+        if (s != null && s.shadowRoot) {
+          const p = s.shadowRoot.querySelector("hui-dialog-edit-card") || s.shadowRoot.querySelector("ha-dialog-edit-card");
           if (p) return p;
-          const d = o.shadowRoot.querySelectorAll("*");
+          const d = s.shadowRoot.querySelectorAll("*");
           for (const c of d)
             if (c.shadowRoot) {
               const h = c.shadowRoot.querySelector("hui-dialog-edit-card") || c.shadowRoot.querySelector("ha-dialog-edit-card");
@@ -444,8 +444,8 @@ class Fa extends HTMLElement {
   }
   _findHaDialog(e) {
     if (e != null && e.shadowRoot) {
-      const o = e.shadowRoot.querySelector("ha-dialog") || e.shadowRoot.querySelector("mwc-dialog");
-      if (o) return o;
+      const s = e.shadowRoot.querySelector("ha-dialog") || e.shadowRoot.querySelector("mwc-dialog");
+      if (s) return s;
     }
     let t = this;
     for (; t; ) {
@@ -465,7 +465,7 @@ class Fa extends HTMLElement {
   _applyExpand(e) {
     var p, d, c;
     this._isDialogExpanded = e;
-    const t = this._findHuiDialog(), o = this._findHaDialog(t);
+    const t = this._findHuiDialog(), s = this._findHaDialog(t);
     if (e) {
       if (t) {
         typeof t._enlarge == "function" && !t.large ? t._enlarge() : (t.large = !0, t.setAttribute("large", ""));
@@ -496,10 +496,10 @@ class Fa extends HTMLElement {
         } catch {
         }
       }
-      if (o) {
-        o.style.setProperty("--mdc-dialog-min-width", "95vw", "important"), o.style.setProperty("--mdc-dialog-max-width", "96vw", "important"), o.style.setProperty("--ha-dialog-max-width", "96vw", "important"), o.style.setProperty("--ha-dialog-width", "95vw", "important"), o.style.setProperty("--mdc-dialog-width", "95vw", "important");
+      if (s) {
+        s.style.setProperty("--mdc-dialog-min-width", "95vw", "important"), s.style.setProperty("--mdc-dialog-max-width", "96vw", "important"), s.style.setProperty("--ha-dialog-max-width", "96vw", "important"), s.style.setProperty("--ha-dialog-width", "95vw", "important"), s.style.setProperty("--mdc-dialog-width", "95vw", "important");
         try {
-          const h = (p = o.shadowRoot) == null ? void 0 : p.querySelector(".mdc-dialog__surface");
+          const h = (p = s.shadowRoot) == null ? void 0 : p.querySelector(".mdc-dialog__surface");
           h && (h.style.setProperty("max-width", "96vw", "important"), h.style.setProperty("width", "95vw", "important"));
         } catch {
         }
@@ -513,10 +513,10 @@ class Fa extends HTMLElement {
         } catch {
         }
       }
-      if (o) {
-        o.style.removeProperty("--mdc-dialog-min-width"), o.style.removeProperty("--mdc-dialog-max-width"), o.style.removeProperty("--ha-dialog-max-width"), o.style.removeProperty("--ha-dialog-width"), o.style.removeProperty("--mdc-dialog-width");
+      if (s) {
+        s.style.removeProperty("--mdc-dialog-min-width"), s.style.removeProperty("--mdc-dialog-max-width"), s.style.removeProperty("--ha-dialog-max-width"), s.style.removeProperty("--ha-dialog-width"), s.style.removeProperty("--mdc-dialog-width");
         try {
-          const h = (c = o.shadowRoot) == null ? void 0 : c.querySelector(".mdc-dialog__surface");
+          const h = (c = s.shadowRoot) == null ? void 0 : c.querySelector(".mdc-dialog__surface");
           h && (h.style.removeProperty("max-width"), h.style.removeProperty("width"));
         } catch {
         }
@@ -525,8 +525,8 @@ class Fa extends HTMLElement {
     this._updateExpandBtn();
   }
   _updateExpandBtn() {
-    var o;
-    const e = (o = this.shadowRoot) == null ? void 0 : o.getElementById("btnToggleExpand");
+    var s;
+    const e = (s = this.shadowRoot) == null ? void 0 : s.getElementById("btnToggleExpand");
     if (!e) return;
     const t = this._isDialogExpanded;
     e.innerHTML = t ? "❐ Звичайний розмір" : "⛶ На весь екран", e.title = t ? "Згорнути вікно налаштувань до звичайного розміру" : "Розширити вікно налаштувань на весь екран";
@@ -544,14 +544,14 @@ class Fa extends HTMLElement {
     });
     this.dispatchEvent(e);
   }
-  _valueChanged(e, t, o = !1) {
+  _valueChanged(e, t, s = !1) {
     if (!this._config) return;
     this._config = JSON.parse(JSON.stringify(this._config));
     const p = e.split(".");
     let d = this._config;
     for (let c = 0; c < p.length - 1; c++)
       d[p[c]] || (d[p[c]] = {}), d = d[p[c]];
-    d[p[p.length - 1]] = t, this._debounceTimer && (clearTimeout(this._debounceTimer), this._debounceTimer = null), o ? this._dispatchConfig() : this._debounceTimer = setTimeout(() => {
+    d[p[p.length - 1]] = t, this._debounceTimer && (clearTimeout(this._debounceTimer), this._debounceTimer = null), s ? this._dispatchConfig() : this._debounceTimer = setTimeout(() => {
       this._dispatchConfig();
     }, 140);
   }
@@ -620,12 +620,12 @@ class Fa extends HTMLElement {
     ], this._config.inverter.power_entity = "sensor.solarman_inverter_power", this._config.battery.soc_entity = "sensor.solarman_battery_soc", this._config.battery.power_entity = "sensor.solarman_battery_power", this._config.grid.power_entity = "sensor.solarman_grid_external_power", this._config.load.auto_calculate = !0, this._config.load.separate_export = !0, this._config.load.essential_power_entity = "sensor.solarman_essential_load"), this._dispatchConfig(), this.render();
   }
   render() {
-    var c, h, b, S, $, m, u, E, g, _, k, f, i, a, s, w, l, y, B, n, I, V, H, W, K, v, C, P, x, L, j, J, le, de, ke, pe, ce, _e, me, ye, Be, Ae, it, ut, we, Ee, at, ue, Ce, he, qe, st, Ie, Ve, Le, Ge, Se, ee, M, R, ne, be, fe, ot, De, nt, yt, Et, ze, rt, Kt, St, He, Pe, $t, lt, dt, vt, mt, wt, Bt, qt, Gt, Ct, It, Ht, jt, ct, Yt, pt, Tt, Pt, Mt, Lt, Rt, Nt;
+    var c, h, b, S, $, m, u, E, g, _, k, f, i, a, o, w, l, y, B, n, I, V, H, W, K, v, C, P, x, L, j, J, le, de, ke, pe, ce, _e, me, ye, Be, Ae, it, ut, we, Ee, at, ue, Ce, he, qe, ot, Ie, Ve, Le, Ge, Se, ee, M, R, ne, be, fe, st, De, nt, yt, Et, ze, rt, Kt, St, He, Pe, $t, lt, dt, vt, mt, wt, Bt, qt, Gt, Ct, It, Ht, jt, ct, Yt, pt, Tt, Pt, Mt, Lt, Rt, Nt;
     if (!this._config) return;
     this._rendered = !0;
     const e = this._config, t = (c = this.shadowRoot) == null ? void 0 : c.activeElement;
-    let o = null, p = null, d = null;
-    if (t && (t.id ? o = `#${t.id}` : ((h = t.dataset) == null ? void 0 : h.idx) !== void 0 && t.className && (o = `.${t.className.trim().split(/\s+/)[0]}[data-idx="${t.dataset.idx}"]`), "selectionStart" in t && "selectionEnd" in t && (p = t.selectionStart, d = t.selectionEnd)), this.shadowRoot.innerHTML = `
+    let s = null, p = null, d = null;
+    if (t && (t.id ? s = `#${t.id}` : ((h = t.dataset) == null ? void 0 : h.idx) !== void 0 && t.className && (s = `.${t.className.trim().split(/\s+/)[0]}[data-idx="${t.dataset.idx}"]`), "selectionStart" in t && "selectionEnd" in t && (p = t.selectionStart, d = t.selectionEnd)), this.shadowRoot.innerHTML = `
       <style>
         :host {
           display: block;
@@ -948,7 +948,7 @@ class Fa extends HTMLElement {
               <input type="number" step="0.1" id="solarInstalledPower" value="${((a = e.solar) == null ? void 0 : a.installed_power) !== void 0 ? e.solar.installed_power : 12}" placeholder="12.0">
             </div>
             <div class="field-row full-width checkbox-row">
-              <input type="checkbox" id="solarShowMetrics" ${((s = e.solar) == null ? void 0 : s.show_metrics) !== !1 ? "checked" : ""}>
+              <input type="checkbox" id="solarShowMetrics" ${((o = e.solar) == null ? void 0 : o.show_metrics) !== !1 ? "checked" : ""}>
               <span>Відображати напругу (V) та струм (A) стрінгів на картці</span>
             </div>
           </div>
@@ -1169,7 +1169,7 @@ class Fa extends HTMLElement {
             <div class="field-row">
               <label>Знак потужності/струму батареї (Напрямок):</label>
               <select id="batPowerSign">
-                <option value="deye" ${((st = e.battery) == null ? void 0 : st.power_sign) !== "standard" ? "selected" : ""}>Стандарт Deye / Sunsynk (- Заряд, + Розряд)</option>
+                <option value="deye" ${((ot = e.battery) == null ? void 0 : ot.power_sign) !== "standard" ? "selected" : ""}>Стандарт Deye / Sunsynk (- Заряд, + Розряд)</option>
                 <option value="standard" ${((Ie = e.battery) == null ? void 0 : Ie.power_sign) === "standard" ? "selected" : ""}>Стандартний (+ Заряд, - Розряд)</option>
               </select>
             </div>
@@ -1226,7 +1226,7 @@ class Fa extends HTMLElement {
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 10px;">
-            ${Array.from({ length: ((ot = e.battery) == null ? void 0 : ot.parallel_batteries) || 2 }).map((te, N) => {
+            ${Array.from({ length: ((st = e.battery) == null ? void 0 : st.parallel_batteries) || 2 }).map((te, N) => {
       var At, Vt, Dt, zt;
       const F = N + 1, D = ((Vt = (At = e.battery) == null ? void 0 : At.modules) == null ? void 0 : Vt[N]) || ((zt = (Dt = e.battery) == null ? void 0 : Dt.module_entities) == null ? void 0 : zt[N]) || {}, Me = `sensor.bms_rack${F}_soc`, je = `sensor.bms_rack${F}_current`, Ye = `sensor.bms_rack${F}_voltage`, Je = `sensor.bms_rack${F}_power`, Ue = `sensor.bms_rack${F}_temperature`, Ft = `sensor.bms_rack${F}_cell_delta`;
       return `
@@ -1525,8 +1525,8 @@ class Fa extends HTMLElement {
           </div>
         </div>
       </div>
-    `, this._bindEvents(), this._updateExpandBtn(), o) {
-      const te = this.shadowRoot.querySelector(o);
+    `, this._bindEvents(), this._updateExpandBtn(), s) {
+      const te = this.shadowRoot.querySelector(s);
       if (te && (te.focus(), p !== null && d !== null && "setSelectionRange" in te))
         try {
           te.setSelectionRange(p, d);
@@ -1545,17 +1545,17 @@ class Fa extends HTMLElement {
       });
     }), (h = e.getElementById("btnPresetEsp")) == null || h.addEventListener("click", () => this._applyPreset("deye_esphome")), (b = e.getElementById("btnPresetSolarman")) == null || b.addEventListener("click", () => this._applyPreset("deye_solarman"));
     const t = (i, a) => {
-      const s = e.getElementById(i);
-      s && (s.addEventListener("input", (w) => this._valueChanged(a, w.target.value, !1)), s.addEventListener("change", (w) => this._valueChanged(a, w.target.value, !0)), s.addEventListener("blur", () => this._flushConfig()));
-    }, o = (i, a) => {
-      const s = e.getElementById(i);
-      s && s.addEventListener("change", (w) => this._valueChanged(a, w.target.checked, !0));
-    }, p = (i, a, s, w = "") => {
+      const o = e.getElementById(i);
+      o && (o.addEventListener("input", (w) => this._valueChanged(a, w.target.value, !1)), o.addEventListener("change", (w) => this._valueChanged(a, w.target.value, !0)), o.addEventListener("blur", () => this._flushConfig()));
+    }, s = (i, a) => {
+      const o = e.getElementById(i);
+      o && o.addEventListener("change", (w) => this._valueChanged(a, w.target.checked, !0));
+    }, p = (i, a, o, w = "") => {
       const l = e.getElementById(i);
       l && (l.addEventListener("input", (y) => {
         const B = parseFloat(y.target.value);
-        if (s) {
-          const n = e.getElementById(s);
+        if (o) {
+          const n = e.getElementById(o);
           n && (n.innerText = `${B}${w}`);
         }
         this._valueChanged(a, isNaN(B) ? 0 : B, !1);
@@ -1565,48 +1565,48 @@ class Fa extends HTMLElement {
       }), l.addEventListener("blur", () => this._flushConfig()));
     };
     t("title", "title"), t("themeMode", "theme_mode"), t("cardLanguage", "language"), (S = e.getElementById("cardScale")) == null || S.addEventListener("input", (i) => {
-      const a = parseFloat(i.target.value), s = e.getElementById("cardScaleVal");
-      s && (s.innerText = `${Math.round(a * 100)}%`), this._valueChanged("card_scale", a);
-    }), ($ = e.getElementById("cardScale")) == null || $.addEventListener("change", () => this._flushConfig()), t("cardMaxWidth", "max_width"), o("showQuickSettings", "show_quick_settings"), t("ctrlSolarCharge", "controls.solar_charge_entity"), t("ctrlSellPower", "controls.sell_power_entity"), t("ctrlGridCharge", "controls.grid_charge_entity"), o("animEnabled", "animations.enabled"), p("animSpeed", "animations.speed", "animSpeedVal", "s"), (m = e.getElementById("solarPvCount")) == null || m.addEventListener("input", (i) => {
+      const a = parseFloat(i.target.value), o = e.getElementById("cardScaleVal");
+      o && (o.innerText = `${Math.round(a * 100)}%`), this._valueChanged("card_scale", a);
+    }), ($ = e.getElementById("cardScale")) == null || $.addEventListener("change", () => this._flushConfig()), t("cardMaxWidth", "max_width"), s("showQuickSettings", "show_quick_settings"), t("ctrlSolarCharge", "controls.solar_charge_entity"), t("ctrlSellPower", "controls.sell_power_entity"), t("ctrlGridCharge", "controls.grid_charge_entity"), s("animEnabled", "animations.enabled"), p("animSpeed", "animations.speed", "animSpeedVal", "s"), (m = e.getElementById("solarPvCount")) == null || m.addEventListener("input", (i) => {
       const a = parseInt(i.target.value);
       for (this._config.solar || (this._config.solar = {}), this._config.solar.pv_count = a, this._config.solar.strings || (this._config.solar.strings = []); this._config.solar.strings.length < a; ) {
-        const s = this._config.solar.strings.length + 1;
+        const o = this._config.solar.strings.length + 1;
         this._config.solar.strings.push({
-          id: `pv${s}`,
-          name: `PV ${s}`,
+          id: `pv${o}`,
+          name: `PV ${o}`,
           capacity_kw: 4,
-          voltage_entity: `sensor.deye_12k_inverter_pv${s}_voltage`,
-          current_entity: `sensor.deye_12k_inverter_pv${s}_current`,
-          power_entity: `sensor.deye_12k_inverter_pv${s}_power`
+          voltage_entity: `sensor.deye_12k_inverter_pv${o}_voltage`,
+          current_entity: `sensor.deye_12k_inverter_pv${o}_current`,
+          power_entity: `sensor.deye_12k_inverter_pv${o}_power`
         });
       }
       this._valueChanged("solar.pv_count", a, !0), this._valueChanged("solar.strings", this._config.solar.strings, !0), this.render();
     }), e.querySelectorAll(".pv-str-name-inp").forEach((i) => {
       i.addEventListener("input", (a) => {
-        const s = parseInt(a.target.dataset.idx);
-        this._config.solar.strings || (this._config.solar.strings = []), this._config.solar.strings[s] || (this._config.solar.strings[s] = {}), this._config.solar.strings[s].name = a.target.value, this._valueChanged("solar.strings", this._config.solar.strings);
+        const o = parseInt(a.target.dataset.idx);
+        this._config.solar.strings || (this._config.solar.strings = []), this._config.solar.strings[o] || (this._config.solar.strings[o] = {}), this._config.solar.strings[o].name = a.target.value, this._valueChanged("solar.strings", this._config.solar.strings);
       }), i.addEventListener("blur", () => this._flushConfig());
     }), e.querySelectorAll(".pv-str-volt-inp").forEach((i) => {
       i.addEventListener("input", (a) => {
-        const s = parseInt(a.target.dataset.idx);
-        this._config.solar.strings || (this._config.solar.strings = []), this._config.solar.strings[s] || (this._config.solar.strings[s] = {}), this._config.solar.strings[s].voltage_entity = a.target.value, this._valueChanged("solar.strings", this._config.solar.strings);
+        const o = parseInt(a.target.dataset.idx);
+        this._config.solar.strings || (this._config.solar.strings = []), this._config.solar.strings[o] || (this._config.solar.strings[o] = {}), this._config.solar.strings[o].voltage_entity = a.target.value, this._valueChanged("solar.strings", this._config.solar.strings);
       }), i.addEventListener("blur", () => this._flushConfig());
     }), e.querySelectorAll(".pv-str-curr-inp").forEach((i) => {
       i.addEventListener("input", (a) => {
-        const s = parseInt(a.target.dataset.idx);
-        this._config.solar.strings || (this._config.solar.strings = []), this._config.solar.strings[s] || (this._config.solar.strings[s] = {}), this._config.solar.strings[s].current_entity = a.target.value, this._valueChanged("solar.strings", this._config.solar.strings);
+        const o = parseInt(a.target.dataset.idx);
+        this._config.solar.strings || (this._config.solar.strings = []), this._config.solar.strings[o] || (this._config.solar.strings[o] = {}), this._config.solar.strings[o].current_entity = a.target.value, this._valueChanged("solar.strings", this._config.solar.strings);
       }), i.addEventListener("blur", () => this._flushConfig());
     }), e.querySelectorAll(".pv-str-power-inp").forEach((i) => {
       i.addEventListener("input", (a) => {
-        const s = parseInt(a.target.dataset.idx);
-        this._config.solar.strings || (this._config.solar.strings = []), this._config.solar.strings[s] || (this._config.solar.strings[s] = {}), this._config.solar.strings[s].power_entity = a.target.value, this._valueChanged("solar.strings", this._config.solar.strings);
+        const o = parseInt(a.target.dataset.idx);
+        this._config.solar.strings || (this._config.solar.strings = []), this._config.solar.strings[o] || (this._config.solar.strings[o] = {}), this._config.solar.strings[o].power_entity = a.target.value, this._valueChanged("solar.strings", this._config.solar.strings);
       }), i.addEventListener("blur", () => this._flushConfig());
     }), e.querySelectorAll(".pv-str-cap-inp").forEach((i) => {
       i.addEventListener("input", (a) => {
-        const s = parseInt(a.target.dataset.idx);
-        this._config.solar.strings || (this._config.solar.strings = []), this._config.solar.strings[s] || (this._config.solar.strings[s] = {}), this._config.solar.strings[s].capacity_kw = parseFloat(a.target.value) || 0, this._valueChanged("solar.strings", this._config.solar.strings);
+        const o = parseInt(a.target.dataset.idx);
+        this._config.solar.strings || (this._config.solar.strings = []), this._config.solar.strings[o] || (this._config.solar.strings[o] = {}), this._config.solar.strings[o].capacity_kw = parseFloat(a.target.value) || 0, this._valueChanged("solar.strings", this._config.solar.strings);
       }), i.addEventListener("blur", () => this._flushConfig());
-    }), t("solarTotalPower", "solar.total_power_entity"), t("solarDailyYield", "solar.daily_yield_entity"), p("solarTargetDaily", "solar.target_daily_yield"), p("solarInstalledPower", "solar.installed_power"), o("solarShowMetrics", "solar.show_metrics"), t("invModel", "inverter.model_name"), t("invPower", "inverter.power_entity"), o("invShowSelfConsumption", "inverter.show_self_consumption"), t("invSelfConsumptionEntity", "inverter.self_consumption_entity"), p("invStandbyPower", "inverter.standby_power", "invStandbyPowerVal", "W"), t("invTempAc", "inverter.ac_temperature_entity"), t("invTempDc", "inverter.dc_temperature_entity"), t("invVolt", "inverter.voltage_entity"), t("invCurrent", "inverter.current_entity"), t("invFreq", "inverter.frequency_entity"), (u = e.getElementById("auxType")) == null || u.addEventListener("change", (i) => {
+    }), t("solarTotalPower", "solar.total_power_entity"), t("solarDailyYield", "solar.daily_yield_entity"), p("solarTargetDaily", "solar.target_daily_yield"), p("solarInstalledPower", "solar.installed_power"), s("solarShowMetrics", "solar.show_metrics"), t("invModel", "inverter.model_name"), t("invPower", "inverter.power_entity"), s("invShowSelfConsumption", "inverter.show_self_consumption"), t("invSelfConsumptionEntity", "inverter.self_consumption_entity"), p("invStandbyPower", "inverter.standby_power", "invStandbyPowerVal", "W"), t("invTempAc", "inverter.ac_temperature_entity"), t("invTempDc", "inverter.dc_temperature_entity"), t("invVolt", "inverter.voltage_entity"), t("invCurrent", "inverter.current_entity"), t("invFreq", "inverter.frequency_entity"), (u = e.getElementById("auxType")) == null || u.addEventListener("change", (i) => {
       const a = i.target.value;
       this._config.aux || (this._config.aux = {}), this._config.aux.type = a;
       const w = {
@@ -1622,12 +1622,12 @@ class Fa extends HTMLElement {
     }), t("auxTitle", "aux.title"), t("auxPower", "aux.power_entity"), (E = e.getElementById("windTurbineCount")) == null || E.addEventListener("input", (i) => {
       const a = parseInt(i.target.value);
       for (this._config.wind || (this._config.wind = {}), this._config.wind.turbine_count = a, this._config.wind.turbines || (this._config.wind.turbines = []); this._config.wind.turbines.length < a; ) {
-        const s = this._config.wind.turbines.length + 1;
+        const o = this._config.wind.turbines.length + 1;
         this._config.wind.turbines.push({
-          id: `turbine_${s}`,
-          name: `Вітряк ${s}`,
-          power_entity: `sensor.wind_turbine_${s}_power`,
-          speed_entity: `sensor.wind_turbine_${s}_speed`,
+          id: `turbine_${o}`,
+          name: `Вітряк ${o}`,
+          power_entity: `sensor.wind_turbine_${o}_power`,
+          speed_entity: `sensor.wind_turbine_${o}_speed`,
           daily_energy_entity: "",
           monthly_energy_entity: "",
           animation_threshold: this._config.wind.animation_threshold || 50
@@ -1638,86 +1638,86 @@ class Fa extends HTMLElement {
       this._valueChanged("aux.wind_animation_threshold", parseFloat(i.target.value));
     }), t("windDailyEnergy", "wind.daily_energy_entity"), t("windMonthlyEnergy", "wind.monthly_energy_entity"), e.querySelectorAll(".turbine-name-inp").forEach((i) => {
       i.addEventListener("input", (a) => {
-        const s = parseInt(a.target.dataset.idx);
-        this._config.wind.turbines || (this._config.wind.turbines = []), this._config.wind.turbines[s] || (this._config.wind.turbines[s] = {}), this._config.wind.turbines[s].name = a.target.value, this._valueChanged("wind.turbines", this._config.wind.turbines);
+        const o = parseInt(a.target.dataset.idx);
+        this._config.wind.turbines || (this._config.wind.turbines = []), this._config.wind.turbines[o] || (this._config.wind.turbines[o] = {}), this._config.wind.turbines[o].name = a.target.value, this._valueChanged("wind.turbines", this._config.wind.turbines);
       }), i.addEventListener("blur", () => this._flushConfig());
     }), e.querySelectorAll(".turbine-power-inp").forEach((i) => {
       i.addEventListener("input", (a) => {
-        const s = parseInt(a.target.dataset.idx);
-        this._config.wind.turbines || (this._config.wind.turbines = []), this._config.wind.turbines[s] || (this._config.wind.turbines[s] = {}), this._config.wind.turbines[s].power_entity = a.target.value, this._valueChanged("wind.turbines", this._config.wind.turbines);
+        const o = parseInt(a.target.dataset.idx);
+        this._config.wind.turbines || (this._config.wind.turbines = []), this._config.wind.turbines[o] || (this._config.wind.turbines[o] = {}), this._config.wind.turbines[o].power_entity = a.target.value, this._valueChanged("wind.turbines", this._config.wind.turbines);
       }), i.addEventListener("blur", () => this._flushConfig());
     }), e.querySelectorAll(".turbine-speed-inp").forEach((i) => {
       i.addEventListener("input", (a) => {
-        const s = parseInt(a.target.dataset.idx);
-        this._config.wind.turbines || (this._config.wind.turbines = []), this._config.wind.turbines[s] || (this._config.wind.turbines[s] = {}), this._config.wind.turbines[s].rpm_entity = a.target.value, this._config.wind.turbines[s].speed_entity = a.target.value, this._valueChanged("wind.turbines", this._config.wind.turbines);
+        const o = parseInt(a.target.dataset.idx);
+        this._config.wind.turbines || (this._config.wind.turbines = []), this._config.wind.turbines[o] || (this._config.wind.turbines[o] = {}), this._config.wind.turbines[o].rpm_entity = a.target.value, this._config.wind.turbines[o].speed_entity = a.target.value, this._valueChanged("wind.turbines", this._config.wind.turbines);
       }), i.addEventListener("blur", () => this._flushConfig());
     }), e.querySelectorAll(".turbine-daily-inp").forEach((i) => {
       i.addEventListener("input", (a) => {
-        const s = parseInt(a.target.dataset.idx);
-        this._config.wind.turbines || (this._config.wind.turbines = []), this._config.wind.turbines[s] || (this._config.wind.turbines[s] = {}), this._config.wind.turbines[s].daily_energy_entity = a.target.value, this._valueChanged("wind.turbines", this._config.wind.turbines);
+        const o = parseInt(a.target.dataset.idx);
+        this._config.wind.turbines || (this._config.wind.turbines = []), this._config.wind.turbines[o] || (this._config.wind.turbines[o] = {}), this._config.wind.turbines[o].daily_energy_entity = a.target.value, this._valueChanged("wind.turbines", this._config.wind.turbines);
       }), i.addEventListener("blur", () => this._flushConfig());
     }), e.querySelectorAll(".turbine-monthly-inp").forEach((i) => {
       i.addEventListener("input", (a) => {
-        const s = parseInt(a.target.dataset.idx);
-        this._config.wind.turbines || (this._config.wind.turbines = []), this._config.wind.turbines[s] || (this._config.wind.turbines[s] = {}), this._config.wind.turbines[s].monthly_energy_entity = a.target.value, this._valueChanged("wind.turbines", this._config.wind.turbines);
+        const o = parseInt(a.target.dataset.idx);
+        this._config.wind.turbines || (this._config.wind.turbines = []), this._config.wind.turbines[o] || (this._config.wind.turbines[o] = {}), this._config.wind.turbines[o].monthly_energy_entity = a.target.value, this._valueChanged("wind.turbines", this._config.wind.turbines);
       }), i.addEventListener("blur", () => this._flushConfig());
     }), t("batSoc", "battery.soc_entity"), t("batPower", "battery.power_entity"), t("batPowerSign", "battery.power_sign"), t("batVolt", "battery.voltage_entity"), t("batCurrent", "battery.current_entity"), t("batTemp", "battery.temperature_entity"), t("batDelta", "battery.cell_delta_entity"), t("batCapacity", "battery.capacity_entity"), t("batChargeDaily", "battery.charge_daily_entity"), t("batDischargeDaily", "battery.discharge_daily_entity"), (_ = e.getElementById("batParallelCount")) == null || _.addEventListener("input", (i) => {
       const a = parseInt(i.target.value);
       for (this._config.battery || (this._config.battery = {}), this._config.battery.parallel_batteries = a, this._config.battery.modules || (this._config.battery.modules = []); this._config.battery.modules.length < a; ) {
-        const s = this._config.battery.modules.length + 1;
+        const o = this._config.battery.modules.length + 1;
         this._config.battery.modules.push({
-          id: `bat${s}`,
-          name: `Батарея ${s}`,
-          soc_entity: `sensor.bms_rack${s}_soc`,
-          current_entity: `sensor.bms_rack${s}_current`,
-          voltage_entity: `sensor.bms_rack${s}_voltage`,
-          power_entity: `sensor.bms_rack${s}_power`,
-          temperature_entity: `sensor.bms_rack${s}_temperature`,
-          cell_delta_entity: `sensor.bms_rack${s}_cell_delta`
+          id: `bat${o}`,
+          name: `Батарея ${o}`,
+          soc_entity: `sensor.bms_rack${o}_soc`,
+          current_entity: `sensor.bms_rack${o}_current`,
+          voltage_entity: `sensor.bms_rack${o}_voltage`,
+          power_entity: `sensor.bms_rack${o}_power`,
+          temperature_entity: `sensor.bms_rack${o}_temperature`,
+          cell_delta_entity: `sensor.bms_rack${o}_cell_delta`
         });
       }
       this._valueChanged("battery.parallel_batteries", a, !0), this._valueChanged("battery.modules", this._config.battery.modules, !0), this.render();
     }), e.querySelectorAll(".bat-mod-name-inp").forEach((i) => {
       i.addEventListener("input", (a) => {
-        const s = parseInt(a.target.dataset.idx);
-        this._config.battery.modules || (this._config.battery.modules = []), this._config.battery.modules[s] || (this._config.battery.modules[s] = {}), this._config.battery.modules[s].name = a.target.value, this._valueChanged("battery.modules", this._config.battery.modules);
+        const o = parseInt(a.target.dataset.idx);
+        this._config.battery.modules || (this._config.battery.modules = []), this._config.battery.modules[o] || (this._config.battery.modules[o] = {}), this._config.battery.modules[o].name = a.target.value, this._valueChanged("battery.modules", this._config.battery.modules);
       }), i.addEventListener("blur", () => this._flushConfig());
     }), e.querySelectorAll(".bat-mod-soc-inp").forEach((i) => {
       i.addEventListener("input", (a) => {
-        const s = parseInt(a.target.dataset.idx);
-        this._config.battery.modules || (this._config.battery.modules = []), this._config.battery.modules[s] || (this._config.battery.modules[s] = {}), this._config.battery.modules[s].soc_entity = a.target.value, this._valueChanged("battery.modules", this._config.battery.modules);
+        const o = parseInt(a.target.dataset.idx);
+        this._config.battery.modules || (this._config.battery.modules = []), this._config.battery.modules[o] || (this._config.battery.modules[o] = {}), this._config.battery.modules[o].soc_entity = a.target.value, this._valueChanged("battery.modules", this._config.battery.modules);
       }), i.addEventListener("blur", () => this._flushConfig());
     }), e.querySelectorAll(".bat-mod-curr-inp").forEach((i) => {
       i.addEventListener("input", (a) => {
-        const s = parseInt(a.target.dataset.idx);
-        this._config.battery.modules || (this._config.battery.modules = []), this._config.battery.modules[s] || (this._config.battery.modules[s] = {}), this._config.battery.modules[s].current_entity = a.target.value, this._valueChanged("battery.modules", this._config.battery.modules);
+        const o = parseInt(a.target.dataset.idx);
+        this._config.battery.modules || (this._config.battery.modules = []), this._config.battery.modules[o] || (this._config.battery.modules[o] = {}), this._config.battery.modules[o].current_entity = a.target.value, this._valueChanged("battery.modules", this._config.battery.modules);
       }), i.addEventListener("blur", () => this._flushConfig());
     }), e.querySelectorAll(".bat-mod-volt-inp").forEach((i) => {
       i.addEventListener("input", (a) => {
-        const s = parseInt(a.target.dataset.idx);
-        this._config.battery.modules || (this._config.battery.modules = []), this._config.battery.modules[s] || (this._config.battery.modules[s] = {}), this._config.battery.modules[s].voltage_entity = a.target.value, this._valueChanged("battery.modules", this._config.battery.modules);
+        const o = parseInt(a.target.dataset.idx);
+        this._config.battery.modules || (this._config.battery.modules = []), this._config.battery.modules[o] || (this._config.battery.modules[o] = {}), this._config.battery.modules[o].voltage_entity = a.target.value, this._valueChanged("battery.modules", this._config.battery.modules);
       }), i.addEventListener("blur", () => this._flushConfig());
     }), e.querySelectorAll(".bat-mod-temp-inp").forEach((i) => {
       i.addEventListener("input", (a) => {
-        const s = parseInt(a.target.dataset.idx);
-        this._config.battery.modules || (this._config.battery.modules = []), this._config.battery.modules[s] || (this._config.battery.modules[s] = {}), this._config.battery.modules[s].temperature_entity = a.target.value, this._valueChanged("battery.modules", this._config.battery.modules);
+        const o = parseInt(a.target.dataset.idx);
+        this._config.battery.modules || (this._config.battery.modules = []), this._config.battery.modules[o] || (this._config.battery.modules[o] = {}), this._config.battery.modules[o].temperature_entity = a.target.value, this._valueChanged("battery.modules", this._config.battery.modules);
       }), i.addEventListener("blur", () => this._flushConfig());
     }), e.querySelectorAll(".bat-mod-delta-inp").forEach((i) => {
       i.addEventListener("input", (a) => {
-        const s = parseInt(a.target.dataset.idx);
-        this._config.battery.modules || (this._config.battery.modules = []), this._config.battery.modules[s] || (this._config.battery.modules[s] = {}), this._config.battery.modules[s].cell_delta_entity = a.target.value, this._valueChanged("battery.modules", this._config.battery.modules);
+        const o = parseInt(a.target.dataset.idx);
+        this._config.battery.modules || (this._config.battery.modules = []), this._config.battery.modules[o] || (this._config.battery.modules[o] = {}), this._config.battery.modules[o].cell_delta_entity = a.target.value, this._valueChanged("battery.modules", this._config.battery.modules);
       }), i.addEventListener("blur", () => this._flushConfig());
     }), e.querySelectorAll(".bat-mod-power-inp").forEach((i) => {
       i.addEventListener("input", (a) => {
-        const s = parseInt(a.target.dataset.idx);
-        this._config.battery.modules || (this._config.battery.modules = []), this._config.battery.modules[s] || (this._config.battery.modules[s] = {}), this._config.battery.modules[s].power_entity = a.target.value, this._valueChanged("battery.modules", this._config.battery.modules);
+        const o = parseInt(a.target.dataset.idx);
+        this._config.battery.modules || (this._config.battery.modules = []), this._config.battery.modules[o] || (this._config.battery.modules[o] = {}), this._config.battery.modules[o].power_entity = a.target.value, this._valueChanged("battery.modules", this._config.battery.modules);
       }), i.addEventListener("blur", () => this._flushConfig());
     }), e.querySelectorAll(".bat-mod-cap-inp").forEach((i) => {
       i.addEventListener("input", (a) => {
-        const s = parseInt(a.target.dataset.idx);
-        this._config.battery.modules || (this._config.battery.modules = []), this._config.battery.modules[s] || (this._config.battery.modules[s] = {}), this._config.battery.modules[s].capacity_kwh = parseFloat(a.target.value) || 0, this._valueChanged("battery.modules", this._config.battery.modules);
+        const o = parseInt(a.target.dataset.idx);
+        this._config.battery.modules || (this._config.battery.modules = []), this._config.battery.modules[o] || (this._config.battery.modules[o] = {}), this._config.battery.modules[o].capacity_kwh = parseFloat(a.target.value) || 0, this._valueChanged("battery.modules", this._config.battery.modules);
       }), i.addEventListener("blur", () => this._flushConfig());
-    }), o("gridSellingEnabled", "grid.selling_enabled"), o("gridAutoCalculate", "grid.auto_calculate"), t("gridPower", "grid.power_entity"), t("gridExternalPower", "grid.external_power_entity"), t("gridVoltage", "grid.voltage_entity"), t("gridStatus", "grid.status_entity"), p("gridVoltageThreshold", "grid.voltage_threshold"), t("gridPowerSign", "grid.power_sign"), p("gridMinThreshold", "grid.min_power_threshold"), t("gridImportDaily", "grid.import_daily_entity"), t("gridExportDaily", "grid.export_daily_entity"), t("gridNonEssential", "grid.non_essential_power_entity"), t("gridCarPower", "grid.car_power_entity"), o("loadAutoCalculate", "load.auto_calculate"), o("loadSeparateExport", "load.separate_export"), t("loadEssential", "load.essential_power_entity"), t("loadDailyHouse", "load.daily_house_entity");
+    }), s("gridSellingEnabled", "grid.selling_enabled"), s("gridAutoCalculate", "grid.auto_calculate"), t("gridPower", "grid.power_entity"), t("gridExternalPower", "grid.external_power_entity"), t("gridVoltage", "grid.voltage_entity"), t("gridStatus", "grid.status_entity"), p("gridVoltageThreshold", "grid.voltage_threshold"), t("gridPowerSign", "grid.power_sign"), p("gridMinThreshold", "grid.min_power_threshold"), t("gridImportDaily", "grid.import_daily_entity"), t("gridExportDaily", "grid.export_daily_entity"), t("gridNonEssential", "grid.non_essential_power_entity"), t("gridCarPower", "grid.car_power_entity"), s("loadAutoCalculate", "load.auto_calculate"), s("loadSeparateExport", "load.separate_export"), t("loadEssential", "load.essential_power_entity"), t("loadDailyHouse", "load.daily_house_entity");
     const d = () => {
       this._config.load || (this._config.load = {}), this._config.load.subloads || (this._config.load.subloads = []);
       const i = this._config.load.subloads.length + 1;
@@ -1731,28 +1731,28 @@ class Fa extends HTMLElement {
     (k = e.getElementById("btnAddSubload")) == null || k.addEventListener("click", d), (f = e.getElementById("btnAddSubloadBottom")) == null || f.addEventListener("click", d), e.querySelectorAll(".btn-del-subload").forEach((i) => {
       i.addEventListener("click", (a) => {
         var l;
-        const s = a.currentTarget || a.target.closest(".btn-del-subload"), w = parseInt(s.dataset.idx);
+        const o = a.currentTarget || a.target.closest(".btn-del-subload"), w = parseInt(o.dataset.idx);
         (l = this._config.load) != null && l.subloads && (this._config.load.subloads.splice(w, 1), this._valueChanged("load.subloads", this._config.load.subloads, !0), this.render());
       });
     }), e.querySelectorAll(".subload-name").forEach((i) => {
       i.addEventListener("input", (a) => {
         var w, l;
-        const s = parseInt(a.target.dataset.idx);
-        (l = (w = this._config.load) == null ? void 0 : w.subloads) != null && l[s] && (this._config.load.subloads[s].name = a.target.value, this._valueChanged("load.subloads", this._config.load.subloads));
+        const o = parseInt(a.target.dataset.idx);
+        (l = (w = this._config.load) == null ? void 0 : w.subloads) != null && l[o] && (this._config.load.subloads[o].name = a.target.value, this._valueChanged("load.subloads", this._config.load.subloads));
       }), i.addEventListener("blur", () => this._flushConfig());
     }), e.querySelectorAll(".subload-icon").forEach((i) => {
       i.addEventListener("change", (a) => {
         var w, l;
-        const s = parseInt(a.target.dataset.idx);
-        (l = (w = this._config.load) == null ? void 0 : w.subloads) != null && l[s] && (this._config.load.subloads[s].icon = a.target.value, this._valueChanged("load.subloads", this._config.load.subloads, !0));
+        const o = parseInt(a.target.dataset.idx);
+        (l = (w = this._config.load) == null ? void 0 : w.subloads) != null && l[o] && (this._config.load.subloads[o].icon = a.target.value, this._valueChanged("load.subloads", this._config.load.subloads, !0));
       });
     }), e.querySelectorAll(".subload-entity").forEach((i) => {
       i.addEventListener("input", (a) => {
         var w, l;
-        const s = parseInt(a.target.dataset.idx);
-        (l = (w = this._config.load) == null ? void 0 : w.subloads) != null && l[s] && (this._config.load.subloads[s].entity = a.target.value, this._valueChanged("load.subloads", this._config.load.subloads));
+        const o = parseInt(a.target.dataset.idx);
+        (l = (w = this._config.load) == null ? void 0 : w.subloads) != null && l[o] && (this._config.load.subloads[o].entity = a.target.value, this._valueChanged("load.subloads", this._config.load.subloads));
       }), i.addEventListener("blur", () => this._flushConfig());
-    }), o("tariffsEnabled", "tariffs.enabled"), t("tariffCurrency", "tariffs.currency"), p("tariffDayRate", "tariffs.day_rate"), p("tariffNightRate", "tariffs.night_rate"), p("tariffExportRate", "tariffs.export_rate"), p("tariffNightStart", "tariffs.night_start_hour"), p("tariffNightEnd", "tariffs.night_end_hour"), o("tariffShowDailyCost", "tariffs.show_daily_cost"), o("tariffShowExportIncome", "tariffs.show_export_income"), o("tariffShowActiveBadge", "tariffs.show_active_badge"), o("tariffShowSolarSavings", "tariffs.show_solar_savings");
+    }), s("tariffsEnabled", "tariffs.enabled"), t("tariffCurrency", "tariffs.currency"), p("tariffDayRate", "tariffs.day_rate"), p("tariffNightRate", "tariffs.night_rate"), p("tariffExportRate", "tariffs.export_rate"), p("tariffNightStart", "tariffs.night_start_hour"), p("tariffNightEnd", "tariffs.night_end_hour"), s("tariffShowDailyCost", "tariffs.show_daily_cost"), s("tariffShowExportIncome", "tariffs.show_export_income"), s("tariffShowActiveBadge", "tariffs.show_active_badge"), s("tariffShowSolarSavings", "tariffs.show_solar_savings");
   }
 }
 customElements.get("energy-station-card-editor") || customElements.define("energy-station-card-editor", Fa);
@@ -1895,7 +1895,7 @@ class Aa extends HTMLElement {
     this._resizeObserver && (this._resizeObserver.disconnect(), this._resizeObserver = null);
   }
   _openCardEditor() {
-    var o, p;
+    var s, p;
     let e = this, t = null;
     for (; e; ) {
       if (e.tagName && (e.tagName.toLowerCase() === "hui-card-options" || e.tagName.toLowerCase() === "hui-card-edit-mode")) {
@@ -1914,7 +1914,7 @@ class Aa extends HTMLElement {
     if (!t && typeof document < "u") {
       const d = document.querySelectorAll("hui-card-options, hui-card-edit-mode");
       for (const c of d)
-        if (c.contains(this) || (o = c.shadowRoot) != null && o.contains(this) || d.length === 1) {
+        if (c.contains(this) || (s = c.shadowRoot) != null && s.contains(this) || d.length === 1) {
           t = c;
           break;
         }
@@ -1974,8 +1974,8 @@ class Aa extends HTMLElement {
   }
   setConfig(e) {
     if (!e) throw new Error("Invalid configuration");
-    const t = JSON.parse(JSON.stringify(e)), o = JSON.parse(JSON.stringify(re));
-    this._config = this._deepMerge(o, t);
+    const t = JSON.parse(JSON.stringify(e)), s = JSON.parse(JSON.stringify(re));
+    this._config = this._deepMerge(s, t);
     const p = typeof localStorage < "u" ? localStorage.getItem("energy_station_theme") : null;
     this._themeMode = p || this._config.theme_mode || "dark";
     const d = typeof localStorage < "u" ? localStorage.getItem("energy_station_lang") : null;
@@ -1990,8 +1990,8 @@ class Aa extends HTMLElement {
     var d, c;
     let t = typeof e == "number" ? e : this._scale + (e || 0.1);
     t = Math.max(0.7, Math.min(2, Math.round(t * 100) / 100)), this._scale = t, typeof localStorage < "u" && localStorage.setItem("energy_station_scale", t.toString());
-    const o = (d = this.shadowRoot) == null ? void 0 : d.querySelector(".energy-station-container");
-    o && (o.style.setProperty("--es-card-scale", t.toString()), o.style.zoom = t.toString());
+    const s = (d = this.shadowRoot) == null ? void 0 : d.querySelector(".energy-station-container");
+    s && (s.style.setProperty("--es-card-scale", t.toString()), s.style.zoom = t.toString());
     const p = (c = this.shadowRoot) == null ? void 0 : c.getElementById("headerZoomVal");
     p && (p.innerText = `${Math.round(t * 100)}%`), this._rAF(() => {
       this._updateFlowPaths(), setTimeout(() => this._updateFlowPaths(), 80);
@@ -2001,13 +2001,13 @@ class Aa extends HTMLElement {
     this._hass = e, this._initialized || this._renderCardSkeleton(), this._updateValues();
   }
   _deepMerge(e, t) {
-    const o = Array.isArray(e) ? [...e] : Object.assign({}, e);
-    if (!t || typeof t != "object") return o;
+    const s = Array.isArray(e) ? [...e] : Object.assign({}, e);
+    if (!t || typeof t != "object") return s;
     for (const p of Object.keys(t)) {
       const d = t[p], c = e ? e[p] : void 0;
-      d && typeof d == "object" && !Array.isArray(d) ? o[p] = this._deepMerge(c || {}, d) : o[p] = d;
+      d && typeof d == "object" && !Array.isArray(d) ? s[p] = this._deepMerge(c || {}, d) : s[p] = d;
     }
-    return o;
+    return s;
   }
   _getEntityState(e) {
     var h;
@@ -2021,9 +2021,9 @@ class Aa extends HTMLElement {
     };
   }
   _t(e) {
-    var o, p;
+    var s, p;
     const t = this._language || "uk";
-    return ((o = Na[t]) == null ? void 0 : o[e]) || ((p = Na.uk) == null ? void 0 : p[e]) || e;
+    return ((s = Na[t]) == null ? void 0 : s[e]) || ((p = Na.uk) == null ? void 0 : p[e]) || e;
   }
   _toggleTheme(e) {
     const t = e || (this._themeMode === "light" ? "dark" : "light");
@@ -2049,19 +2049,19 @@ class Aa extends HTMLElement {
     if (!e) return;
     const t = this._themeMode === "light";
     e.classList.toggle("theme-light", t);
-    const o = this.shadowRoot.getElementById("headerThemeToggle");
-    o && (o.innerHTML = t ? "☀️" : "🌙", o.setAttribute("title", t ? this._t("theme_dark") : this._t("theme_light")));
+    const s = this.shadowRoot.getElementById("headerThemeToggle");
+    s && (s.innerHTML = t ? "☀️" : "🌙", s.setAttribute("title", t ? this._t("theme_dark") : this._t("theme_light")));
     const p = this.shadowRoot.getElementById("btnThemeDark"), d = this.shadowRoot.getElementById("btnThemeLight");
     p && d && (p.classList.toggle("active", !t), d.classList.toggle("active", t));
   }
   _formatPower(e, t = 0) {
-    const o = this._language === "en" ? "kW" : "кВт";
-    if (!e) return { num: t.toFixed(3), kw: t, str: `${t.toFixed(3)} ${o}` };
+    const s = this._language === "en" ? "kW" : "кВт";
+    if (!e) return { num: t.toFixed(3), kw: t, str: `${t.toFixed(3)} ${s}` };
     let p = e.val;
     return e.unit === "W" && (p = p / 1e3), {
       num: p.toFixed(3),
       kw: p,
-      str: `${p.toFixed(3)} ${o}`
+      str: `${p.toFixed(3)} ${s}`
     };
   }
   _fireMoreInfo(e) {
@@ -2074,10 +2074,10 @@ class Aa extends HTMLElement {
     this.dispatchEvent(t);
   }
   _renderCardSkeleton() {
-    var b, S, $, m, u, E, g, _, k, f, i, a, s, w, l, y, B, n;
+    var b, S, $, m, u, E, g, _, k, f, i, a, o, w, l, y, B, n;
     const e = this._config || re;
     this._initialized = !0;
-    const t = e.appearance || re.appearance || {}, o = {
+    const t = e.appearance || re.appearance || {}, s = {
       Inter: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       "JetBrains Mono": "'JetBrains Mono', monospace",
       Roboto: "'Roboto', sans-serif",
@@ -2111,7 +2111,9 @@ class Aa extends HTMLElement {
 
         :host {
           display: block;
-          font-family: var(--es-font-family, ${o[t.font_family] || o.Inter});
+          width: 100%;
+          box-sizing: border-box;
+          font-family: var(--es-font-family, ${s[t.font_family] || s.Inter});
           color: #e2e8f0;
           user-select: none;
           --es-bg: #050b14;
@@ -3621,7 +3623,7 @@ class Aa extends HTMLElement {
         <!-- SOLAR PV SECTION -->
         <div class="es-solar-section">
           <div class="es-sun-header clickable-node" id="solarHeaderNode">
-            <div style="width: 28px; height: 28px; color: #fbbf24; margin-bottom: 2px;">${oe.sun}</div>
+            <div style="width: 28px; height: 28px; color: #fbbf24; margin-bottom: 2px;">${se.sun}</div>
             <div class="es-mono" style="font-size: 17px; font-weight: 800; color: #fbbf24;">
               <span id="dailySolarYield">48,6</span> kWh <span style="color: #64748b;">/</span> <span id="targetSolarYield">${((S = e.solar) == null ? void 0 : S.target_daily_yield) || 55}</span> kWh
             </div>
@@ -3648,7 +3650,7 @@ class Aa extends HTMLElement {
 
           <!-- Total Solar Badge -->
           <div style="display: flex; flex-direction: column; align-items: center; margin-top: -2px;">
-            <div style="width: 20px; height: 20px; color: #fbbf24; margin-bottom: 1px;">${oe.sun}</div>
+            <div style="width: 20px; height: 20px; color: #fbbf24; margin-bottom: 1px;">${se.sun}</div>
             <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(245, 158, 11, 0.85); font-weight: 600;">${this._t("total_pv")}</span>
             <div class="es-mono glow-solar clickable-node" id="totalPvPowerBadge" style="font-size: var(--es-power-font-size, 20px); font-weight: 900; color: #fbbf24; display: flex; align-items: center; justify-content: center; gap: 6px;">
               <span id="totalPvPowerVal">12,000 ${this._language === "en" ? "kW" : "кВт"}</span>
@@ -3685,7 +3687,7 @@ class Aa extends HTMLElement {
 
             <!-- 1. Grid Node (Мережа) -->
             <div class="es-schematic-node glow-grid clickable-node" id="gridNode" style="border-color: rgba(56, 189, 248, 0.4);">
-              <div class="es-node-icon" style="color: #38bdf8; width: 24px; height: 24px; max-width: 24px; max-height: 24px; overflow: hidden; display: flex; align-items: center; justify-content: center;">${oe.grid_tower}</div>
+              <div class="es-node-icon" style="color: #38bdf8; width: 24px; height: 24px; max-width: 24px; max-height: 24px; overflow: hidden; display: flex; align-items: center; justify-content: center;">${se.grid_tower}</div>
               <div class="es-node-title">${this._t("grid_title")}</div>
               <div class="es-mono es-node-power" id="gridPowerVal" style="color: #38bdf8;">2,000 ${this._language === "en" ? "kW" : "кВт"}</div>
               <div class="es-mono es-node-dir" id="gridDirectionLabel" style="color: #34d399;">${this._t("grid_dir_export")}</div>
@@ -3693,14 +3695,14 @@ class Aa extends HTMLElement {
 
             <!-- 2. Non-essential Node (Негарантоване) -->
             <div class="es-schematic-node clickable-node ${($ = e.grid) != null && $.show_non_essential && ((m = e.grid) != null && m.non_essential_power_entity) ? "" : "hidden"}" id="nonEssentialNode" style="border-color: rgba(56, 189, 248, 0.25);">
-              <div class="es-node-icon" style="color: #38bdf8; width: 24px; height: 24px; max-width: 24px; max-height: 24px; overflow: hidden; display: flex; align-items: center; justify-content: center;">${oe.house_outline || oe.house}</div>
+              <div class="es-node-icon" style="color: #38bdf8; width: 24px; height: 24px; max-width: 24px; max-height: 24px; overflow: hidden; display: flex; align-items: center; justify-content: center;">${se.house_outline || se.house}</div>
               <div class="es-node-title">${this._t("non_essential")}</div>
               <div class="es-mono es-node-power" id="nonEssentialPowerVal" style="color: #38bdf8;">0.000 ${this._language === "en" ? "kW" : "кВт"}</div>
             </div>
 
             <!-- 3. Car Node (Авто) -->
             <div class="es-schematic-node clickable-node ${(u = e.grid) != null && u.show_car && ((E = e.grid) != null && E.car_power_entity) ? "" : "hidden"}" id="carNode" style="border-color: rgba(56, 189, 248, 0.25);">
-              <div class="es-node-icon" style="color: #38bdf8; width: 24px; height: 24px; max-width: 24px; max-height: 24px; overflow: hidden; display: flex; align-items: center; justify-content: center;">${oe.car}</div>
+              <div class="es-node-icon" style="color: #38bdf8; width: 24px; height: 24px; max-width: 24px; max-height: 24px; overflow: hidden; display: flex; align-items: center; justify-content: center;">${se.car}</div>
               <div class="es-node-title" id="carTitle">${((g = e.grid) == null ? void 0 : g.car_title) || this._t("car")}</div>
               <div class="es-mono es-node-power" id="carPowerVal" style="color: #38bdf8;">0.000 ${this._language === "en" ? "kW" : "кВт"}</div>
             </div>
@@ -3718,7 +3720,7 @@ class Aa extends HTMLElement {
               <!-- Center: Inverter Card -->
               <div class="es-inverter-card glow-inverter clickable-node" id="inverterNode">
                 <div class="es-inverter-card-top-row">
-                  <div class="es-inverter-icon-box">${oe.inverter}</div>
+                  <div class="es-inverter-icon-box">${se.inverter}</div>
                   <div class="es-mono es-inverter-freq"><span id="inverterFreq">50,01</span> Hz</div>
                 </div>
                 <div class="es-inverter-title">${this._t("inverter_title")}</div>
@@ -3735,9 +3737,9 @@ class Aa extends HTMLElement {
                 <!-- AUX Node (Microinverter / Generator moved here above telemetry to avoid animation collisions) -->
                 <div class="es-aux-box glow-aux clickable-node ${((k = e.aux) == null ? void 0 : k.type) === "none" || ((f = e.aux) == null ? void 0 : f.type) === "wind" ? "hidden" : ""}" id="auxNode">
                   <div style="width: 22px; height: 22px; color: #c084fc; margin-bottom: 2px;" id="auxIconBox">
-                    ${oe[(i = e.aux) == null ? void 0 : i.type] || oe.microinverter}
+                    ${se[(i = e.aux) == null ? void 0 : i.type] || se.microinverter}
                   </div>
-                  <div style="font-size: 11px; font-weight: 700; color: #cbd5e1; text-transform: uppercase;" id="auxTitle">${((a = e.aux) == null ? void 0 : a.type) === "microinverter" && (!((s = e.aux) != null && s.title) || ((w = e.aux) == null ? void 0 : w.title) === "Вітрогенератор") ? this._t("aux_microinverter") : ((l = e.aux) == null ? void 0 : l.title) || this._t("aux_microinverter")}</div>
+                  <div style="font-size: 11px; font-weight: 700; color: #cbd5e1; text-transform: uppercase;" id="auxTitle">${((a = e.aux) == null ? void 0 : a.type) === "microinverter" && (!((o = e.aux) != null && o.title) || ((w = e.aux) == null ? void 0 : w.title) === "Вітрогенератор") ? this._t("aux_microinverter") : ((l = e.aux) == null ? void 0 : l.title) || this._t("aux_microinverter")}</div>
                   <div class="es-mono" id="auxPowerVal" style="font-size: 16px; font-weight: 800; color: #c084fc; margin: 2px 0;">2,000 ${this._language === "en" ? "kW" : "кВт"}</div>
                   <div class="es-mono" style="font-size: 10px; color: rgba(216, 180, 254, 0.85);" id="auxSubtitle">${((y = e.aux) == null ? void 0 : y.subtitle) || this._t("aux_source_gen")}</div>
                 </div>
@@ -3759,7 +3761,7 @@ class Aa extends HTMLElement {
 
             <!-- Essential Loads Node (Гарантоване) -->
             <div class="es-schematic-node glow-load clickable-node" id="essentialNode" style="border-color: rgba(6, 182, 212, 0.4);">
-              <div class="es-node-icon" style="color: #22d3ee; width: 24px; height: 24px; max-width: 24px; max-height: 24px; overflow: hidden; display: flex; align-items: center; justify-content: center;">${oe.house}</div>
+              <div class="es-node-icon" style="color: #22d3ee; width: 24px; height: 24px; max-width: 24px; max-height: 24px; overflow: hidden; display: flex; align-items: center; justify-content: center;">${se.house}</div>
               <div class="es-node-title">${this._t("house_title")}</div>
               <div class="es-mono es-node-power" id="essentialPowerVal" style="color: #22d3ee;">8,000 ${this._language === "en" ? "kW" : "кВт"}</div>
             </div>
@@ -3941,7 +3943,7 @@ class Aa extends HTMLElement {
         <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 2px;">
           <div style="display: flex; align-items: center; gap: 6px; color: #67e8f9; font-size: 11px; font-weight: 700;">
             <div style="width: 20px; height: 20px;" class="turbine-icon-box" id="turbineIcon_${k + 1}">
-              ${oe.wind_turbine}
+              ${se.wind_turbine}
             </div>
             <span>${f.name || `Вітряк ${k + 1}`}</span>
           </div>
@@ -3973,12 +3975,12 @@ class Aa extends HTMLElement {
     const e = this._config || re, t = this._nodes.pvPanelsContainer;
     if (!t) return;
     t.innerHTML = "";
-    const o = ((c = e.solar) == null ? void 0 : c.pv_count) || ((b = (h = e.solar) == null ? void 0 : h.strings) == null ? void 0 : b.length) || 3, p = this._language === "en" ? "kWp" : "кВтп", d = ((S = e.solar) == null ? void 0 : S.show_metrics) !== !1;
-    for (let u = 1; u <= o; u++) {
+    const s = ((c = e.solar) == null ? void 0 : c.pv_count) || ((b = (h = e.solar) == null ? void 0 : h.strings) == null ? void 0 : b.length) || 3, p = this._language === "en" ? "kWp" : "кВтп", d = ((S = e.solar) == null ? void 0 : S.show_metrics) !== !1;
+    for (let u = 1; u <= s; u++) {
       const E = u < 10 ? `0${u}` : `${u}`, g = ((m = ($ = e.solar) == null ? void 0 : $.strings) == null ? void 0 : m[u - 1]) || {}, _ = g.name || `PV ${E}`, k = g.capacity_kw !== void 0 ? parseFloat(g.capacity_kw) : 4, f = g.voltage_entity || (u <= 3 ? `sensor.deye_12k_inverter_pv${u}_voltage` : ""), i = g.current_entity || (u <= 3 ? `sensor.deye_12k_inverter_pv${u}_current` : ""), a = document.createElement("div");
       a.className = "es-pv-panel glow-solar clickable-node", a.dataset.pvIndex = u, a.id = `pvPanel_${u}`, a.innerHTML = `
         <div class="es-pv-top-row">
-          <div style="width: 22px; height: 22px; color: #fbbf24;">${oe.pv_panel}</div>
+          <div style="width: 22px; height: 22px; color: #fbbf24;">${se.pv_panel}</div>
         </div>
         <span class="es-pv-label es-mono">${_}</span>
         <span class="es-pv-val es-mono" id="pvVal_${u}">0,000 кВт</span>
@@ -3995,8 +3997,8 @@ class Aa extends HTMLElement {
         const l = g.power_entity || f || i || ((y = e.solar) == null ? void 0 : y.total_power_entity);
         this._fireMoreInfo(l);
       });
-      const s = a.querySelector(`#pvVolt_${u}`);
-      s && s.addEventListener("click", (l) => {
+      const o = a.querySelector(`#pvVolt_${u}`);
+      o && o.addEventListener("click", (l) => {
         l.stopPropagation(), f ? this._fireMoreInfo(f) : g.power_entity && this._fireMoreInfo(g.power_entity);
       });
       const w = a.querySelector(`#pvCurr_${u}`);
@@ -4012,7 +4014,7 @@ class Aa extends HTMLElement {
     t.innerHTML = "", (((p = e.load) == null ? void 0 : p.subloads) || []).forEach((d, c) => {
       const h = document.createElement("div");
       h.className = "es-subload-card clickable-node", h.id = `subloadCard_${c}`, h.innerHTML = `
-        <div style="width: 22px; height: 22px; color: #22d3ee; margin-bottom: 2px;">${oe[d.icon] || oe.other}</div>
+        <div style="width: 22px; height: 22px; color: #22d3ee; margin-bottom: 2px;">${se[d.icon] || se.other}</div>
         <span style="font-size: 11px; color: #cbd5e1; font-weight: 600; white-space: nowrap;">${d.name}</span>
         <span class="es-mono" id="subloadVal_${c}" style="font-size: 13px; font-weight: 800; color: #22d3ee; margin-top: 2px;">2,000 кВт</span>
       `, h.addEventListener("click", () => {
@@ -4025,12 +4027,12 @@ class Aa extends HTMLElement {
     const e = this._config || re, t = this._nodes.batteryRackContainer;
     if (!t) return;
     t.innerHTML = "";
-    const o = ((m = e.battery) == null ? void 0 : m.parallel_batteries) || ((E = (u = e.battery) == null ? void 0 : u.modules) == null ? void 0 : E.length) || 2, p = [82, 76, 91, 68, 85, 90, 72, 80], d = [52.4, 52.4, 52.4, 52.4, 52.4, 52.4], c = [25, 21, 22.5, 20, 24, 19.5, 23, 21.5], h = [12, 8, 15, 9, 14, 11, 18, 10], b = this._t("bat_prefix"), S = this._language === "en" ? "kW" : "кВт", $ = this._language === "en" ? "kWh" : "кВт·год";
-    for (let i = 1; i <= o; i++) {
-      const a = ((_ = (g = e.battery) == null ? void 0 : g.modules) == null ? void 0 : _[i - 1]) || ((f = (k = e.battery) == null ? void 0 : k.module_entities) == null ? void 0 : f[i - 1]) || {}, s = a.name || `${b} ${i}`, w = p[(i - 1) % p.length], l = d[(i - 1) % d.length], y = c[(i - 1) % c.length], B = h[(i - 1) % h.length], n = document.createElement("div");
+    const s = ((m = e.battery) == null ? void 0 : m.parallel_batteries) || ((E = (u = e.battery) == null ? void 0 : u.modules) == null ? void 0 : E.length) || 2, p = [82, 76, 91, 68, 85, 90, 72, 80], d = [52.4, 52.4, 52.4, 52.4, 52.4, 52.4], c = [25, 21, 22.5, 20, 24, 19.5, 23, 21.5], h = [12, 8, 15, 9, 14, 11, 18, 10], b = this._t("bat_prefix"), S = this._language === "en" ? "kW" : "кВт", $ = this._language === "en" ? "kWh" : "кВт·год";
+    for (let i = 1; i <= s; i++) {
+      const a = ((_ = (g = e.battery) == null ? void 0 : g.modules) == null ? void 0 : _[i - 1]) || ((f = (k = e.battery) == null ? void 0 : k.module_entities) == null ? void 0 : f[i - 1]) || {}, o = a.name || `${b} ${i}`, w = p[(i - 1) % p.length], l = d[(i - 1) % d.length], y = c[(i - 1) % c.length], B = h[(i - 1) % h.length], n = document.createElement("div");
       n.className = "es-battery-pack-card glow-battery clickable-node", n.id = `batPackCard_${i}`, n.innerHTML = `
-        <div style="width: 24px; height: 24px; color: #34d399; margin-bottom: 2px;">${oe.battery_vertical}</div>
-        <span class="es-bat-name">${s}</span>
+        <div style="width: 24px; height: 24px; color: #34d399; margin-bottom: 2px;">${se.battery_vertical}</div>
+        <span class="es-bat-name">${o}</span>
         <span class="es-bat-soc-val es-mono" id="batPackSoc_${i}">${w}%</span>
         <div class="es-mono es-bat-volt" id="batPackVolt_${i}">${l.toFixed(2).replace(".", ",")} V</div>
         <div class="es-mono es-bat-power" id="batPackPower_${i}" style="font-size: 12px; font-weight: 800; color: #34d399; margin-top: 2px;">0.00 ${S}</div>
@@ -4062,14 +4064,14 @@ class Aa extends HTMLElement {
     this._renderQuickSettingsCard();
   }
   _renderQuickSettingsCard() {
-    var _, k, f, i, a, s, w, l, y, B;
+    var _, k, f, i, a, o, w, l, y, B;
     const e = this._config || re, t = ((_ = this._nodes) == null ? void 0 : _.bottomControlsDock) || this.shadowRoot.getElementById("bottomControlsDock");
     if (!t || (t.innerHTML = "", e.show_quick_settings === !1)) return;
-    const o = this._themeMode === "light", p = this._language === "en", d = ((k = e.controls) == null ? void 0 : k.solar_charge_entity) || "number.deye_12k_inverter_max_charge_current", c = ((f = e.controls) == null ? void 0 : f.sell_power_entity) || "number.deye_12k_inverter_export_surplus_power", h = ((i = e.controls) == null ? void 0 : i.grid_charge_entity) || "number.deye_12k_inverter_grid_charge_current", b = document.createElement("div");
+    const s = this._themeMode === "light", p = this._language === "en", d = ((k = e.controls) == null ? void 0 : k.solar_charge_entity) || "number.deye_12k_inverter_max_charge_current", c = ((f = e.controls) == null ? void 0 : f.sell_power_entity) || "number.deye_12k_inverter_export_surplus_power", h = ((i = e.controls) == null ? void 0 : i.grid_charge_entity) || "number.deye_12k_inverter_grid_charge_current", b = document.createElement("div");
     b.className = "es-quick-settings-card", b.id = "quickSettingsCard", b.innerHTML = `
       <div class="es-qs-header">
         <div class="es-qs-title-wrap">
-          <span class="es-qs-icon">${oe.battery_vertical}</span>
+          <span class="es-qs-icon">${se.battery_vertical}</span>
           <span class="es-qs-title">${this._t("ctrl_title")}</span>
         </div>
         <div class="es-qs-actions">
@@ -4077,7 +4079,7 @@ class Aa extends HTMLElement {
             <span>⚙️</span>
           </button>
           <button class="es-qs-mini-btn" id="btnThemeToggle" title="${this._t("theme_label")}">
-            <span class="es-qs-mini-icon">${o ? oe.sun_mode : oe.moon}</span>
+            <span class="es-qs-mini-icon">${s ? se.sun_mode : se.moon}</span>
           </button>
           <button class="es-qs-mini-btn" id="btnLangToggle" title="${this._t("lang_label")}">
             <span>${p ? "EN" : "UA"}</span>
@@ -4090,7 +4092,7 @@ class Aa extends HTMLElement {
         <div class="es-ctrl-tile" id="ctrlTileSolar">
           <div class="es-ctrl-top">
             <div class="es-ctrl-label-wrap" id="ctrlLabelWrapSolar" title="${d}">
-              <span class="es-ctrl-icon es-ctrl-solar">${oe.sun_mode}</span>
+              <span class="es-ctrl-icon es-ctrl-solar">${se.sun_mode}</span>
               <span class="es-ctrl-label">${this._t("ctrl_solar_charge")}</span>
             </div>
             <div class="es-ctrl-val es-mono" id="ctrlValSolar">80 A</div>
@@ -4104,7 +4106,7 @@ class Aa extends HTMLElement {
         <div class="es-ctrl-tile" id="ctrlTileSell">
           <div class="es-ctrl-top">
             <div class="es-ctrl-label-wrap" id="ctrlLabelWrapSell" title="${c}">
-              <span class="es-ctrl-icon es-ctrl-sell" style="width: 18px; height: 18px; max-width: 18px; max-height: 18px; overflow: hidden; display: inline-flex; align-items: center; justify-content: center;">${oe.inverter}</span>
+              <span class="es-ctrl-icon es-ctrl-sell" style="width: 18px; height: 18px; max-width: 18px; max-height: 18px; overflow: hidden; display: inline-flex; align-items: center; justify-content: center;">${se.inverter}</span>
               <span class="es-ctrl-label">${this._t("ctrl_sell_power")}</span>
             </div>
             <div class="es-ctrl-val es-mono" id="ctrlValSell">5 000 ${p ? "W" : "Вт"}</div>
@@ -4118,7 +4120,7 @@ class Aa extends HTMLElement {
         <div class="es-ctrl-tile" id="ctrlTileGrid">
           <div class="es-ctrl-top">
             <div class="es-ctrl-label-wrap" id="ctrlLabelWrapGrid" title="${h}">
-              <span class="es-ctrl-icon es-ctrl-grid" style="width: 18px; height: 18px; max-width: 18px; max-height: 18px; overflow: hidden; display: inline-flex; align-items: center; justify-content: center;">${oe.grid_tower}</span>
+              <span class="es-ctrl-icon es-ctrl-grid" style="width: 18px; height: 18px; max-width: 18px; max-height: 18px; overflow: hidden; display: inline-flex; align-items: center; justify-content: center;">${se.grid_tower}</span>
               <span class="es-ctrl-label">${this._t("ctrl_grid_charge")}</span>
             </div>
             <div class="es-ctrl-val es-mono" id="ctrlValGrid">70 A</div>
@@ -4130,7 +4132,7 @@ class Aa extends HTMLElement {
       </div>
     `, (a = b.querySelector("#btnEditCardQs")) == null || a.addEventListener("click", (n) => {
       n.stopPropagation(), this._openCardEditor();
-    }), (s = b.querySelector("#btnThemeToggle")) == null || s.addEventListener("click", (n) => {
+    }), (o = b.querySelector("#btnThemeToggle")) == null || o.addEventListener("click", (n) => {
       n.stopPropagation(), this._toggleTheme();
     }), (w = b.querySelector("#btnLangToggle")) == null || w.addEventListener("click", (n) => {
       n.stopPropagation(), this._toggleLanguage();
@@ -4157,7 +4159,7 @@ class Aa extends HTMLElement {
   }
   _updateSliderGradient(e) {
     if (!e) return;
-    const t = parseFloat(e.min) || 0, o = parseFloat(e.max) || 100, p = parseFloat(e.value) || 0, d = Math.max(0, Math.min(100, (p - t) / (o - t) * 100));
+    const t = parseFloat(e.min) || 0, s = parseFloat(e.max) || 100, p = parseFloat(e.value) || 0, d = Math.max(0, Math.min(100, (p - t) / (s - t) * 100));
     e.style.background = `linear-gradient(to right, #38bdf8 0%, #38bdf8 ${d}%, rgba(255, 255, 255, 0.12) ${d}%, rgba(255, 255, 255, 0.12) 100%)`;
   }
   _setNumberValue(e, t) {
@@ -4169,14 +4171,14 @@ class Aa extends HTMLElement {
     });
   }
   _updateControlSliders() {
-    var u, E, g, _, k, f, i, a, s;
+    var u, E, g, _, k, f, i, a, o;
     const e = this._config || re;
     if (e.show_quick_settings === !1) return;
     const t = this.shadowRoot;
     if (!t) return;
-    const o = ((u = e.controls) == null ? void 0 : u.solar_charge_entity) || "number.deye_12k_inverter_max_charge_current", p = ((E = e.controls) == null ? void 0 : E.sell_power_entity) || "number.deye_12k_inverter_export_surplus_power", d = ((g = e.controls) == null ? void 0 : g.grid_charge_entity) || "number.deye_12k_inverter_grid_charge_current", c = t.getElementById("ctrlSliderSolar"), h = t.getElementById("ctrlValSolar"), b = t.getElementById("ctrlSliderSell"), S = t.getElementById("ctrlValSell"), $ = t.getElementById("ctrlSliderGrid"), m = t.getElementById("ctrlValGrid");
+    const s = ((u = e.controls) == null ? void 0 : u.solar_charge_entity) || "number.deye_12k_inverter_max_charge_current", p = ((E = e.controls) == null ? void 0 : E.sell_power_entity) || "number.deye_12k_inverter_export_surplus_power", d = ((g = e.controls) == null ? void 0 : g.grid_charge_entity) || "number.deye_12k_inverter_grid_charge_current", c = t.getElementById("ctrlSliderSolar"), h = t.getElementById("ctrlValSolar"), b = t.getElementById("ctrlSliderSell"), S = t.getElementById("ctrlValSell"), $ = t.getElementById("ctrlSliderGrid"), m = t.getElementById("ctrlValGrid");
     if (c && (!c.matches || !c.matches(":active"))) {
-      const w = (k = (_ = this._hass) == null ? void 0 : _.states) == null ? void 0 : k[o], l = w && !isNaN(parseFloat(w.state)) ? parseFloat(w.state) : c.value ? parseFloat(c.value) : 80;
+      const w = (k = (_ = this._hass) == null ? void 0 : _.states) == null ? void 0 : k[s], l = w && !isNaN(parseFloat(w.state)) ? parseFloat(w.state) : c.value ? parseFloat(c.value) : 80;
       c.value = l, h && (h.innerText = `${Math.round(l)} A`), this._updateSliderGradient(c);
     }
     if (b && (!b.matches || !b.matches(":active"))) {
@@ -4186,14 +4188,14 @@ class Aa extends HTMLElement {
       S && (S.innerText = `${y} ${B}`), this._updateSliderGradient(b);
     }
     if ($ && (!$.matches || !$.matches(":active"))) {
-      const w = (s = (a = this._hass) == null ? void 0 : a.states) == null ? void 0 : s[d], l = w && !isNaN(parseFloat(w.state)) ? parseFloat(w.state) : $.value ? parseFloat($.value) : 70;
+      const w = (o = (a = this._hass) == null ? void 0 : a.states) == null ? void 0 : o[d], l = w && !isNaN(parseFloat(w.state)) ? parseFloat(w.state) : $.value ? parseFloat($.value) : 70;
       $.value = l, m && (m.innerText = `${Math.round(l)} A`), this._updateSliderGradient($);
     }
   }
   _bindInteractions() {
-    var o, p, d, c, h, b, S, $, m, u, E, g, _, k, f, i, a, s, w, l, y, B;
+    var s, p, d, c, h, b, S, $, m, u, E, g, _, k, f, i, a, o, w, l, y, B;
     const e = this.shadowRoot, t = this._config || re;
-    (o = e.getElementById("headerEditCard")) == null || o.addEventListener("click", (n) => {
+    (s = e.getElementById("headerEditCard")) == null || s.addEventListener("click", (n) => {
       n.stopPropagation(), this._openCardEditor();
     }), (p = e.getElementById("headerThemeToggle")) == null || p.addEventListener("click", (n) => {
       n.stopPropagation(), this._toggleTheme();
@@ -4238,7 +4240,7 @@ class Aa extends HTMLElement {
     }), (a = e.getElementById("batChargeDaily")) == null || a.addEventListener("click", (n) => {
       var I;
       n.stopPropagation(), this._fireMoreInfo(((I = t.battery) == null ? void 0 : I.charge_daily_entity) || "sensor.inverter_12_kvt_daily_battery_charge");
-    }), (s = e.getElementById("batDischargeDaily")) == null || s.addEventListener("click", (n) => {
+    }), (o = e.getElementById("batDischargeDaily")) == null || o.addEventListener("click", (n) => {
       var I;
       n.stopPropagation(), this._fireMoreInfo(((I = t.battery) == null ? void 0 : I.discharge_daily_entity) || "sensor.inverter_12_kvt_daily_battery_discharge");
     });
@@ -4288,7 +4290,7 @@ class Aa extends HTMLElement {
     }).catch(() => {
     });
   }
-  _calculateTariffs(e, t, o) {
+  _calculateTariffs(e, t, s) {
     var w, l, y, B, n, I, V, H, W, K, v, C, P;
     const d = (this._config || re).tariffs || {};
     if (d.enabled === !1) {
@@ -4300,8 +4302,8 @@ class Aa extends HTMLElement {
       const x = g ? b : h, L = g ? this._t("tariff_night") : this._t("tariff_day"), j = g ? "🌙" : "☀️", J = g ? "rgba(99, 102, 241, 0.15)" : "rgba(245, 158, 11, 0.15)", le = g ? "rgba(129, 140, 248, 0.35)" : "rgba(251, 191, 36, 0.35)", de = g ? "#a5b4fc" : "#fbbf24";
       this._nodes.gridTariffBadge.style.background = J, this._nodes.gridTariffBadge.style.border = `1px solid ${le}`, this._nodes.gridTariffBadge.style.color = de, this._nodes.gridTariffBadge.innerText = `${j} ${L}: ${x.toFixed(2)} ${c}`, this._nodes.gridTariffBadge.style.display = "inline-flex";
     } else (I = this._nodes) != null && I.gridTariffBadge && (this._nodes.gridTariffBadge.style.display = "none");
-    if ((V = this._nodes) != null && V.solarSavingsDaily && d.show_solar_savings !== !1 && o > 0) {
-      const x = o * h;
+    if ((V = this._nodes) != null && V.solarSavingsDaily && d.show_solar_savings !== !1 && s > 0) {
+      const x = s * h;
       this._nodes.solarSavingsDaily.innerText = `💰 ${this._t("solar_saved")}: ~${x.toFixed(2)} ${c}`, this._nodes.solarSavingsDaily.style.display = "block";
     } else (H = this._nodes) != null && H.solarSavingsDaily && (this._nodes.solarSavingsDaily.style.display = "none");
     if ((W = this._nodes) != null && W.gridExportIncomeRow && d.show_export_income !== !1 && typeof t == "number" && t > 0) {
@@ -4346,22 +4348,22 @@ class Aa extends HTMLElement {
       const j = Math.max(0, e - L);
       i = x + j;
     }
-    const s = i * b + a * h;
-    (C = this._nodes) != null && C.gridCostDailyRow && d.show_daily_cost !== !1 ? (this._nodes.gridCostDailyVal && (this._nodes.gridCostDailyVal.innerText = `~${s.toFixed(2)} ${c}`), this._nodes.gridCostSplitVal && (this._nodes.gridCostSplitVal.innerText = `(🌙 ${i.toFixed(1)} + ☀️ ${a.toFixed(1)})`), this._nodes.gridCostDailyRow.style.display = "block") : (P = this._nodes) != null && P.gridCostDailyRow && (this._nodes.gridCostDailyRow.style.display = "none");
+    const o = i * b + a * h;
+    (C = this._nodes) != null && C.gridCostDailyRow && d.show_daily_cost !== !1 ? (this._nodes.gridCostDailyVal && (this._nodes.gridCostDailyVal.innerText = `~${o.toFixed(2)} ${c}`), this._nodes.gridCostSplitVal && (this._nodes.gridCostSplitVal.innerText = `(🌙 ${i.toFixed(1)} + ☀️ ${a.toFixed(1)})`), this._nodes.gridCostDailyRow.style.display = "block") : (P = this._nodes) != null && P.gridCostDailyRow && (this._nodes.gridCostDailyRow.style.display = "none");
   }
   _updateValues() {
-    var Pt, Mt, Lt, Rt, Nt, te, N, F, D, Me, je, Ye, Je, Ue, Ft, At, Vt, Dt, zt, Xt, Qt, ei, ti, ii, ai, si, oi, ni, ri, li, di, ci, pi, gi, hi, fi, _i, bi, ui, yi, vi, mi, wi, xi, ki, Ei, Si, $i, Bi, Ci, Ii, Ti, Pi, Mi, Li, Ri, Ni, Fi, Ai, Vi, Di, zi, Oi, Wi, qi, Gi, Hi, ji, Yi, Ji, Ui, Ki, Zi, Xi, Qi, ea, ta, ia, aa, sa, oa, na, ra, la, da, ca, pa, ga, ha, fa, _a, ba, ua, ya, va, ma, wa, xa, ka, Ea, Sa, $a, Ba, Ca, Ia, Ta, Pa;
+    var Pt, Mt, Lt, Rt, Nt, te, N, F, D, Me, je, Ye, Je, Ue, Ft, At, Vt, Dt, zt, Xt, Qt, ei, ti, ii, ai, oi, si, ni, ri, li, di, ci, pi, gi, hi, fi, _i, bi, ui, yi, vi, mi, wi, xi, ki, Ei, Si, $i, Bi, Ci, Ii, Ti, Pi, Mi, Li, Ri, Ni, Fi, Ai, Vi, Di, zi, Oi, Wi, qi, Gi, Hi, ji, Yi, Ji, Ui, Ki, Zi, Xi, Qi, ea, ta, ia, aa, oa, sa, na, ra, la, da, ca, pa, ga, ha, fa, _a, ba, ua, ya, va, ma, wa, xa, ka, Ea, Sa, $a, Ba, Ca, Ia, Ta, Pa;
     if (!this._nodes.dailySolarYield) return;
-    const e = this._config || re, t = this._language === "en" ? "kW" : "кВт", o = ((Pt = e.solar) == null ? void 0 : Pt.pv_count) || ((Lt = (Mt = e.solar) == null ? void 0 : Mt.strings) == null ? void 0 : Lt.length) || 3;
+    const e = this._config || re, t = this._language === "en" ? "kW" : "кВт", s = ((Pt = e.solar) == null ? void 0 : Pt.pv_count) || ((Lt = (Mt = e.solar) == null ? void 0 : Mt.strings) == null ? void 0 : Lt.length) || 3;
     let p = 0, d = 0, c = !1;
-    for (let r = 1; r <= o; r++) {
+    for (let r = 1; r <= s; r++) {
       const A = (Nt = (Rt = e.solar) == null ? void 0 : Rt.strings) == null ? void 0 : Nt[r - 1], G = (A == null ? void 0 : A.voltage_entity) || (r <= 3 ? `sensor.deye_12k_inverter_pv${r}_voltage` : ""), U = (A == null ? void 0 : A.current_entity) || (r <= 3 ? `sensor.deye_12k_inverter_pv${r}_current` : ""), T = (A == null ? void 0 : A.power_entity) || (r <= 3 ? `sensor.deye_12k_inverter_pv${r}_power` : "");
       if (this._getEntityState(T) || this._getEntityState(G) || this._getEntityState(U)) {
         c = !0;
         break;
       }
     }
-    for (let r = 1; r <= o; r++) {
+    for (let r = 1; r <= s; r++) {
       const A = this.shadowRoot.getElementById(`pvVal_${r}`), G = this.shadowRoot.getElementById(`pvVolt_${r}`), U = this.shadowRoot.getElementById(`pvCurr_${r}`), T = (N = (te = e.solar) == null ? void 0 : te.strings) == null ? void 0 : N[r - 1], Z = (T == null ? void 0 : T.voltage_entity) || (r <= 3 ? `sensor.deye_12k_inverter_pv${r}_voltage` : ""), z = (T == null ? void 0 : T.current_entity) || (r <= 3 ? `sensor.deye_12k_inverter_pv${r}_current` : ""), Y = (T == null ? void 0 : T.power_entity) || (r <= 3 ? `sensor.deye_12k_inverter_pv${r}_power` : ""), O = this._getEntityState(Z), X = this._getEntityState(z), q = this._getEntityState(Y);
       let ie = 0, Te = 0, ge = 0;
       q ? ge = this._formatPower(q).kw : O && X ? ge = O.val * X.val / 1e3 : O ? ge = 0 : ge = c ? 0 : 4, O ? ie = O.val : ie = c ? 0 : 380 + r * 4.5, X ? Te = X.val : q && ie > 0 ? Te = ge * 1e3 / ie : Te = c ? 0 : 3.12 + r * 0.28, p += ge, d += Te, A && (A.innerText = `${ge.toFixed(3)} ${t}`), G && (G.innerText = `${ie.toFixed(1)} V`), U && (U.innerText = `${Te.toFixed(2)} A`);
@@ -4379,7 +4381,7 @@ class Aa extends HTMLElement {
     let S = ((Me = e.solar) == null ? void 0 : Me.installed_power) !== void 0 ? parseFloat(e.solar.installed_power) : 0;
     if (isNaN(S) || S <= 0) {
       let r = 0;
-      for (let A = 0; A < o; A++) {
+      for (let A = 0; A < s; A++) {
         const G = (Ye = (je = e.solar) == null ? void 0 : je.strings) == null ? void 0 : Ye[A], U = (G == null ? void 0 : G.capacity_kw) !== void 0 ? parseFloat(G.capacity_kw) : (G == null ? void 0 : G.installed_power) !== void 0 ? parseFloat(G.installed_power) : 0;
         !isNaN(U) && U > 0 && (r += U);
       }
@@ -4399,8 +4401,8 @@ class Aa extends HTMLElement {
     this._nodes.inverterAcTemp.innerText = i ? i.val.toFixed(2) : "41,20";
     const a = this._getEntityState((zt = e.inverter) == null ? void 0 : zt.dc_temperature_entity);
     this._nodes.inverterDcTemp.innerText = a ? a.val.toFixed(2) : "38,40";
-    const s = this._getEntityState((Xt = e.inverter) == null ? void 0 : Xt.voltage_entity);
-    this._nodes.inverterVolt.innerText = s ? s.val.toFixed(2) : "231,45";
+    const o = this._getEntityState((Xt = e.inverter) == null ? void 0 : Xt.voltage_entity);
+    this._nodes.inverterVolt.innerText = o ? o.val.toFixed(2) : "231,45";
     const w = this._getEntityState((Qt = e.inverter) == null ? void 0 : Qt.current_entity);
     this._nodes.inverterCurrent.innerText = w ? w.val.toFixed(2) : "8,60";
     const l = this._getEntityState((ei = e.inverter) == null ? void 0 : ei.frequency_entity);
@@ -4412,7 +4414,7 @@ class Aa extends HTMLElement {
         B.classList.add("hidden");
       else {
         B.classList.remove("hidden");
-        const r = ((ai = e.wind) == null ? void 0 : ai.turbine_count) || ((oi = (si = e.wind) == null ? void 0 : si.turbines) == null ? void 0 : oi.length) || 2, A = ((ni = e.wind) == null ? void 0 : ni.turbines) || [];
+        const r = ((ai = e.wind) == null ? void 0 : ai.turbine_count) || ((si = (oi = e.wind) == null ? void 0 : oi.turbines) == null ? void 0 : si.length) || 2, A = ((ni = e.wind) == null ? void 0 : ni.turbines) || [];
         let G = 0, U = 0, T = !1, Z = !1;
         for (let q = 0; q < r; q++) {
           const ie = A[q] || {
@@ -4470,7 +4472,7 @@ class Aa extends HTMLElement {
           smart_load: "Smart Load"
         };
         let T = (mi = e.aux) == null ? void 0 : mi.title;
-        ((wi = e.aux) == null ? void 0 : wi.type) === "microinverter" && (!T || T === "Вітрогенератор") ? T = "Мікроінвертор" : (xi = e.aux) != null && xi.type && U[e.aux.type] && (!T || T === "Вітрогенератор") ? T = U[e.aux.type] : T || (T = "Мікроінвертор"), this._nodes.auxTitle && (this._nodes.auxTitle.innerText = T), this._nodes.auxIconBox && (this._nodes.auxIconBox.innerHTML = oe[(ki = e.aux) == null ? void 0 : ki.type] || oe.microinverter), this._nodes.auxSubtitle && (this._nodes.auxSubtitle.innerText = ((Ei = e.aux) == null ? void 0 : Ei.subtitle) || "Джерело → GEN port", this._nodes.auxSubtitle.style.color = "rgba(216, 180, 254, 0.85)"), n.style.borderColor = "rgba(192, 132, 252, 0.45)", n.style.background = "rgba(88, 28, 135, 0.35)", n.classList.remove("glow-wind"), n.classList.add("glow-aux");
+        ((wi = e.aux) == null ? void 0 : wi.type) === "microinverter" && (!T || T === "Вітрогенератор") ? T = "Мікроінвертор" : (xi = e.aux) != null && xi.type && U[e.aux.type] && (!T || T === "Вітрогенератор") ? T = U[e.aux.type] : T || (T = "Мікроінвертор"), this._nodes.auxTitle && (this._nodes.auxTitle.innerText = T), this._nodes.auxIconBox && (this._nodes.auxIconBox.innerHTML = se[(ki = e.aux) == null ? void 0 : ki.type] || se.microinverter), this._nodes.auxSubtitle && (this._nodes.auxSubtitle.innerText = ((Ei = e.aux) == null ? void 0 : Ei.subtitle) || "Джерело → GEN port", this._nodes.auxSubtitle.style.color = "rgba(216, 180, 254, 0.85)"), n.style.borderColor = "rgba(192, 132, 252, 0.45)", n.style.background = "rgba(88, 28, 135, 0.35)", n.classList.remove("glow-wind"), n.classList.add("glow-aux");
       }
     const H = this.shadowRoot.getElementById("nonEssentialNode"), W = !!((Si = e.grid) != null && Si.show_non_essential && (($i = e.grid) != null && $i.non_essential_power_entity)) || ((Bi = e.grid) == null ? void 0 : Bi.show_non_essential) !== !1 && !!((Ci = e.grid) != null && Ci.non_essential_power_entity);
     let K = 0;
@@ -4588,7 +4590,7 @@ class Aa extends HTMLElement {
         ue || (ue = r, Ce = !1);
       }
     }
-    const he = ue ? ue.unit === "W" ? ue.val / 1e3 : ue.val : 0, qe = ((Ui = e.grid) == null ? void 0 : Ui.power_sign) || ((Ki = e.grid) != null && Ki.invert_power ? "inverted" : "deye"), st = ((Zi = e.grid) == null ? void 0 : Zi.selling_enabled) === !0, Ie = (((Xi = e.grid) == null ? void 0 : Xi.min_power_threshold) !== void 0 ? e.grid.min_power_threshold : 50) / 1e3, Ve = this._getEntityState((Qi = e.grid) == null ? void 0 : Qi.status_entity), Le = this._getEntityState(((ea = e.grid) == null ? void 0 : ea.voltage_entity) || ((ta = e.inverter) == null ? void 0 : ta.voltage_entity)), Ge = ((ia = e.grid) == null ? void 0 : ia.voltage_threshold) !== void 0 ? e.grid.voltage_threshold : 90;
+    const he = ue ? ue.unit === "W" ? ue.val / 1e3 : ue.val : 0, qe = ((Ui = e.grid) == null ? void 0 : Ui.power_sign) || ((Ki = e.grid) != null && Ki.invert_power ? "inverted" : "deye"), ot = ((Zi = e.grid) == null ? void 0 : Zi.selling_enabled) === !0, Ie = (((Xi = e.grid) == null ? void 0 : Xi.min_power_threshold) !== void 0 ? e.grid.min_power_threshold : 50) / 1e3, Ve = this._getEntityState((Qi = e.grid) == null ? void 0 : Qi.status_entity), Le = this._getEntityState(((ea = e.grid) == null ? void 0 : ea.voltage_entity) || ((ta = e.inverter) == null ? void 0 : ta.voltage_entity)), Ge = ((ia = e.grid) == null ? void 0 : ia.voltage_threshold) !== void 0 ? e.grid.voltage_threshold : 90;
     let Se = !0;
     if (Ve) {
       const r = String(Ve.raw || Ve.val).toLowerCase();
@@ -4621,7 +4623,7 @@ class Aa extends HTMLElement {
       }
       const r = b + I + (V > 0 ? V : 0) + Be, A = r < 0.15, G = r < ye + 0.05;
       if (!Ce && (A || G)) {
-        const Z = this._getEntityState(((sa = e.grid) == null ? void 0 : sa.voltage_entity) || ((oa = e.inverter) == null ? void 0 : oa.voltage_entity)), z = this._getEntityState(((na = e.inverter) == null ? void 0 : na.current_entity) || "sensor.deye_12k_inverter_grid_current"), Y = Z && typeof Z.val == "number" && !isNaN(Z.val) ? Z.val : 0, O = z && typeof z.val == "number" && !isNaN(z.val) ? z.val : 0, X = Y >= Ge && O >= 1, q = ye > 0.2 && r < 0.1;
+        const Z = this._getEntityState(((oa = e.grid) == null ? void 0 : oa.voltage_entity) || ((sa = e.inverter) == null ? void 0 : sa.voltage_entity)), z = this._getEntityState(((na = e.inverter) == null ? void 0 : na.current_entity) || "sensor.deye_12k_inverter_grid_current"), Y = Z && typeof Z.val == "number" && !isNaN(Z.val) ? Z.val : 0, O = z && typeof z.val == "number" && !isNaN(z.val) ? z.val : 0, X = Y >= Ge && O >= 1, q = ye > 0.2 && r < 0.1;
         if (X) {
           const ie = Y * O * 0.9 / 1e3;
           (R < 0.05 || ie > R + 0.2) && (R = ie, M = !0, ee = !1);
@@ -4631,7 +4633,7 @@ class Aa extends HTMLElement {
         }
       }
       const T = Math.max(0, b + I + (V > 0 ? V : 0) + Be - ye - Ee - K - P);
-      ee && R > T + 0.1 && (R = T, R < Ie && (ee = !1, R = 0)), ee && !st && (ee = !1, R = 0);
+      ee && R > T + 0.1 && (R = T, R < Ie && (ee = !1, R = 0)), ee && !ot && (ee = !1, R = 0);
     }
     const ne = this.shadowRoot.getElementById("gridNode");
     this._nodes.gridPowerVal && (Se ? (this._nodes.gridPowerVal.innerText = `${R.toFixed(3)} ${t}`, ee ? this._nodes.gridPowerVal.style.color = "#34d399" : M ? this._nodes.gridPowerVal.style.color = "#38bdf8" : this._nodes.gridPowerVal.style.color = "#94a3b8") : (this._nodes.gridPowerVal.innerText = `0.000 ${t}`, this._nodes.gridPowerVal.style.color = "#64748b")), this._nodes.gridDirectionLabel && (Se ? ee ? (this._nodes.gridDirectionLabel.innerText = this._t("grid_dir_export"), this._nodes.gridDirectionLabel.style.color = "#34d399") : M ? (this._nodes.gridDirectionLabel.innerText = this._t("grid_dir_import"), this._nodes.gridDirectionLabel.style.color = "#38bdf8") : (this._nodes.gridDirectionLabel.innerText = this._t("grid_dir_idle"), this._nodes.gridDirectionLabel.style.color = "#64748b") : (this._nodes.gridDirectionLabel.innerText = this._t("grid_dir_off"), this._nodes.gridDirectionLabel.style.color = "#ef4444")), ne && (Se ? (ne.classList.add("glow-grid"), ne.style.borderColor = "rgba(56, 189, 248, 0.4)") : (ne.classList.remove("glow-grid"), ne.style.borderColor = "rgba(239, 68, 68, 0.45)"));
@@ -4639,7 +4641,7 @@ class Aa extends HTMLElement {
     this._nodes.gridImportDaily.innerText = be ? `${be.val.toFixed(2)} kWh` : "0.00 kWh";
     const fe = this._getEntityState((la = e.grid) == null ? void 0 : la.export_daily_entity);
     this._nodes.gridExportDaily.innerText = fe ? `${fe.val.toFixed(2)} kWh` : "0.00 kWh", this._calculateTariffs(be ? be.val : 0, fe ? fe.val : 0, g);
-    const ot = M ? R : 0, De = ee ? R : 0, nt = b + I + (V > 0 ? V : 0) + ot + Be, yt = ye + De + K + P, Et = Math.max(0, nt - yt), ze = this._getEntityState((da = e.inverter) == null ? void 0 : da.self_consumption_entity), rt = ze && typeof ze.val == "number" && !isNaN(ze.val) ? Math.max(0, ze.unit === "W" ? ze.val / 1e3 : ze.val) : null, St = (((ca = e.inverter) == null ? void 0 : ca.standby_power) !== void 0 ? e.inverter.standby_power : 100) / 1e3;
+    const st = M ? R : 0, De = ee ? R : 0, nt = b + I + (V > 0 ? V : 0) + st + Be, yt = ye + De + K + P, Et = Math.max(0, nt - yt), ze = this._getEntityState((da = e.inverter) == null ? void 0 : da.self_consumption_entity), rt = ze && typeof ze.val == "number" && !isNaN(ze.val) ? Math.max(0, ze.unit === "W" ? ze.val / 1e3 : ze.val) : null, St = (((ca = e.inverter) == null ? void 0 : ca.standby_power) !== void 0 ? e.inverter.standby_power : 100) / 1e3;
     let He = 0, Pe = 0;
     if (at)
       if (He = Math.max(x, Ee), rt !== null)
@@ -4725,7 +4727,7 @@ class Aa extends HTMLElement {
     }), this._resizeObserver.observe(e)), this._rAF(() => this._updateFlowPaths()), setTimeout(() => this._updateFlowPaths(), 150));
   }
   _updateFlowPaths() {
-    var e, t, o, p, d, c, h, b, S;
+    var e, t, s, p, d, c, h, b, S;
     try {
       const $ = (e = this.shadowRoot) == null ? void 0 : e.querySelector(".energy-station-container");
       if (!$) return;
@@ -4741,7 +4743,7 @@ class Aa extends HTMLElement {
       }, _ = (v, C, P) => {
         const x = this.shadowRoot.getElementById(v), L = this.shadowRoot.getElementById(C);
         x && x.setAttribute("d", P || ""), L && L.setAttribute("d", P || "");
-      }, k = this.shadowRoot.getElementById("gridNode"), f = this.shadowRoot.getElementById("inverterNode"), i = this.shadowRoot.getElementById("essentialNode"), a = this.shadowRoot.getElementById("totalPvPowerBadge"), s = this.shadowRoot.getElementById("masterBatteryHub"), w = this.shadowRoot.getElementById("carNode");
+      }, k = this.shadowRoot.getElementById("gridNode"), f = this.shadowRoot.getElementById("inverterNode"), i = this.shadowRoot.getElementById("essentialNode"), a = this.shadowRoot.getElementById("totalPvPowerBadge"), o = this.shadowRoot.getElementById("masterBatteryHub"), w = this.shadowRoot.getElementById("carNode");
       if (k && f) {
         const v = k.getBoundingClientRect(), C = f.getBoundingClientRect();
         if (v.bottom < C.top + 30) {
@@ -4789,8 +4791,8 @@ class Aa extends HTMLElement {
           _("pathSolarInvBase", "pathSolarInvFlow", P);
         }
       }
-      if (f && s) {
-        const v = g(f, 0.5, 1), C = g(s, 0.5, 0);
+      if (f && o) {
+        const v = g(f, 0.5, 1), C = g(o, 0.5, 0);
         if (v && C) {
           const P = `M ${v.x} ${v.y} L ${C.x} ${C.y}`;
           _("pathInvBatBase", "pathInvBatFlow", P);
@@ -4836,12 +4838,12 @@ class Aa extends HTMLElement {
       } else
         _("pathInvAuxBase", "pathInvAuxFlow", "");
       _("pathBatStemBase", "pathBatStemFlow", "");
-      const V = this.shadowRoot.getElementById("windStationContainer"), W = ((t = u.wind) == null ? void 0 : t.show) !== !1 || ((o = u.aux) == null ? void 0 : o.type) === "wind" ? ((p = u.wind) == null ? void 0 : p.turbine_count) || ((c = (d = u.wind) == null ? void 0 : d.turbines) == null ? void 0 : c.length) || 2 : 0;
+      const V = this.shadowRoot.getElementById("windStationContainer"), W = ((t = u.wind) == null ? void 0 : t.show) !== !1 || ((s = u.aux) == null ? void 0 : s.type) === "wind" ? ((p = u.wind) == null ? void 0 : p.turbine_count) || ((c = (d = u.wind) == null ? void 0 : d.turbines) == null ? void 0 : c.length) || 2 : 0;
       for (let v = 1; v <= 4; v++)
         if (v <= W && V && !V.classList.contains("hidden")) {
           const C = this.shadowRoot.getElementById(`turbineCard_${v}`);
-          if (C && s) {
-            const P = g(C, 0.5, 1), x = W === 1 ? 0.5 : 0.28 + (v - 1) / (W - 1) * 0.44, L = g(s, x, 0);
+          if (C && o) {
+            const P = g(C, 0.5, 1), x = W === 1 ? 0.5 : 0.28 + (v - 1) / (W - 1) * 0.44, L = g(o, x, 0);
             if (P && L) {
               const j = `M ${P.x} ${P.y} L ${L.x} ${L.y}`;
               _(`pathTurbine${v}Base`, `pathTurbine${v}Flow`, j);
@@ -4853,8 +4855,8 @@ class Aa extends HTMLElement {
       const K = ((h = u.battery) == null ? void 0 : h.parallel_batteries) || ((S = (b = u.battery) == null ? void 0 : b.modules) == null ? void 0 : S.length) || 2;
       for (let v = 1; v <= 8; v++) {
         const C = this.shadowRoot.getElementById(`batPackCard_${v}`), P = this.shadowRoot.getElementById(`batBranchBadge_${v}`);
-        if (v <= K && s && C) {
-          const x = g(s, 0.5, 1), L = g(C, 0.5, 0);
+        if (v <= K && o && C) {
+          const x = g(o, 0.5, 1), L = g(C, 0.5, 0);
           if (x && L) {
             const j = Math.round(x.y + (L.y - x.y) * 0.45);
             let J = "";
@@ -4869,13 +4871,13 @@ class Aa extends HTMLElement {
     }
   }
   _updateBusBars() {
-    var e, t, o, p, d;
+    var e, t, s, p, d;
     try {
-      const c = this._config || re, h = this._scale || 1, b = this.shadowRoot.getElementById("solarBusSvg"), S = ((e = c.solar) == null ? void 0 : e.pv_count) || ((o = (t = c.solar) == null ? void 0 : t.strings) == null ? void 0 : o.length) || 3;
+      const c = this._config || re, h = this._scale || 1, b = this.shadowRoot.getElementById("solarBusSvg"), S = ((e = c.solar) == null ? void 0 : e.pv_count) || ((s = (t = c.solar) == null ? void 0 : t.strings) == null ? void 0 : s.length) || 3;
       if (b && S > 0) {
         const u = b.getBoundingClientRect(), E = this.shadowRoot.getElementById("pvPanel_1"), g = this.shadowRoot.getElementById(`pvPanel_${S}`), _ = this.shadowRoot.getElementById("solarBusBase"), k = this.shadowRoot.getElementById("solarFlowCollector"), f = this.shadowRoot.getElementById("solarBusStemBase"), i = this.shadowRoot.getElementById("solarBusStemFlow"), a = this.shadowRoot.getElementById("solarBusFeeders");
         if (E && g && u.width > 0) {
-          const s = E.getBoundingClientRect(), w = g.getBoundingClientRect(), l = Math.round((s.left - u.left + s.width / 2) / h), y = Math.round((w.left - u.left + w.width / 2) / h), B = 13, n = Math.round((l + y) / 2);
+          const o = E.getBoundingClientRect(), w = g.getBoundingClientRect(), l = Math.round((o.left - u.left + o.width / 2) / h), y = Math.round((w.left - u.left + w.width / 2) / h), B = 13, n = Math.round((l + y) / 2);
           if (_ && (_.setAttribute("x1", l), _.setAttribute("y1", B), _.setAttribute("x2", y), _.setAttribute("y2", B)), k && (k.setAttribute("x1", l), k.setAttribute("y1", B), k.setAttribute("x2", y), k.setAttribute("y2", B)), f && (f.setAttribute("x1", n), f.setAttribute("y1", B), f.setAttribute("x2", n), f.setAttribute("y2", 26)), i && (i.setAttribute("x1", n), i.setAttribute("y1", B), i.setAttribute("x2", n), i.setAttribute("y2", 26)), a) {
             let I = "";
             for (let V = 1; V <= S; V++) {
@@ -4894,7 +4896,7 @@ class Aa extends HTMLElement {
       }
       const $ = this.shadowRoot.getElementById("subloadsBusSvg"), m = ((d = (p = c.load) == null ? void 0 : p.subloads) == null ? void 0 : d.length) || 3;
       if ($ && m > 0) {
-        const u = $.getBoundingClientRect(), E = this.shadowRoot.getElementById("subloadCard_0"), g = this.shadowRoot.getElementById(`subloadCard_${m - 1}`), _ = this.shadowRoot.getElementById("essentialNode"), k = this.shadowRoot.getElementById("subloadsBusBase"), f = this.shadowRoot.getElementById("subloadsFlowCollector"), i = this.shadowRoot.getElementById("subloadsBusStemBase"), a = this.shadowRoot.getElementById("subloadsBusStemFlow"), s = this.shadowRoot.getElementById("subloadsBusFeeders");
+        const u = $.getBoundingClientRect(), E = this.shadowRoot.getElementById("subloadCard_0"), g = this.shadowRoot.getElementById(`subloadCard_${m - 1}`), _ = this.shadowRoot.getElementById("essentialNode"), k = this.shadowRoot.getElementById("subloadsBusBase"), f = this.shadowRoot.getElementById("subloadsFlowCollector"), i = this.shadowRoot.getElementById("subloadsBusStemBase"), a = this.shadowRoot.getElementById("subloadsBusStemFlow"), o = this.shadowRoot.getElementById("subloadsBusFeeders");
         if (E && g && u.width > 0) {
           const w = E.getBoundingClientRect(), l = g.getBoundingClientRect(), y = Math.round((w.left - u.left + w.width / 2) / h), B = Math.round((l.left - u.left + l.width / 2) / h), n = 13;
           let I = Math.round((y + B) / 2);
@@ -4903,7 +4905,7 @@ class Aa extends HTMLElement {
             I = Math.round((W.left - u.left + W.width / 2) / h);
           }
           const V = Math.min(y, I), H = Math.max(B, I);
-          if (k && (k.setAttribute("x1", V), k.setAttribute("y1", n), k.setAttribute("x2", H), k.setAttribute("y2", n)), f && (f.setAttribute("x1", V), f.setAttribute("y1", n), f.setAttribute("x2", H), f.setAttribute("y2", n)), i && (i.setAttribute("x1", I), i.setAttribute("y1", 0), i.setAttribute("x2", I), i.setAttribute("y2", n)), a && (a.setAttribute("x1", I), a.setAttribute("y1", 0), a.setAttribute("x2", I), a.setAttribute("y2", n)), s) {
+          if (k && (k.setAttribute("x1", V), k.setAttribute("y1", n), k.setAttribute("x2", H), k.setAttribute("y2", n)), f && (f.setAttribute("x1", V), f.setAttribute("y1", n), f.setAttribute("x2", H), f.setAttribute("y2", n)), i && (i.setAttribute("x1", I), i.setAttribute("y1", 0), i.setAttribute("x2", I), i.setAttribute("y2", n)), a && (a.setAttribute("x1", I), a.setAttribute("y1", 0), a.setAttribute("x2", I), a.setAttribute("y2", n)), o) {
             let W = "";
             for (let K = 0; K < m; K++) {
               const v = this.shadowRoot.getElementById(`subloadCard_${K}`);
@@ -4915,30 +4917,30 @@ class Aa extends HTMLElement {
                 `;
               }
             }
-            s.innerHTML = W;
+            o.innerHTML = W;
           }
         }
       }
     } catch {
     }
   }
-  _applyFlowAnimation(e, t, o, p, d) {
+  _applyFlowAnimation(e, t, s, p, d) {
     if (!e) return;
     if (!d) {
       e.setAttribute("class", `flow-pulse ${t} inactive`), e.style.opacity = "0", e.style.animation = "none";
       return;
     }
-    const c = o ? "flow-reverse" : "flow-forward", h = o ? "esFlowBackward" : "esFlowForward";
+    const c = s ? "flow-reverse" : "flow-forward", h = s ? "esFlowBackward" : "esFlowForward";
     e.setAttribute("class", `flow-pulse ${t} ${c}`), e.style.opacity = "1", e.style.setProperty("--flow-speed", p), e.style.animation = `${h} ${p} linear infinite`;
   }
-  _updateFlowAnimations(e, t, o, p, d, c, h, b, S, $ = [], m = 0, u = 0, E = 0) {
-    var Ee, at, ue, Ce, he, qe, st, Ie, Ve, Le, Ge, Se, ee;
+  _updateFlowAnimations(e, t, s, p, d, c, h, b, S, $ = [], m = 0, u = 0, E = 0) {
+    var Ee, at, ue, Ce, he, qe, ot, Ie, Ve, Le, Ge, Se, ee;
     const g = this._config || re, _ = ((Ee = g.animations) == null ? void 0 : Ee.enabled) !== !1, k = ((at = g.animations) == null ? void 0 : at.speed) || 1.2, f = (M, R = 10) => {
       const ne = Math.abs(M);
       if (ne < 0.05) return "2.5s";
       const be = Math.min(1, ne / R);
       return `${Math.max(0.4, (2.6 - be * 1.9) * (k / 1.2)).toFixed(2)}s`;
-    }, i = this.shadowRoot.getElementById("pathGridInvFlow"), a = Math.abs(e), s = (((ue = g.grid) == null ? void 0 : ue.min_power_threshold) !== void 0 ? g.grid.min_power_threshold : 50) / 1e3, w = ((Ce = g.grid) == null ? void 0 : Ce.selling_enabled) === !0, l = _ && a >= s && (o || t && w);
+    }, i = this.shadowRoot.getElementById("pathGridInvFlow"), a = Math.abs(e), o = (((ue = g.grid) == null ? void 0 : ue.min_power_threshold) !== void 0 ? g.grid.min_power_threshold : 50) / 1e3, w = ((Ce = g.grid) == null ? void 0 : Ce.selling_enabled) === !0, l = _ && a >= o && (s || t && w);
     this._applyFlowAnimation(i, "flow-grid", t, f(e, 10), l);
     const y = this.shadowRoot.getElementById("pathSolarInvFlow");
     this._applyFlowAnimation(y, "flow-solar", !1, f(p, 12), _ && p >= 0.05);
@@ -4991,8 +4993,8 @@ class Aa extends HTMLElement {
     for (let M = 1; M <= 8; M++) {
       const R = this.shadowRoot.getElementById(`pathBat${M}Flow`);
       if (!R) continue;
-      const ne = $[M - 1], be = ne ? ne.kwNum : 0, fe = _ && (be >= 0.02 || H), ot = b;
-      this._applyFlowAnimation(R, W, ot, f(be || c, 8), fe);
+      const ne = $[M - 1], be = ne ? ne.kwNum : 0, fe = _ && (be >= 0.02 || H), st = b;
+      this._applyFlowAnimation(R, W, st, f(be || c, 8), fe);
     }
     for (let M = 0; M < 6; M++) {
       const R = this.shadowRoot.getElementById(`pathSubload${M}Flow`);
@@ -5000,7 +5002,7 @@ class Aa extends HTMLElement {
       const ne = (qe = (he = g.load) == null ? void 0 : he.subloads) == null ? void 0 : qe[M], be = ne ? this._getEntityState(ne.entity) : null, fe = be ? this._formatPower(be, 2).kw : M === 0 ? 2 : M === 1 ? 3 : 4;
       this._applyFlowAnimation(R, "flow-load", !1, f(fe, 8), _ && fe >= 0.05);
     }
-    const it = ((st = g.wind) == null ? void 0 : st.show) !== !1 || ((Ie = g.aux) == null ? void 0 : Ie.type) === "wind", ut = it ? ((Ve = g.wind) == null ? void 0 : Ve.turbine_count) || ((Ge = (Le = g.wind) == null ? void 0 : Le.turbines) == null ? void 0 : Ge.length) || 2 : 0, we = ((Se = g.wind) == null ? void 0 : Se.turbines) || [];
+    const it = ((ot = g.wind) == null ? void 0 : ot.show) !== !1 || ((Ie = g.aux) == null ? void 0 : Ie.type) === "wind", ut = it ? ((Ve = g.wind) == null ? void 0 : Ve.turbine_count) || ((Ge = (Le = g.wind) == null ? void 0 : Le.turbines) == null ? void 0 : Ge.length) || 2 : 0, we = ((Se = g.wind) == null ? void 0 : Se.turbines) || [];
     for (let M = 1; M <= 4; M++) {
       const R = this.shadowRoot.getElementById(`pathTurbine${M}Flow`);
       if (R)
@@ -5032,7 +5034,9 @@ class Va extends HTMLElement {
     this._hass = e, this._cardNode && (this._cardNode.hass = e), this._updateHaStatusBadge();
   }
   connectedCallback() {
-    this._loadConfig(), this._render(), this._bindEvents(), this._hass && this._cardNode && (this._cardNode.hass = this._hass);
+    this._loadConfig(), this._render(), this._bindEvents(), this._hass && this._cardNode && (this._cardNode.hass = this._hass), setTimeout(() => {
+      this._cardNode && typeof this._cardNode._updateFlowPaths == "function" && this._cardNode._updateFlowPaths();
+    }, 120);
   }
   _loadConfig() {
     try {
@@ -5061,7 +5065,7 @@ class Va extends HTMLElement {
     this._cardNode && this._cardNode.setConfig(this._config), this._saveConfig();
   }
   _render() {
-    var o, p, d, c, h, b, S, $, m, u, E, g, _, k, f, i, a, s, w, l, y, B, n, I, V, H, W;
+    var s, p, d, c, h, b, S, $, m, u, E, g, _, k, f, i, a, o, w, l, y, B, n, I, V, H, W;
     const e = this._config, t = e.appearance;
     this.shadowRoot.innerHTML = `
       <style>
@@ -5182,11 +5186,22 @@ class Va extends HTMLElement {
         /* MAIN CONTENT VIEWPORT */
         .panel-viewport {
           width: 100%;
+          box-sizing: border-box;
           padding: 20px 24px 60px 24px;
           display: flex;
           justify-content: center;
           align-items: flex-start;
           transition: margin-right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        energy-station-card,
+        #stationCard {
+          display: block;
+          width: 100%;
+          max-width: 1600px;
+          min-width: 0;
+          flex: 1 1 100%;
+          box-sizing: border-box;
         }
 
         /* SETTINGS DRAWER OVERLAY */
@@ -5529,7 +5544,7 @@ class Va extends HTMLElement {
 
           <!-- Quick Theme Toggle -->
           <button class="panel-pill-btn" id="btnQuickTheme" title="Змінити тему">
-            ${e.theme_mode === "light" ? "☀️ Світла" : ((o = e.appearance) == null ? void 0 : o.theme_preset) === "oled_black" ? "⬛ OLED" : "🌙 Темна"}
+            ${e.theme_mode === "light" ? "☀️ Світла" : ((s = e.appearance) == null ? void 0 : s.theme_preset) === "oled_black" ? "⬛ OLED" : "🌙 Темна"}
           </button>
 
           <!-- Fullscreen Toggle -->
@@ -5814,7 +5829,7 @@ class Va extends HTMLElement {
               <div class="cfg-row">
                 <div class="cfg-label">
                   <span>Кількість паралельних блоків АКБ (1 - 8):</span>
-                  <span id="lblBatCount" style="color: #34d399; font-family: 'JetBrains Mono', monospace; font-weight: 700;">${((s = e.battery) == null ? void 0 : s.parallel_batteries) || 2}</span>
+                  <span id="lblBatCount" style="color: #34d399; font-family: 'JetBrains Mono', monospace; font-weight: 700;">${((o = e.battery) == null ? void 0 : o.parallel_batteries) || 2}</span>
                 </div>
                 <div class="slider-row">
                   <input type="range" id="sliderBatCount" min="1" max="8" step="1" value="${((w = e.battery) == null ? void 0 : w.parallel_batteries) || 2}">
@@ -5913,7 +5928,7 @@ class Va extends HTMLElement {
     `, this._cardNode = this.shadowRoot.getElementById("stationCard"), this._cardNode && (this._cardNode.setConfig(this._config), this._hass && (this._cardNode.hass = this._hass));
   }
   _bindEvents() {
-    var $, m, u, E, g, _, k, f, i, a, s, w;
+    var $, m, u, E, g, _, k, f, i, a, o, w;
     const e = this.shadowRoot;
     ($ = e.getElementById("btnOpenDrawer")) == null || $.addEventListener("click", () => this._openDrawer()), (m = e.getElementById("btnCloseDrawer")) == null || m.addEventListener("click", () => this._closeDrawer()), (u = e.getElementById("btnCancelDrawer")) == null || u.addEventListener("click", () => this._closeDrawer()), (E = e.getElementById("drawerBackdrop")) == null || E.addEventListener("click", () => this._closeDrawer()), (g = e.getElementById("btnSaveDrawer")) == null || g.addEventListener("click", () => {
       this._collectFormData(), this._updateCardConfig(), this._closeDrawer();
@@ -5960,14 +5975,14 @@ class Va extends HTMLElement {
         e.querySelectorAll("#densitySeg .seg-btn").forEach((y) => y.classList.remove("active")), l.classList.add("active"), this._config.appearance.density = l.dataset.val, this._updateCardConfig();
       });
     });
-    const t = e.getElementById("sliderCardScale"), o = e.getElementById("lblCardScale");
+    const t = e.getElementById("sliderCardScale"), s = e.getElementById("lblCardScale");
     t && t.addEventListener("input", (l) => {
       const y = parseFloat(l.target.value);
-      o && (o.innerText = `${Math.round(y * 100)}%`), this._changeScale(y);
+      s && (s.innerText = `${Math.round(y * 100)}%`), this._changeScale(y);
     }), e.querySelectorAll(".btn-scale-preset").forEach((l) => {
       l.addEventListener("click", () => {
         const y = parseFloat(l.dataset.val);
-        t && (t.value = y), o && (o.innerText = `${Math.round(y * 100)}%`), this._changeScale(y);
+        t && (t.value = y), s && (s.innerText = `${Math.round(y * 100)}%`), this._changeScale(y);
       });
     });
     const p = e.getElementById("sliderAnimSpeed"), d = e.getElementById("lblAnimSpeed");
@@ -5986,7 +6001,7 @@ class Va extends HTMLElement {
       S && (S.innerText = y), this._config.battery || (this._config.battery = {}), this._config.battery.parallel_batteries = y, this._updateCardConfig();
     }), (a = e.getElementById("btnPresetDeye")) == null || a.addEventListener("click", () => {
       this._applyPreset("deye_esphome");
-    }), (s = e.getElementById("btnResetDefaults")) == null || s.addEventListener("click", () => {
+    }), (o = e.getElementById("btnResetDefaults")) == null || o.addEventListener("click", () => {
       confirm("Скинути всі налаштування до початкових?") && (this._config = JSON.parse(JSON.stringify(re)), this._scale = 1, this._saveConfig(), this._render(), this._bindEvents());
     }), (w = e.getElementById("btnCopyJson")) == null || w.addEventListener("click", () => {
       var l;
@@ -6006,30 +6021,30 @@ class Va extends HTMLElement {
     }, this._saveConfig(), this._render(), this._bindEvents(), alert("Застосовано пресет: Deye SUN-12K (ESPHome)!"));
   }
   _openDrawer() {
-    var t, o;
+    var t, s;
     this._isDrawerOpen = !0;
     const e = this.shadowRoot;
-    (t = e.getElementById("settingsDrawer")) == null || t.classList.add("active"), (o = e.getElementById("drawerBackdrop")) == null || o.classList.add("active");
+    (t = e.getElementById("settingsDrawer")) == null || t.classList.add("active"), (s = e.getElementById("drawerBackdrop")) == null || s.classList.add("active");
   }
   _closeDrawer() {
-    var t, o;
+    var t, s;
     this._isDrawerOpen = !1;
     const e = this.shadowRoot;
-    (t = e.getElementById("settingsDrawer")) == null || t.classList.remove("active"), (o = e.getElementById("drawerBackdrop")) == null || o.classList.remove("active");
+    (t = e.getElementById("settingsDrawer")) == null || t.classList.remove("active"), (s = e.getElementById("drawerBackdrop")) == null || s.classList.remove("active");
   }
   _changeScale(e) {
     const t = Math.max(0.65, Math.min(1.8, Math.round(e * 100) / 100));
     this._scale = t, this._config.card_scale = t;
-    const o = this.shadowRoot.getElementById("txtZoomVal");
-    o && (o.innerText = `${Math.round(t * 100)}%`), this._updateCardConfig();
+    const s = this.shadowRoot.getElementById("txtZoomVal");
+    s && (s.innerText = `${Math.round(t * 100)}%`), this._updateCardConfig();
   }
   _updateHaStatusBadge() {
     var t;
     const e = (t = this.shadowRoot) == null ? void 0 : t.getElementById("haStatusText");
     if (e)
       if (this._hass) {
-        const o = Object.keys(this._hass.states || {}).length;
-        e.innerText = `HA Live (${o} сенсорів)`;
+        const s = Object.keys(this._hass.states || {}).length;
+        e.innerText = `HA Live (${s} сенсорів)`;
       } else
         e.innerText = "Демо режим";
   }
