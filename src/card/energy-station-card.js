@@ -413,18 +413,56 @@ export class EnergyStationCard extends HTMLElement {
     const c = this._config || DEFAULT_CONFIG;
     this._initialized = true;
 
+    const app = c.appearance || DEFAULT_CONFIG.appearance || {};
+    const fontMap = {
+      'Inter': "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      'JetBrains Mono': "'JetBrains Mono', monospace",
+      'Roboto': "'Roboto', sans-serif",
+      'Orbitron': "'Orbitron', sans-serif",
+      'Exo 2': "'Exo 2', sans-serif",
+      'Ubuntu': "'Ubuntu', sans-serif",
+      'system-ui': "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+    };
+    const monoFontMap = {
+      'JetBrains Mono': "'JetBrains Mono', monospace",
+      'Roboto Mono': "'Roboto Mono', monospace",
+      'Orbitron': "'Orbitron', monospace",
+      'Fira Code': "'Fira Code', monospace",
+      'Share Tech Mono': "'Share Tech Mono', monospace"
+    };
+    const powerSizeMap = {
+      'compact': '18px',
+      'normal': '22px',
+      'large': '28px',
+      'huge': '34px'
+    };
+    const labelSizeMap = {
+      'compact': '10px',
+      'normal': '11.5px',
+      'large': '13.5px'
+    };
+    const densityPaddingMap = {
+      'compact': '14px 18px',
+      'balanced': '22px 28px 24px 28px',
+      'spacious': '30px 36px'
+    };
+
     // Load styles
     this.shadowRoot.innerHTML = `
       <style>
+        @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&family=Orbitron:wght@500;700;900&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;600;700&family=Ubuntu:wght@400;500;700&display=swap');
+
         :host {
           display: block;
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+          font-family: var(--es-font-family, ${fontMap[app.font_family] || fontMap['Inter']});
           color: #e2e8f0;
           user-select: none;
           --es-bg: #050b14;
           --es-card-bg: #08101e;
           --es-border: rgba(255, 255, 255, 0.08);
           --flow-speed: ${c.animations?.speed || 1.2}s;
+          --es-power-font-size: ${powerSizeMap[app.power_font_size] || '22px'};
+          --es-label-font-size: ${labelSizeMap[app.label_font_size] || '11.5px'};
         }
 
         * {
@@ -442,7 +480,7 @@ export class EnergyStationCard extends HTMLElement {
           width: 100%;
           max-width: var(--es-card-max-width, ${c.max_width || '1400px'});
           margin: 0 auto;
-          padding: 22px 28px 24px 28px;
+          padding: ${densityPaddingMap[app.density] || '22px 28px 24px 28px'};
           transition: all 0.3s ease;
           container-type: inline-size;
           container-name: es-card;
@@ -450,8 +488,15 @@ export class EnergyStationCard extends HTMLElement {
           zoom: var(--es-card-scale, ${this._scale || 1.0});
         }
 
+        .energy-station-container.theme-oled {
+          background-color: #000000 !important;
+          background-image: none !important;
+          border-color: rgba(255, 255, 255, 0.12) !important;
+          box-shadow: 0 0 30px rgba(0, 0, 0, 0.9) !important;
+        }
+
         .es-mono {
-          font-family: 'JetBrains Mono', monospace;
+          font-family: var(--es-mono-font-family, ${monoFontMap[app.mono_font_family] || monoFontMap['JetBrains Mono']});
           font-feature-settings: "tnum" 1;
         }
 
@@ -874,12 +919,12 @@ export class EnergyStationCard extends HTMLElement {
           flex-shrink: 0;
         }
         .es-node-title {
-          font-size: 13px;
+          font-size: var(--es-label-font-size, 13px);
           font-weight: 600;
           color: #cbd5e1;
         }
         .es-node-power {
-          font-size: 20px;
+          font-size: var(--es-power-font-size, 20px);
           font-weight: 800;
           line-height: 1.2;
           margin: 2px 0 1px 0;
@@ -1948,7 +1993,7 @@ export class EnergyStationCard extends HTMLElement {
           <div style="display: flex; flex-direction: column; align-items: center; margin-top: -2px;">
             <div style="width: 20px; height: 20px; color: #fbbf24; margin-bottom: 1px;">${ICONS.sun}</div>
             <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(245, 158, 11, 0.85); font-weight: 600;">${this._t('total_pv')}</span>
-            <div class="es-mono glow-solar clickable-node" id="totalPvPowerBadge" style="font-size: 20px; font-weight: 900; color: #fbbf24; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <div class="es-mono glow-solar clickable-node" id="totalPvPowerBadge" style="font-size: var(--es-power-font-size, 20px); font-weight: 900; color: #fbbf24; display: flex; align-items: center; justify-content: center; gap: 6px;">
               <span id="totalPvPowerVal">12,000 ${this._language === 'en' ? 'kW' : 'кВт'}</span>
               <span id="totalPvPercentBadge" class="es-pv-percent-badge" title="Поточна віддача від встановленої потужності СЕС">0%</span>
             </div>
@@ -2096,7 +2141,7 @@ export class EnergyStationCard extends HTMLElement {
             <div class="es-bat-hub-soc-col" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;">
               <div class="es-mono" id="masterBatterySoc" style="font-size: 15px; font-weight: 700; color: #34d399; margin: 0;">80.0%</div>
               <div class="es-mono" id="masterBatteryFlowHint" style="display: flex; align-items: center; justify-content: center; margin-top: 2px;">
-                <span style="font-size: 20px; font-weight: 900; color: #f8fafc;">3,000 ${this._language === 'en' ? 'kW' : 'кВт'}</span> <span style="color: #64748b; margin: 0 4px;">•</span> <span style="color: #34d399; font-weight: 700; font-size: 14px;">${this._t('bat_dir_charge')}</span>
+                <span id="batMasterPowerVal" style="font-size: var(--es-power-font-size, 20px); font-weight: 900; color: #f8fafc;">3,000 ${this._language === 'en' ? 'kW' : 'кВт'}</span> <span style="color: #64748b; margin: 0 4px;">•</span> <span style="color: #34d399; font-weight: 700; font-size: 14px;">${this._t('bat_dir_charge')}</span>
               </div>
             </div>
 

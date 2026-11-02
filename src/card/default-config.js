@@ -9,6 +9,18 @@ export const DEFAULT_CONFIG = {
   card_scale: 1.0, // Масштаб картки: 0.7 - 2.0
   max_width: '1400px', // '1400px' | '1600px' | '1800px' | '100%'
   show_quick_settings: true, // Показувати панель швидких перемикачів на картці
+
+  // Visual & Typography Customization (Шрифти, розміри та стилі)
+  appearance: {
+    font_family: 'Inter', // 'Inter' | 'JetBrains Mono' | 'Roboto' | 'Orbitron' | 'Exo 2' | 'Ubuntu' | 'system-ui'
+    mono_font_family: 'JetBrains Mono', // 'JetBrains Mono' | 'Roboto Mono' | 'Orbitron' | 'Fira Code' | 'Share Tech Mono'
+    power_font_size: 'normal', // 'compact' (18px) | 'normal' (22px) | 'large' (28px) | 'huge' (34px)
+    label_font_size: 'normal', // 'compact' (10px) | 'normal' (12px) | 'large' (14px)
+    theme_preset: 'cyber_dark', // 'cyber_dark' | 'oled_black' | 'clean_light'
+    density: 'balanced', // 'compact' | 'balanced' | 'spacious'
+    glow_intensity: 'high' // 'off' | 'subtle' | 'high'
+  },
+
   controls: {
     show: true,
     solar_charge_entity: 'number.deye_12k_inverter_max_charge_current',
