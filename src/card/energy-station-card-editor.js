@@ -10,6 +10,7 @@ export class EnergyStationCardEditor extends HTMLElement {
     this._isInternalChange = false;
     this._debounceTimer = null;
     this._rendered = false;
+    this._isDialogExpanded = false;
   }
 
   set hass(hass) {
@@ -29,6 +30,193 @@ export class EnergyStationCardEditor extends HTMLElement {
     if (!this._rendered) {
       this.render();
     }
+    // Automatically maximize/expand dialog width on desktop screens
+    const tryExpand = () => {
+      if (typeof window !== 'undefined' && window.innerWidth >= 850) {
+        this._applyExpand(true);
+      }
+    };
+    tryExpand();
+    setTimeout(tryExpand, 80);
+    setTimeout(tryExpand, 250);
+  }
+
+  _findHuiDialog() {
+    let curr = this;
+    while (curr) {
+      if (curr.tagName && curr.tagName.toLowerCase() === 'hui-dialog-edit-card') {
+        return curr;
+      }
+      if (curr.parentElement) {
+        curr = curr.parentElement;
+      } else if (curr.parentNode) {
+        curr = curr.parentNode;
+      } else if (curr.getRootNode && curr.getRootNode().host) {
+        curr = curr.getRootNode().host;
+      } else {
+        break;
+      }
+    }
+
+    // Direct document search
+    if (typeof document !== 'undefined') {
+      const docDialog = document.querySelector('hui-dialog-edit-card') ||
+                        document.querySelector('ha-dialog-edit-card');
+      if (docDialog) return docDialog;
+
+      // Deep search through home-assistant shadow DOM
+      try {
+        const ha = document.querySelector('home-assistant');
+        if (ha?.shadowRoot) {
+          const fromHa = ha.shadowRoot.querySelector('hui-dialog-edit-card') ||
+                         ha.shadowRoot.querySelector('ha-dialog-edit-card');
+          if (fromHa) return fromHa;
+
+          const all = ha.shadowRoot.querySelectorAll('*');
+          for (const el of all) {
+            if (el.shadowRoot) {
+              const found = el.shadowRoot.querySelector('hui-dialog-edit-card') ||
+                            el.shadowRoot.querySelector('ha-dialog-edit-card');
+              if (found) return found;
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    return null;
+  }
+
+  _findHaDialog(huiDialog) {
+    if (huiDialog?.shadowRoot) {
+      const d = huiDialog.shadowRoot.querySelector('ha-dialog') || 
+                huiDialog.shadowRoot.querySelector('mwc-dialog');
+      if (d) return d;
+    }
+    let curr = this;
+    while (curr) {
+      if (curr.tagName && (curr.tagName.toLowerCase() === 'ha-dialog' || curr.tagName.toLowerCase() === 'mwc-dialog')) {
+        return curr;
+      }
+      if (curr.parentElement) {
+        curr = curr.parentElement;
+      } else if (curr.parentNode) {
+        curr = curr.parentNode;
+      } else if (curr.getRootNode && curr.getRootNode().host) {
+        curr = curr.getRootNode().host;
+      } else {
+        break;
+      }
+    }
+    if (typeof document !== 'undefined') {
+      return document.querySelector('ha-dialog') || document.querySelector('mwc-dialog');
+    }
+    return null;
+  }
+
+  _applyExpand(expanded) {
+    this._isDialogExpanded = expanded;
+    const huiDialog = this._findHuiDialog();
+    const haDialog = this._findHaDialog(huiDialog);
+
+    if (expanded) {
+      if (huiDialog) {
+        if (typeof huiDialog._enlarge === 'function' && !huiDialog.large) {
+          huiDialog._enlarge();
+        } else {
+          huiDialog.large = true;
+          huiDialog.setAttribute('large', '');
+        }
+
+        try {
+          if (huiDialog.shadowRoot) {
+            let st = huiDialog.shadowRoot.getElementById('energy-station-wide-style');
+            if (!st) {
+              st = document.createElement('style');
+              st.id = 'energy-station-wide-style';
+              st.textContent = `
+                ha-dialog {
+                  --mdc-dialog-min-width: 95vw !important;
+                  --mdc-dialog-max-width: 96vw !important;
+                  --ha-dialog-max-width: 96vw !important;
+                  --ha-dialog-width: 95vw !important;
+                }
+                .content {
+                  width: 100% !important;
+                  max-width: 100% !important;
+                }
+                .element-editor {
+                  min-width: 0 !important;
+                  flex: 1.1 !important;
+                }
+                .element-preview {
+                  min-width: 0 !important;
+                  flex: 0.9 !important;
+                }
+              `;
+              huiDialog.shadowRoot.appendChild(st);
+            }
+          }
+        } catch (e) {}
+      }
+
+      if (haDialog) {
+        haDialog.style.setProperty('--mdc-dialog-min-width', '95vw', 'important');
+        haDialog.style.setProperty('--mdc-dialog-max-width', '96vw', 'important');
+        haDialog.style.setProperty('--ha-dialog-max-width', '96vw', 'important');
+        haDialog.style.setProperty('--ha-dialog-width', '95vw', 'important');
+        haDialog.style.setProperty('--mdc-dialog-width', '95vw', 'important');
+
+        try {
+          const surf = haDialog.shadowRoot?.querySelector('.mdc-dialog__surface');
+          if (surf) {
+            surf.style.setProperty('max-width', '96vw', 'important');
+            surf.style.setProperty('width', '95vw', 'important');
+          }
+        } catch (e) {}
+      }
+    } else {
+      if (huiDialog) {
+        if (typeof huiDialog._enlarge === 'function' && huiDialog.large) {
+          huiDialog._enlarge();
+        } else {
+          huiDialog.large = false;
+          huiDialog.removeAttribute('large');
+        }
+        try {
+          const st = huiDialog.shadowRoot?.getElementById('energy-station-wide-style');
+          if (st) st.remove();
+        } catch (e) {}
+      }
+
+      if (haDialog) {
+        haDialog.style.removeProperty('--mdc-dialog-min-width');
+        haDialog.style.removeProperty('--mdc-dialog-max-width');
+        haDialog.style.removeProperty('--ha-dialog-max-width');
+        haDialog.style.removeProperty('--ha-dialog-width');
+        haDialog.style.removeProperty('--mdc-dialog-width');
+
+        try {
+          const surf = haDialog.shadowRoot?.querySelector('.mdc-dialog__surface');
+          if (surf) {
+            surf.style.removeProperty('max-width');
+            surf.style.removeProperty('width');
+          }
+        } catch (e) {}
+      }
+    }
+
+    this._updateExpandBtn();
+  }
+
+  _updateExpandBtn() {
+    const btn = this.shadowRoot?.getElementById('btnToggleExpand');
+    if (!btn) return;
+    const isWide = this._isDialogExpanded;
+    btn.innerHTML = isWide ? '❐ Звичайний розмір' : '⛶ На весь екран';
+    btn.title = isWide 
+      ? 'Згорнути вікно налаштувань до звичайного розміру' 
+      : 'Розширити вікно налаштувань на весь екран';
   }
 
   _flushConfig() {
@@ -405,14 +593,25 @@ export class EnergyStationCardEditor extends HTMLElement {
           color: #e2e8f0;
           user-select: none;
         }
+        .fields-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          gap: 12px;
+        }
+        .full-width {
+          grid-column: 1 / -1;
+        }
       </style>
 
       <div class="editor-header">
         <div class="editor-title">
           <span>⚡ Energy Station</span>
-          <span style="font-size: 10px; background: rgba(245,158,11,0.2); color: #fbbf24; padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(245,158,11,0.3);">HA PRO v1.2.8</span>
+          <span style="font-size: 10px; background: rgba(245,158,11,0.2); color: #fbbf24; padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(245,158,11,0.3);">HA PRO v1.2.9</span>
         </div>
         <div class="presets-row">
+          <button class="preset-badge" id="btnToggleExpand" style="background: rgba(2, 132, 199, 0.2); border-color: #38bdf8; color: #38bdf8;" title="Розгорнути вікно налаштувань на весь екран / згорнути до стандартного розміру">
+            ${this._isDialogExpanded ? '❐ Звичайний розмір' : '⛶ На весь екран'}
+          </button>
           <button class="preset-badge" id="btnPresetEsp" title="Швидко застосувати типові сенсори прошивки ESPHome Deye">⚡ ESPHome Deye</button>
           <button class="preset-badge" id="btnPresetSolarman" title="Швидко застосувати сенсори інтеграції Solarman">☀️ Solarman</button>
         </div>
@@ -433,71 +632,67 @@ export class EnergyStationCardEditor extends HTMLElement {
       <div style="display: ${this._currentTab === 'general' ? 'block' : 'none'};">
         <div class="field-group">
           <div class="field-group-title">Основні параметри картки</div>
-          <div class="field-row">
-            <label>Назва станції / Заголовок:</label>
-            <input type="text" id="title" value="${c.title || 'Energy Station'}">
-          </div>
-          <div class="field-row">
-            <label>Тема оформлення (Theme):</label>
-            <select id="themeMode">
-              <option value="dark" ${c.theme_mode !== 'light' ? 'selected' : ''}>🌙 Темна (Dark)</option>
-              <option value="light" ${c.theme_mode === 'light' ? 'selected' : ''}>☀️ Світла (Light)</option>
-            </select>
-          </div>
-          <div class="field-row">
-            <label>Мова інтерфейсу (Language):</label>
-            <select id="cardLanguage">
-              <option value="uk" ${c.language !== 'en' ? 'selected' : ''}>🇺🇦 Українська (UK)</option>
-              <option value="en" ${c.language === 'en' ? 'selected' : ''}>🇬🇧 English (EN)</option>
-            </select>
-          </div>
-          <div class="field-row">
-            <label>Масштаб картки (Zoom / Scale):</label>
-            <div class="slider-row">
-              <input type="range" id="cardScale" min="0.7" max="1.8" step="0.05" value="${c.card_scale || 1.0}">
-              <span id="cardScaleVal" style="font-family: monospace; font-weight: bold; width: 45px; color: #38bdf8;">${Math.round((c.card_scale || 1.0) * 100)}%</span>
+          <div class="fields-grid">
+            <div class="field-row">
+              <label>Назва станції / Заголовок:</label>
+              <input type="text" id="title" value="${c.title || 'Energy Station'}">
             </div>
-          </div>
-          <div class="field-row">
-            <label>Максимальна ширина картки (Max Width):</label>
-            <select id="cardMaxWidth">
-              <option value="1400px" ${c.max_width === '1400px' || !c.max_width ? 'selected' : ''}>1400px (Стандартна)</option>
-              <option value="1600px" ${c.max_width === '1600px' ? 'selected' : ''}>1600px (Широка)</option>
-              <option value="1800px" ${c.max_width === '1800px' ? 'selected' : ''}>1800px (Дуже широка / 2K)</option>
-              <option value="100%" ${c.max_width === '100%' ? 'selected' : ''}>100% (На всю ширину панелі)</option>
-            </select>
-          </div>
-          <div class="field-row">
-            <label>Панель перемикачів на картці:</label>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <input type="checkbox" id="showQuickSettings" ${c.show_quick_settings !== false ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #0284c7;">
-              <span style="font-size: 11px;">Показувати блок контролю струму та теми/мови</span>
+            <div class="field-row">
+              <label>Максимальна ширина картки (Max Width):</label>
+              <select id="cardMaxWidth">
+                <option value="1400px" ${c.max_width === '1400px' || !c.max_width ? 'selected' : ''}>1400px (Стандартна)</option>
+                <option value="1600px" ${c.max_width === '1600px' ? 'selected' : ''}>1600px (Широка)</option>
+                <option value="1800px" ${c.max_width === '1800px' ? 'selected' : ''}>1800px (Дуже широка / 2K)</option>
+                <option value="100%" ${c.max_width === '100%' ? 'selected' : ''}>100% (На всю ширину панелі)</option>
+              </select>
             </div>
-          </div>
-          <div class="field-row">
-            <label>Сенсор струму заряду АКБ від сонця:</label>
-            <input type="text" id="ctrlSolarCharge" value="${c.controls?.solar_charge_entity || ''}" placeholder="number.deye_12k_inverter_max_charge_current">
-          </div>
-          <div class="field-row">
-            <label>Сенсор потужності продажу в мережу:</label>
-            <input type="text" id="ctrlSellPower" value="${c.controls?.sell_power_entity || ''}" placeholder="number.deye_12k_inverter_export_surplus_power">
-          </div>
-          <div class="field-row">
-            <label>Сенсор струму заряду АКБ від мережі:</label>
-            <input type="text" id="ctrlGridCharge" value="${c.controls?.grid_charge_entity || ''}" placeholder="number.deye_12k_inverter_grid_charge_current">
-          </div>
-          <div class="field-row">
-            <label>Анімація енергетичних потоків (струмки):</label>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <input type="checkbox" id="animEnabled" ${c.animations?.enabled !== false ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #0284c7;">
-              <span style="font-size: 11px;">Увімкнути імпульсні лінії енергії</span>
+            <div class="field-row">
+              <label>Тема оформлення (Theme):</label>
+              <select id="themeMode">
+                <option value="dark" ${c.theme_mode !== 'light' ? 'selected' : ''}>🌙 Темна (Dark)</option>
+                <option value="light" ${c.theme_mode === 'light' ? 'selected' : ''}>☀️ Світла (Light)</option>
+              </select>
             </div>
-          </div>
-          <div class="field-row">
-            <label>Швидкість анімації (сек):</label>
-            <div class="slider-row">
-              <input type="range" id="animSpeed" min="0.5" max="3" step="0.1" value="${c.animations?.speed || 1.2}">
-              <span id="animSpeedVal" style="font-family: monospace; font-weight: bold; width: 35px;">${c.animations?.speed || 1.2}s</span>
+            <div class="field-row">
+              <label>Мова інтерфейсу (Language):</label>
+              <select id="cardLanguage">
+                <option value="uk" ${c.language !== 'en' ? 'selected' : ''}>🇺🇦 Українська (UK)</option>
+                <option value="en" ${c.language === 'en' ? 'selected' : ''}>🇬🇧 English (EN)</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <label>Масштаб картки (Zoom / Scale):</label>
+              <div class="slider-row">
+                <input type="range" id="cardScale" min="0.7" max="1.8" step="0.05" value="${c.card_scale || 1.0}">
+                <span id="cardScaleVal" style="font-family: monospace; font-weight: bold; width: 45px; color: #38bdf8;">${Math.round((c.card_scale || 1.0) * 100)}%</span>
+              </div>
+            </div>
+            <div class="field-row">
+              <label>Швидкість анімації (сек):</label>
+              <div class="slider-row">
+                <input type="range" id="animSpeed" min="0.5" max="3" step="0.1" value="${c.animations?.speed || 1.2}">
+                <span id="animSpeedVal" style="font-family: monospace; font-weight: bold; width: 35px;">${c.animations?.speed || 1.2}s</span>
+              </div>
+            </div>
+            <div class="field-row full-width checkbox-row">
+              <input type="checkbox" id="showQuickSettings" ${c.show_quick_settings !== false ? 'checked' : ''}>
+              <span>Показувати блок контролю струму та теми/мови на картці</span>
+            </div>
+            <div class="field-row full-width checkbox-row">
+              <input type="checkbox" id="animEnabled" ${c.animations?.enabled !== false ? 'checked' : ''}>
+              <span>Увімкнути імпульсні лінії енергії (анімація потоків)</span>
+            </div>
+            <div class="field-row">
+              <label>Сенсор струму заряду АКБ від сонця:</label>
+              <input type="text" id="ctrlSolarCharge" value="${c.controls?.solar_charge_entity || ''}" placeholder="number.deye_12k_inverter_max_charge_current">
+            </div>
+            <div class="field-row">
+              <label>Сенсор потужності продажу в мережу:</label>
+              <input type="text" id="ctrlSellPower" value="${c.controls?.sell_power_entity || ''}" placeholder="number.deye_12k_inverter_export_surplus_power">
+            </div>
+            <div class="field-row full-width">
+              <label>Сенсор струму заряду АКБ від мережі:</label>
+              <input type="text" id="ctrlGridCharge" value="${c.controls?.grid_charge_entity || ''}" placeholder="number.deye_12k_inverter_grid_charge_current">
             </div>
           </div>
         </div>
@@ -507,34 +702,35 @@ export class EnergyStationCardEditor extends HTMLElement {
       <div style="display: ${this._currentTab === 'solar' ? 'block' : 'none'};">
         <div class="field-group">
           <div class="field-group-title">☀️ Сонячне поле (PV панелі)</div>
-          <div class="field-row">
-            <label>Кількість панелей/стрингів (1 - 16):</label>
-            <div class="slider-row">
-              <input type="range" id="solarPvCount" min="1" max="16" value="${c.solar?.pv_count || 3}">
-              <span id="solarPvCountVal" style="font-family: monospace; font-weight: bold; color: #fbbf24; width: 30px;">${c.solar?.pv_count || 3}</span>
+          <div class="fields-grid">
+            <div class="field-row full-width">
+              <label>Кількість панелей/стрингів (1 - 16):</label>
+              <div class="slider-row">
+                <input type="range" id="solarPvCount" min="1" max="16" value="${c.solar?.pv_count || 3}">
+                <span id="solarPvCountVal" style="font-family: monospace; font-weight: bold; color: #fbbf24; width: 30px;">${c.solar?.pv_count || 3}</span>
+              </div>
             </div>
-          </div>
-          <div class="field-row">
-            <label>Сумарна сонячна потужність (сенсор, необов'язково):</label>
-            <input type="text" id="solarTotalPower" value="${c.solar?.total_power_entity || ''}" placeholder="Залиште порожнім для авторозрахунку як суми стрінгів">
-            <span style="font-size: 10px; color: #94a3b8;">Якщо не вказано або сенсор відсутній — картка автоматично сумує потужність усіх стрінгів (PV1 + PV2 + PV3...).</span>
-          </div>
-          <div class="field-row">
-            <label>Щоденна сонячна генерація (kWh):</label>
-            <input type="text" id="solarDailyYield" value="${c.solar?.daily_yield_entity || ''}">
-          </div>
-          <div class="field-row">
-            <label>Ціль генерації на день (kWh):</label>
-            <input type="number" id="solarTargetDaily" value="${c.solar?.target_daily_yield || 55}">
-          </div>
-          <div class="field-row">
-            <label>Встановлена пікова потужність СЕС (kWp / кВт):</label>
-            <input type="number" step="0.1" id="solarInstalledPower" value="${c.solar?.installed_power !== undefined ? c.solar.installed_power : 12.0}" placeholder="12.0">
-            <span style="font-size: 10px; color: #94a3b8;">Повна встановлена потужність усіх сонячних панелей для розрахунку % поточної генерації СЕС. Якщо не вказано — сумує потужність окремих полів.</span>
-          </div>
-          <div class="field-row checkbox-row">
-            <input type="checkbox" id="solarShowMetrics" ${c.solar?.show_metrics !== false ? 'checked' : ''}>
-            <label for="solarShowMetrics">Відображати напругу (V) та струм (A) стрінгів</label>
+            <div class="field-row">
+              <label>Сумарна сонячна потужність (сенсор, необов'язково):</label>
+              <input type="text" id="solarTotalPower" value="${c.solar?.total_power_entity || ''}" placeholder="Залиште порожнім для авторозрахунку">
+              <span style="font-size: 10px; color: #94a3b8;">Картка автоматично сумує потужність усіх стрінгів, якщо порожньо.</span>
+            </div>
+            <div class="field-row">
+              <label>Щоденна сонячна генерація (kWh):</label>
+              <input type="text" id="solarDailyYield" value="${c.solar?.daily_yield_entity || ''}">
+            </div>
+            <div class="field-row">
+              <label>Ціль генерації на день (kWh):</label>
+              <input type="number" id="solarTargetDaily" value="${c.solar?.target_daily_yield || 55}">
+            </div>
+            <div class="field-row">
+              <label>Встановлена пікова потужність СЕС (kWp / кВт):</label>
+              <input type="number" step="0.1" id="solarInstalledPower" value="${c.solar?.installed_power !== undefined ? c.solar.installed_power : 12.0}" placeholder="12.0">
+            </div>
+            <div class="field-row full-width checkbox-row">
+              <input type="checkbox" id="solarShowMetrics" ${c.solar?.show_metrics !== false ? 'checked' : ''}>
+              <span>Відображати напругу (V) та струм (A) стрінгів на картці</span>
+            </div>
           </div>
         </div>
 
@@ -596,70 +792,74 @@ export class EnergyStationCardEditor extends HTMLElement {
       <div style="display: ${this._currentTab === 'inverter' ? 'block' : 'none'};">
         <div class="field-group">
           <div class="field-group-title">⚡ Гібридний інвертор</div>
-          <div class="field-row">
-            <label>Модель / Назва на шильдику:</label>
-            <input type="text" id="invModel" value="${c.inverter?.model_name || 'DEYE SUN-12K'}">
-          </div>
-          <div class="field-row">
-            <label>Потужність інвертора (сенсор, опціонально):</label>
-            <input type="text" id="invPower" value="${c.inverter?.power_entity || ''}" placeholder="Залиште порожнім, якщо немає">
-            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">В інверторах Deye окремого датчика немає — залиште порожнім, щоб не показувати зайве значення.</div>
-          </div>
-          <div class="field-row">
-            <label>Власне споживання інвертора:</label>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <input type="checkbox" id="invShowSelfConsumption" ${c.inverter?.show_self_consumption !== false ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #f97316;">
-              <span style="font-size: 11px;">Відображати «⚡ Власне споживання» всередині картки інвертора</span>
+          <div class="fields-grid">
+            <div class="field-row">
+              <label>Модель / Назва на шильдику:</label>
+              <input type="text" id="invModel" value="${c.inverter?.model_name || 'DEYE SUN-12K'}">
             </div>
-          </div>
-          <div class="field-row">
-            <label>Сенсор власного споживання (W або kW, опціонально):</label>
-            <input type="text" id="invSelfConsumptionEntity" value="${c.inverter?.self_consumption_entity || ''}" placeholder="Залиште порожнім для авторозрахунку за балансом">
-            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Якщо не вказано — розраховується автоматично за балансом енергії.</div>
-          </div>
-          <div class="field-row">
-            <label>Базове власне споживання / втрати інвертора (Вт):</label>
-            <div class="slider-row">
-              <input type="range" id="invStandbyPower" min="20" max="300" step="10" value="${c.inverter?.standby_power !== undefined ? c.inverter.standby_power : 100}">
-              <span id="invStandbyPowerVal" style="font-family: monospace; font-weight: bold; color: #fb923c; width: 48px;">${c.inverter?.standby_power !== undefined ? c.inverter.standby_power : 100}W</span>
+            <div class="field-row">
+              <label>Потужність інвертора (сенсор, опц.):</label>
+              <input type="text" id="invPower" value="${c.inverter?.power_entity || ''}" placeholder="Залиште порожнім, якщо немає">
             </div>
-            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Власні втрати електроніки та охолодження (зазвичай 80–150 Вт для інверторів Deye 8–12 кВт).</div>
-          </div>
-          <div class="field-row">
-            <label>Температура AC (°C):</label>
-            <input type="text" id="invTempAc" value="${c.inverter?.ac_temperature_entity || ''}">
-          </div>
-          <div class="field-row">
-            <label>Температура DC (°C):</label>
-            <input type="text" id="invTempDc" value="${c.inverter?.dc_temperature_entity || ''}">
-          </div>
-          <div class="field-row">
-            <label>Напруга мережі (V) / Струм (A) / Частота (Hz):</label>
-            <input type="text" id="invVolt" placeholder="Напруга V" value="${c.inverter?.voltage_entity || ''}" style="margin-bottom: 4px;">
-            <input type="text" id="invCurrent" placeholder="Струм A" value="${c.inverter?.current_entity || ''}" style="margin-bottom: 4px;">
-            <input type="text" id="invFreq" placeholder="Частота Hz" value="${c.inverter?.frequency_entity || ''}">
+            <div class="field-row full-width checkbox-row">
+              <input type="checkbox" id="invShowSelfConsumption" ${c.inverter?.show_self_consumption !== false ? 'checked' : ''} style="accent-color: #f97316;">
+              <span>Відображати «⚡ Власне споживання» всередині картки інвертора</span>
+            </div>
+            <div class="field-row">
+              <label>Сенсор власного споживання (W/kW, опц.):</label>
+              <input type="text" id="invSelfConsumptionEntity" value="${c.inverter?.self_consumption_entity || ''}" placeholder="Залиште порожнім для авторозрахунку">
+            </div>
+            <div class="field-row">
+              <label>Базові втрати інвертора (Вт):</label>
+              <div class="slider-row">
+                <input type="range" id="invStandbyPower" min="20" max="300" step="10" value="${c.inverter?.standby_power !== undefined ? c.inverter.standby_power : 100}">
+                <span id="invStandbyPowerVal" style="font-family: monospace; font-weight: bold; color: #fb923c; width: 48px;">${c.inverter?.standby_power !== undefined ? c.inverter.standby_power : 100}W</span>
+              </div>
+            </div>
+            <div class="field-row">
+              <label>Температура AC (°C):</label>
+              <input type="text" id="invTempAc" value="${c.inverter?.ac_temperature_entity || ''}">
+            </div>
+            <div class="field-row">
+              <label>Температура DC (°C):</label>
+              <input type="text" id="invTempDc" value="${c.inverter?.dc_temperature_entity || ''}">
+            </div>
+            <div class="field-row">
+              <label>Напруга мережі інвертора (V):</label>
+              <input type="text" id="invVolt" placeholder="Напруга V" value="${c.inverter?.voltage_entity || ''}">
+            </div>
+            <div class="field-row">
+              <label>Струм інвертора (A):</label>
+              <input type="text" id="invCurrent" placeholder="Струм A" value="${c.inverter?.current_entity || ''}">
+            </div>
+            <div class="field-row full-width">
+              <label>Частота мережі (Hz):</label>
+              <input type="text" id="invFreq" placeholder="Частота Hz" value="${c.inverter?.frequency_entity || ''}">
+            </div>
           </div>
         </div>
 
         <div class="field-group">
           <div class="field-group-title">🔌 Додатковий AUX / GEN порт</div>
-          <div class="field-row">
-            <label>Тип підключеного пристрою:</label>
-            <select id="auxType">
-              <option value="microinverter" ${c.aux?.type === 'microinverter' ? 'selected' : ''}>Мікроінвертор (Microinverter)</option>
-              <option value="generator" ${c.aux?.type === 'generator' ? 'selected' : ''}>Генератор (Generator / Дизель-бензин)</option>
-              <option value="wind" ${c.aux?.type === 'wind' ? 'selected' : ''}>Вітрогенератор (Wind Turbine)</option>
-              <option value="smart_load" ${c.aux?.type === 'smart_load' ? 'selected' : ''}>Smart Load (Розумне навантаження)</option>
-              <option value="none" ${c.aux?.type === 'none' ? 'selected' : ''}>Вимкнено (Не відображати)</option>
-            </select>
-          </div>
-          <div class="field-row">
-            <label>Назва порту AUX:</label>
-            <input type="text" id="auxTitle" value="${(c.aux?.type === 'microinverter' && (!c.aux?.title || c.aux?.title === 'Вітрогенератор')) ? 'Мікроінвертор' : (c.aux?.title || (c.aux?.type === 'generator' ? 'Генератор' : (c.aux?.type === 'smart_load' ? 'Smart Load' : 'Мікроінвертор')))}" placeholder="Мікроінвертор">
-          </div>
-          <div class="field-row">
-            <label>Потужність AUX порту (сенсор):</label>
-            <input type="text" id="auxPower" value="${c.aux?.power_entity || ''}">
+          <div class="fields-grid">
+            <div class="field-row">
+              <label>Тип підключеного пристрою:</label>
+              <select id="auxType">
+                <option value="microinverter" ${c.aux?.type === 'microinverter' ? 'selected' : ''}>Мікроінвертор (Microinverter)</option>
+                <option value="generator" ${c.aux?.type === 'generator' ? 'selected' : ''}>Генератор (Generator / Дизель-бензин)</option>
+                <option value="wind" ${c.aux?.type === 'wind' ? 'selected' : ''}>Вітрогенератор (Wind Turbine)</option>
+                <option value="smart_load" ${c.aux?.type === 'smart_load' ? 'selected' : ''}>Smart Load (Розумне навантаження)</option>
+                <option value="none" ${c.aux?.type === 'none' ? 'selected' : ''}>Вимкнено (Не відображати)</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <label>Назва порту AUX:</label>
+              <input type="text" id="auxTitle" value="${(c.aux?.type === 'microinverter' && (!c.aux?.title || c.aux?.title === 'Вітрогенератор')) ? 'Мікроінвертор' : (c.aux?.title || (c.aux?.type === 'generator' ? 'Генератор' : (c.aux?.type === 'smart_load' ? 'Smart Load' : 'Мікроінвертор')))}" placeholder="Мікроінвертор">
+            </div>
+            <div class="field-row full-width">
+              <label>Потужність AUX порту (сенсор):</label>
+              <input type="text" id="auxPower" value="${c.aux?.power_entity || ''}">
+            </div>
           </div>
         </div>
 
@@ -739,43 +939,50 @@ export class EnergyStationCardEditor extends HTMLElement {
       <div style="display: ${this._currentTab === 'battery' ? 'block' : 'none'};">
         <div class="field-group">
           <div class="field-group-title">🔋 Шина акумуляторів & Інвертор</div>
-          <div class="field-row">
-            <label>Рівень заряду Battery SOC (%) (сенсор):</label>
-            <input type="text" id="batSoc" value="${c.battery?.soc_entity || ''}">
-          </div>
-          <div class="field-row">
-            <label>Потужність заряду/розряду (W або kW):</label>
-            <input type="text" id="batPower" value="${c.battery?.power_entity || ''}">
-          </div>
-          <div class="field-row">
-            <label>Знак потужності/струму батареї (Напрямок перетоку):</label>
-            <select id="batPowerSign">
-              <option value="deye" ${c.battery?.power_sign !== 'standard' ? 'selected' : ''}>Стандарт Deye / Sunsynk / Solarman (- Заряд, + Розряд)</option>
-              <option value="standard" ${c.battery?.power_sign === 'standard' ? 'selected' : ''}>Стандартний (+ Заряд, - Розряд)</option>
-            </select>
-            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
-              Більшість інверторів Deye передають заряд із мінусом (-), а розряд із плюсом (+).
+          <div class="fields-grid">
+            <div class="field-row">
+              <label>Рівень заряду Battery SOC (%) (сенсор):</label>
+              <input type="text" id="batSoc" value="${c.battery?.soc_entity || ''}">
             </div>
-          </div>
-          <div class="field-row">
-            <label>Напруга (V) та Струм (A):</label>
-            <input type="text" id="batVolt" placeholder="Напруга батареї V" value="${c.battery?.voltage_entity || ''}" style="margin-bottom: 4px;">
-            <input type="text" id="batCurrent" placeholder="Струм батареї A" value="${c.battery?.current_entity || ''}">
-          </div>
-          <div class="field-row">
-            <label>Температура АКБ (°C) та Загальний розбаланс банок (mV):</label>
-            <input type="text" id="batTemp" placeholder="sensor.deye_12k_inverter_battery_temperature" value="${c.battery?.temperature_entity || ''}" style="margin-bottom: 4px;">
-            <input type="text" id="batDelta" placeholder="sensor.bms_cell_delta (опціонально)" value="${c.battery?.cell_delta_entity || ''}">
-          </div>
-          <div class="field-row">
-            <label>Сенсор ємності інвертора (показується в дужках):</label>
-            <input type="text" id="batCapacity" placeholder="sensor.inverter_12_kvt_battery_capacity" value="${c.battery?.capacity_entity || ''}">
-            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Ємність батареї розрахована інвертором (буде виведена в дужках поруч із сумою модулів)</div>
-          </div>
-          <div class="field-row">
-            <label>Щоденний заряд (kWh) / Щоденний розряд (kWh):</label>
-            <input type="text" id="batChargeDaily" placeholder="Заряд kWh" value="${c.battery?.charge_daily_entity || ''}" style="margin-bottom: 4px;">
-            <input type="text" id="batDischargeDaily" placeholder="Розряд kWh" value="${c.battery?.discharge_daily_entity || ''}">
+            <div class="field-row">
+              <label>Потужність заряду/розряду (W або kW):</label>
+              <input type="text" id="batPower" value="${c.battery?.power_entity || ''}">
+            </div>
+            <div class="field-row">
+              <label>Знак потужності/струму батареї (Напрямок):</label>
+              <select id="batPowerSign">
+                <option value="deye" ${c.battery?.power_sign !== 'standard' ? 'selected' : ''}>Стандарт Deye / Sunsynk (- Заряд, + Розряд)</option>
+                <option value="standard" ${c.battery?.power_sign === 'standard' ? 'selected' : ''}>Стандартний (+ Заряд, - Розряд)</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <label>Сенсор ємності інвертора (показується в дужках):</label>
+              <input type="text" id="batCapacity" placeholder="sensor.inverter_12_kvt_battery_capacity" value="${c.battery?.capacity_entity || ''}">
+            </div>
+            <div class="field-row">
+              <label>Напруга батареї (V):</label>
+              <input type="text" id="batVolt" placeholder="Напруга батареї V" value="${c.battery?.voltage_entity || ''}">
+            </div>
+            <div class="field-row">
+              <label>Струм батареї (A):</label>
+              <input type="text" id="batCurrent" placeholder="Струм батареї A" value="${c.battery?.current_entity || ''}">
+            </div>
+            <div class="field-row">
+              <label>Температура АКБ (°C):</label>
+              <input type="text" id="batTemp" placeholder="sensor.deye_12k_inverter_battery_temperature" value="${c.battery?.temperature_entity || ''}">
+            </div>
+            <div class="field-row">
+              <label>Загальний розбаланс банок (Cell Delta mV):</label>
+              <input type="text" id="batDelta" placeholder="sensor.bms_cell_delta (опціонально)" value="${c.battery?.cell_delta_entity || ''}">
+            </div>
+            <div class="field-row">
+              <label>Щоденний заряд (kWh):</label>
+              <input type="text" id="batChargeDaily" placeholder="Заряд kWh" value="${c.battery?.charge_daily_entity || ''}">
+            </div>
+            <div class="field-row">
+              <label>Щоденний розряд (kWh):</label>
+              <input type="text" id="batDischargeDaily" placeholder="Розряд kWh" value="${c.battery?.discharge_daily_entity || ''}">
+            </div>
           </div>
         </div>
 
@@ -868,7 +1075,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         <div class="field-group">
           <div class="field-group-title">🌐 Зовнішня електромережа</div>
 
-          <div class="field-row" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 10px; margin-bottom: 12px;">
+          <div class="field-row full-width" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 10px; margin-bottom: 12px;">
             <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 0;">
               <div>
                 <span style="font-weight: 700; color: #38bdf8; font-size: 13px;">Дозволити продаж в мережу (Експорт)</span>
@@ -880,83 +1087,79 @@ export class EnergyStationCardEditor extends HTMLElement {
             </label>
           </div>
 
-          <div class="field-row">
-            <label>Потужність мережі (+/- або імпорт/експорт):</label>
-            <input type="text" id="gridPower" value="${c.grid?.power_entity || ''}" placeholder="sensor.deye_12k_inverter_total_grid_power">
-          </div>
-
-          <div class="field-row">
-            <label>Зовнішній лічильник мережі (External CT / Smart Meter, опціонально):</label>
-            <input type="text" id="gridExternalPower" value="${c.grid?.external_power_entity || ''}" placeholder="sensor.deye_12k_inverter_external_power або sensor.solarman_grid_external_power">
-            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
-              Трансформатор струму (CT) на вводі з вулиці. Відображає реальний перетік на стовпі (напр. 30 Вт в режимі Zero Export).
+          <div class="fields-grid">
+            <div class="field-row">
+              <label>Потужність мережі (+/- або імпорт/експорт):</label>
+              <input type="text" id="gridPower" value="${c.grid?.power_entity || ''}" placeholder="sensor.deye_12k_inverter_total_grid_power">
             </div>
-          </div>
 
-          <div class="field-row">
-            <label>Автоматичний розрахунок вводу мережі (Grid Import Reconcile):</label>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <input type="checkbox" id="gridAutoCalculate" ${c.grid?.auto_calculate !== false ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #0284c7;">
-              <span style="font-size: 11px;">Сумувати заряд АКБ та навантаження будинку, якщо інвертор вимірює лише зарядне</span>
+            <div class="field-row">
+              <label>Зовнішній лічильник мережі (External CT / Smart Meter):</label>
+              <input type="text" id="gridExternalPower" value="${c.grid?.external_power_entity || ''}" placeholder="sensor.deye_12k_inverter_external_power">
             </div>
-            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
-              Якщо зовнішній CT відсутній, а інвертор (Deye) у Grid Power обліковує лише ввід на заряд АКБ, картка автоматично додає споживання будинку для відображення реального вводу з вулиці.
+
+            <div class="field-row full-width checkbox-row">
+              <input type="checkbox" id="gridAutoCalculate" ${c.grid?.auto_calculate !== false ? 'checked' : ''}>
+              <div>
+                <span>Сумувати заряд АКБ та навантаження будинку (Grid Import Reconcile)</span>
+                <div style="font-size: 10px; color: #94a3b8; margin-top: 1px;">Якщо зовнішній CT відсутній, автоматично додає споживання будинку для відображення реального вводу з вулиці.</div>
+              </div>
             </div>
-          </div>
 
-          <div class="field-row">
-            <label>Знак потужності (Напрямок перетоку за сенсором):</label>
-            <select id="gridPowerSign">
-              <option value="deye" ${c.grid?.power_sign !== 'inverted' ? 'selected' : ''}>Стандарт Deye / Sunsynk / Solarman (+ Імпорт, - Експорт)</option>
-              <option value="inverted" ${c.grid?.power_sign === 'inverted' ? 'selected' : ''}>Інвертований (+ Експорт, - Імпорт)</option>
-            </select>
-            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
-              Більшість інверторів Deye передають споживання з плюсом (+), а продаж з мінусом (-).
+            <div class="field-row">
+              <label>Знак потужності (Напрямок перетоку за сенсором):</label>
+              <select id="gridPowerSign">
+                <option value="deye" ${c.grid?.power_sign !== 'inverted' ? 'selected' : ''}>Стандарт Deye / Sunsynk / Solarman (+ Імпорт, - Експорт)</option>
+                <option value="inverted" ${c.grid?.power_sign === 'inverted' ? 'selected' : ''}>Інвертований (+ Експорт, - Імпорт)</option>
+              </select>
             </div>
-          </div>
 
-          <div class="field-row">
-            <label>Поріг чутливості анімації мережі (Вт):</label>
-            <input type="number" id="gridMinThreshold" min="0" max="500" value="${c.grid?.min_power_threshold !== undefined ? c.grid.min_power_threshold : 50}">
-            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
-              Нижче цього значення (напр. 50 Вт) перетік вважається нульовим і анімація вимикається.
+            <div class="field-row">
+              <label>Поріг чутливості анімації мережі (Вт):</label>
+              <input type="number" id="gridMinThreshold" min="0" max="500" value="${c.grid?.min_power_threshold !== undefined ? c.grid.min_power_threshold : 50}">
             </div>
-          </div>
 
-          <div class="field-row">
-            <label>Сенсор напруги мережі (Grid Voltage, опціонально):</label>
-            <input type="text" id="gridVoltage" value="${c.grid?.voltage_entity || ''}" placeholder="За замовчуванням береться з інвертора (напр. sensor.deye_12k_inverter_grid_voltage)">
-          </div>
-
-          <div class="field-row">
-            <label>Сенсор наявності мережі (опціонально, binary_sensor):</label>
-            <input type="text" id="gridStatus" value="${c.grid?.status_entity || ''}" placeholder="binary_sensor.grid_connected">
-          </div>
-
-          <div class="field-row">
-            <label>Поріг напруги вимкнення мережі / блекаут (В):</label>
-            <input type="number" id="gridVoltageThreshold" min="20" max="200" value="${c.grid?.voltage_threshold !== undefined ? c.grid.voltage_threshold : 90}">
-            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
-              Якщо напруга нижче цього значення (за замовчуванням 90 В) — мережа вважається знеструмленою. Експорт та імпорт блокуються, а вся енергія від АКБ і Сонця зараховується в дім.
+            <div class="field-row">
+              <label>Сенсор напруги мережі (Grid Voltage, опціонально):</label>
+              <input type="text" id="gridVoltage" value="${c.grid?.voltage_entity || ''}" placeholder="sensor.deye_12k_inverter_grid_voltage">
             </div>
-          </div>
 
-          <div class="field-row">
-            <label>Щоденний імпорт (kWh) / Експорт (kWh):</label>
-            <input type="text" id="gridImportDaily" placeholder="Імпорт kWh (напр. sensor.grid_import_daily)" value="${c.grid?.import_daily_entity || ''}" style="margin-bottom: 4px;">
-            <input type="text" id="gridExportDaily" placeholder="Експорт kWh (напр. sensor.grid_export_daily)" value="${c.grid?.export_daily_entity || ''}">
+            <div class="field-row">
+              <label>Сенсор наявності мережі (опціонально, binary_sensor):</label>
+              <input type="text" id="gridStatus" value="${c.grid?.status_entity || ''}" placeholder="binary_sensor.grid_connected">
+            </div>
+
+            <div class="field-row full-width">
+              <label>Поріг напруги вимкнення мережі / блекаут (В):</label>
+              <input type="number" id="gridVoltageThreshold" min="20" max="200" value="${c.grid?.voltage_threshold !== undefined ? c.grid.voltage_threshold : 90}">
+              <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
+                Якщо напруга нижче цього значення (за замовчуванням 90 В) — мережа вважається знеструмленою. Експорт та імпорт блокуються, а вся енергія від АКБ і Сонця зараховується в дім.
+              </div>
+            </div>
+
+            <div class="field-row">
+              <label>Щоденний імпорт (kWh):</label>
+              <input type="text" id="gridImportDaily" placeholder="sensor.grid_import_daily" value="${c.grid?.import_daily_entity || ''}">
+            </div>
+
+            <div class="field-row">
+              <label>Щоденний експорт (kWh):</label>
+              <input type="text" id="gridExportDaily" placeholder="sensor.grid_export_daily" value="${c.grid?.export_daily_entity || ''}">
+            </div>
           </div>
         </div>
 
         <div class="field-group">
           <div class="field-group-title">🚗 Негарантоване навантаження & Авто (Опціонально)</div>
-          <div class="field-row">
-            <label>Сенсор негарантованого навантаження (порожньо = приховати):</label>
-            <input type="text" id="gridNonEssential" value="${c.grid?.non_essential_power_entity || ''}" placeholder="Залишіть порожнім, якщо немає">
-          </div>
-          <div class="field-row">
-            <label>Сенсор зарядки авто / EV (порожньо = приховати):</label>
-            <input type="text" id="gridCarPower" value="${c.grid?.car_power_entity || ''}" placeholder="Залишіть порожнім, якщо немає">
+          <div class="fields-grid">
+            <div class="field-row">
+              <label>Сенсор негарантованого навантаження:</label>
+              <input type="text" id="gridNonEssential" value="${c.grid?.non_essential_power_entity || ''}" placeholder="Залишіть порожнім, якщо немає">
+            </div>
+            <div class="field-row">
+              <label>Сенсор зарядки авто / EV:</label>
+              <input type="text" id="gridCarPower" value="${c.grid?.car_power_entity || ''}" placeholder="Залишіть порожнім, якщо немає">
+            </div>
           </div>
         </div>
       </div>
@@ -965,33 +1168,29 @@ export class EnergyStationCardEditor extends HTMLElement {
       <div style="display: ${this._currentTab === 'loads' ? 'block' : 'none'};">
         <div class="field-group">
           <div class="field-group-title">🏠 Гарантоване навантаження (Дім)</div>
-          <div class="field-row">
-            <label>Автоматичний розрахунок навантаження за балансом:</label>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <input type="checkbox" id="loadAutoCalculate" ${c.load?.auto_calculate !== false ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #06b6d4;">
-              <span style="font-size: 11px;">Розраховувати за балансом енергії: (Мережа + Сонце + Вітер) - Заряд АКБ - Власне інвертора</span>
+          <div class="fields-grid">
+            <div class="field-row full-width checkbox-row">
+              <input type="checkbox" id="loadAutoCalculate" ${c.load?.auto_calculate !== false ? 'checked' : ''} style="accent-color: #06b6d4;">
+              <div>
+                <span>Розраховувати за балансом енергії (Deye / Sunsynk Reconcile)</span>
+                <div style="font-size: 10px; color: #94a3b8; margin-top: 1px;">Формула: (Мережа + Сонце + Вітер) - Заряд АКБ - Власне інвертора. Запобігає від'ємним значенням.</div>
+              </div>
             </div>
-            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
-              Рекомендовано для Deye / Sunsynk. Запобігає від'ємним значенням під час заряду батареї з мережі.
+            <div class="field-row full-width checkbox-row">
+              <input type="checkbox" id="loadSeparateExport" ${c.load?.separate_export !== false ? 'checked' : ''} style="accent-color: #06b6d4;">
+              <div>
+                <span>Відокремлювати експорт від навантаження будинку</span>
+                <div style="font-size: 10px; color: #94a3b8; margin-top: 1px;">Віднімати експорт у мережу від показників сенсора навантаження інвертора.</div>
+              </div>
             </div>
-          </div>
-          <div class="field-row">
-            <label>Відокремлювати експорт від навантаження будинку:</label>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <input type="checkbox" id="loadSeparateExport" ${c.load?.separate_export !== false ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #06b6d4;">
-              <span style="font-size: 11px;">Віднімати експорт у мережу від показників сенсора навантаження (Deye / Sunsynk)</span>
+            <div class="field-row">
+              <label>Essential потужність будинку (сенсор, опціонально):</label>
+              <input type="text" id="loadEssential" value="${c.load?.essential_power_entity || ''}" placeholder="Залиште порожнім або сенсор навантаження">
             </div>
-            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
-              У гібридних інверторах Deye сенсор Load Power або Inverter Power під час продажу в мережу підсумовує експорт з навантаженням будинку. Ця опція гарантує коректне розділення.
+            <div class="field-row">
+              <label>Щоденне споживання будинку (kWh):</label>
+              <input type="text" id="loadDailyHouse" value="${c.load?.daily_house_entity || ''}">
             </div>
-          </div>
-          <div class="field-row">
-            <label>Essential потужність будинку (сенсор, опціонально):</label>
-            <input type="text" id="loadEssential" value="${c.load?.essential_power_entity || ''}" placeholder="Залиште порожнім або вкажіть сенсор навантаження">
-          </div>
-          <div class="field-row">
-            <label>Щоденне споживання будинку (kWh):</label>
-            <input type="text" id="loadDailyHouse" value="${c.load?.daily_house_entity || ''}">
           </div>
         </div>
 
@@ -1041,73 +1240,77 @@ export class EnergyStationCardEditor extends HTMLElement {
         <div class="field-group">
           <div class="field-group-title">Двозонний облік тарифів (День / Ніч)</div>
           
-          <div class="field-row">
-            <label>Увімкнути облік тарифів:</label>
-            <input type="checkbox" id="tariffsEnabled" ${(c.tariffs?.enabled !== false) ? 'checked' : ''} style="width: 20px; height: 20px; accent-color: #38bdf8;">
-          </div>
+          <div class="fields-grid">
+            <div class="field-row full-width checkbox-row">
+              <input type="checkbox" id="tariffsEnabled" ${(c.tariffs?.enabled !== false) ? 'checked' : ''} style="accent-color: #38bdf8;">
+              <span>Увімкнути облік тарифів на картці</span>
+            </div>
 
-          <div class="field-row">
-            <label>Валюта / позначення:</label>
-            <input type="text" id="tariffCurrency" value="${c.tariffs?.currency || 'грн'}" placeholder="грн або ₴" style="max-width: 120px;">
-          </div>
+            <div class="field-row">
+              <label>Валюта / позначення:</label>
+              <input type="text" id="tariffCurrency" value="${c.tariffs?.currency || 'грн'}" placeholder="грн або ₴">
+            </div>
 
-          <div class="field-row">
-            <label>☀️ Денний тариф (${c.tariffs?.currency || 'грн'}/кВт·год):</label>
-            <input type="number" step="0.01" min="0" id="tariffDayRate" value="${c.tariffs?.day_rate ?? 4.32}" placeholder="4.32" style="max-width: 140px;">
-          </div>
+            <div class="field-row">
+              <label>☀️ Денний тариф (${c.tariffs?.currency || 'грн'}/кВт·год):</label>
+              <input type="number" step="0.01" min="0" id="tariffDayRate" value="${c.tariffs?.day_rate ?? 4.32}" placeholder="4.32">
+            </div>
 
-          <div class="field-row">
-            <label>🌙 Нічний тариф (${c.tariffs?.currency || 'грн'}/кВт·год):</label>
-            <input type="number" step="0.01" min="0" id="tariffNightRate" value="${c.tariffs?.night_rate ?? 2.16}" placeholder="2.16" style="max-width: 140px;">
-          </div>
+            <div class="field-row">
+              <label>🌙 Нічний тариф (${c.tariffs?.currency || 'грн'}/кВт·год):</label>
+              <input type="number" step="0.01" min="0" id="tariffNightRate" value="${c.tariffs?.night_rate ?? 2.16}" placeholder="2.16">
+            </div>
 
-          <div class="field-row">
-            <label>🟢 Зелений тариф / експорт (${c.tariffs?.currency || 'грн'}/кВт·год):</label>
-            <input type="number" step="0.01" min="0" id="tariffExportRate" value="${c.tariffs?.export_rate ?? 5.30}" placeholder="5.30" style="max-width: 140px;">
-          </div>
+            <div class="field-row">
+              <label>🟢 Зелений тариф / експорт (${c.tariffs?.currency || 'грн'}/кВт·год):</label>
+              <input type="number" step="0.01" min="0" id="tariffExportRate" value="${c.tariffs?.export_rate ?? 5.30}" placeholder="5.30">
+            </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
-            <div class="field-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+            <div class="field-row">
               <label>Початок ночі (година):</label>
               <select id="tariffNightStart" style="width: 100%;">
                 ${Array.from({length: 24}, (_, i) => `<option value="${i}" ${(c.tariffs?.night_start_hour ?? 23) === i ? 'selected' : ''}>${String(i).padStart(2, '0')}:00</option>`).join('')}
               </select>
             </div>
-            <div class="field-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+
+            <div class="field-row">
               <label>Кінець ночі (година):</label>
               <select id="tariffNightEnd" style="width: 100%;">
                 ${Array.from({length: 24}, (_, i) => `<option value="${i}" ${(c.tariffs?.night_end_hour ?? 7) === i ? 'selected' : ''}>${String(i).padStart(2, '0')}:00</option>`).join('')}
               </select>
             </div>
           </div>
-          <div style="font-size: 11px; color: #94a3b8; margin-top: 6px; line-height: 1.4;">
-            💡 Картка автоматично ділить добовий імпорт з мережі (наприклад 22.9 кВт·год) на нічну (з 23:00 до 07:00) та денну зону за годинником або з історії Home Assistant.
+          <div style="font-size: 11px; color: #94a3b8; margin-top: 10px; line-height: 1.4;">
+            💡 Картка автоматично ділить добовий імпорт з мережі на нічну (з 23:00 до 07:00) та денну зону за годинником або з історії Home Assistant.
           </div>
         </div>
 
         <div class="field-group">
           <div class="field-group-title">Відображення на станції</div>
-          <div class="field-row">
-            <label>Показувати вартість імпорту за сьогодні:</label>
-            <input type="checkbox" id="tariffShowDailyCost" ${(c.tariffs?.show_daily_cost !== false) ? 'checked' : ''} style="width: 20px; height: 20px; accent-color: #38bdf8;">
-          </div>
-          <div class="field-row">
-            <label>Показувати дохід від експорту (Зелений тариф):</label>
-            <input type="checkbox" id="tariffShowExportIncome" ${(c.tariffs?.show_export_income !== false) ? 'checked' : ''} style="width: 20px; height: 20px; accent-color: #34d399;">
-          </div>
-          <div class="field-row">
-            <label>Показувати бейдж активного тарифу (🌙 Ніч / ☀️ День):</label>
-            <input type="checkbox" id="tariffShowActiveBadge" ${(c.tariffs?.show_active_badge !== false) ? 'checked' : ''} style="width: 20px; height: 20px; accent-color: #38bdf8;">
-          </div>
-          <div class="field-row">
-            <label>Показувати заощадження від сонця (💰):</label>
-            <input type="checkbox" id="tariffShowSolarSavings" ${(c.tariffs?.show_solar_savings !== false) ? 'checked' : ''} style="width: 20px; height: 20px; accent-color: #38bdf8;">
+          <div class="fields-grid">
+            <div class="field-row checkbox-row">
+              <input type="checkbox" id="tariffShowDailyCost" ${(c.tariffs?.show_daily_cost !== false) ? 'checked' : ''} style="accent-color: #38bdf8;">
+              <span>Показувати вартість імпорту за сьогодні</span>
+            </div>
+            <div class="field-row checkbox-row">
+              <input type="checkbox" id="tariffShowExportIncome" ${(c.tariffs?.show_export_income !== false) ? 'checked' : ''} style="accent-color: #34d399;">
+              <span>Показувати дохід від експорту (Зелений тариф)</span>
+            </div>
+            <div class="field-row checkbox-row">
+              <input type="checkbox" id="tariffShowActiveBadge" ${(c.tariffs?.show_active_badge !== false) ? 'checked' : ''} style="accent-color: #38bdf8;">
+              <span>Показувати бейдж активного тарифу (🌙 / ☀️)</span>
+            </div>
+            <div class="field-row checkbox-row">
+              <input type="checkbox" id="tariffShowSolarSavings" ${(c.tariffs?.show_solar_savings !== false) ? 'checked' : ''} style="accent-color: #38bdf8;">
+              <span>Показувати заощадження від сонця (💰)</span>
+            </div>
           </div>
         </div>
       </div>
     `;
 
     this._bindEvents();
+    this._updateExpandBtn();
 
     // 2. Restore active element focus and selection range
     if (activeSelector) {
@@ -1125,6 +1328,11 @@ export class EnergyStationCardEditor extends HTMLElement {
 
   _bindEvents() {
     const root = this.shadowRoot;
+
+    // Toggle expand button
+    root.getElementById('btnToggleExpand')?.addEventListener('click', () => {
+      this._applyExpand(!this._isDialogExpanded);
+    });
 
     // Tabs
     root.querySelectorAll('.tab-btn').forEach(btn => {
