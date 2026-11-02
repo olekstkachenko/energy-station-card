@@ -35,6 +35,8 @@ jobs:
           files: |
             dist/energy-station-card.js
             dist/energy-station-card.umd.js
+            dist/energy-station-panel.js
+            dist/energy-station-panel.umd.js
           generate_release_notes: true
           draft: false
           prerelease: false
