@@ -7,6 +7,9 @@ export class EnergyStationCardEditor extends HTMLElement {
     this._config = null;
     this._hass = null;
     this._currentTab = 'general';
+    this._isInternalChange = false;
+    this._debounceTimer = null;
+    this._rendered = false;
   }
 
   set hass(hass) {
@@ -15,14 +18,39 @@ export class EnergyStationCardEditor extends HTMLElement {
 
   setConfig(config) {
     this._config = JSON.parse(JSON.stringify(config || DEFAULT_CONFIG));
+    if (this._isInternalChange) {
+      this._isInternalChange = false;
+      return;
+    }
     this.render();
   }
 
   connectedCallback() {
-    this.render();
+    if (!this._rendered) {
+      this.render();
+    }
   }
 
-  _valueChanged(path, value) {
+  _flushConfig() {
+    if (this._debounceTimer) {
+      clearTimeout(this._debounceTimer);
+      this._debounceTimer = null;
+      this._dispatchConfig();
+    }
+  }
+
+  _dispatchConfig() {
+    if (!this._config) return;
+    this._isInternalChange = true;
+    const event = new CustomEvent('config-changed', {
+      detail: { config: JSON.parse(JSON.stringify(this._config)) },
+      bubbles: true,
+      composed: true
+    });
+    this.dispatchEvent(event);
+  }
+
+  _valueChanged(path, value, immediate = false) {
     if (!this._config) return;
     
     // Always work on an unfrozen clean clone
@@ -37,16 +65,22 @@ export class EnergyStationCardEditor extends HTMLElement {
     }
     curr[parts[parts.length - 1]] = value;
 
-    // Fire Lovelace standard change event with a clone
-    const event = new CustomEvent('config-changed', {
-      detail: { config: JSON.parse(JSON.stringify(this._config)) },
-      bubbles: true,
-      composed: true
-    });
-    this.dispatchEvent(event);
+    if (this._debounceTimer) {
+      clearTimeout(this._debounceTimer);
+      this._debounceTimer = null;
+    }
+
+    if (immediate) {
+      this._dispatchConfig();
+    } else {
+      this._debounceTimer = setTimeout(() => {
+        this._dispatchConfig();
+      }, 140);
+    }
   }
 
   _switchTab(tab) {
+    this._flushConfig();
     this._currentTab = tab;
     this.render();
   }
@@ -154,19 +188,34 @@ export class EnergyStationCardEditor extends HTMLElement {
       this._config.load.essential_power_entity = 'sensor.solarman_essential_load';
     }
 
-    const event = new CustomEvent('config-changed', {
-      detail: { config: JSON.parse(JSON.stringify(this._config)) },
-      bubbles: true,
-      composed: true
-    });
-    this.dispatchEvent(event);
+    this._dispatchConfig();
     this.render();
   }
 
   render() {
     if (!this._config) return;
+    this._rendered = true;
 
     const c = this._config;
+
+    // Capture active element state (selector + selection range) before replacing innerHTML
+    const activeEl = this.shadowRoot?.activeElement;
+    let activeSelector = null;
+    let caretStart = null;
+    let caretEnd = null;
+
+    if (activeEl) {
+      if (activeEl.id) {
+        activeSelector = `#${activeEl.id}`;
+      } else if (activeEl.dataset?.idx !== undefined && activeEl.className) {
+        const firstClass = activeEl.className.trim().split(/\s+/)[0];
+        activeSelector = `.${firstClass}[data-idx="${activeEl.dataset.idx}"]`;
+      }
+      if ('selectionStart' in activeEl && 'selectionEnd' in activeEl) {
+        caretStart = activeEl.selectionStart;
+        caretEnd = activeEl.selectionEnd;
+      }
+    }
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -176,72 +225,119 @@ export class EnergyStationCardEditor extends HTMLElement {
           font-size: 13px;
           color: #e2e8f0;
           background: #090e1a;
-          border-radius: 12px;
-          padding: 14px;
+          border-radius: 14px;
+          padding: 16px;
           box-sizing: border-box;
         }
         .editor-header {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding-bottom: 10px;
+          padding-bottom: 12px;
           border-bottom: 1px solid #1e293b;
-          margin-bottom: 12px;
+          margin-bottom: 14px;
+          gap: 10px;
+          flex-wrap: wrap;
         }
         .editor-title {
-          font-size: 15px;
+          font-size: 16px;
           font-weight: 700;
           color: #f59e0b;
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 8px;
         }
-        .tabs {
+        .presets-row {
           display: flex;
-          gap: 4px;
-          overflow-x: auto;
-          padding-bottom: 6px;
-          border-bottom: 1px solid #1e293b;
-          margin-bottom: 14px;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
         }
-        .tab-btn {
-          background: #0f172a;
-          border: 1px solid #1e293b;
-          color: #94a3b8;
+        .preset-badge {
+          background: #1e293b;
+          border: 1px solid #334155;
+          color: #f1f5f9;
           padding: 6px 12px;
           border-radius: 8px;
           cursor: pointer;
           font-size: 11px;
           font-weight: 600;
-          white-space: nowrap;
-          transition: all 0.2s;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          user-select: none;
         }
-        .tab-btn.active {
+        .preset-badge:hover {
           background: #0284c7;
           border-color: #38bdf8;
+          box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+          transform: translateY(-1px);
+        }
+        .tabs {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          padding: 6px;
+          background: rgba(15, 23, 42, 0.7);
+          border: 1px solid #1e293b;
+          border-radius: 12px;
+          margin-bottom: 16px;
+        }
+        .tab-btn {
+          flex: 1 1 auto;
+          min-width: 110px;
+          background: transparent;
+          border: 1px solid transparent;
+          color: #94a3b8;
+          padding: 8px 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 11.5px;
+          font-weight: 600;
+          white-space: nowrap;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          user-select: none;
+        }
+        .tab-btn:hover {
+          background: #1e293b;
+          color: #f1f5f9;
+          border-color: #334155;
+        }
+        .tab-btn.active {
+          background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+          border-color: #38bdf8;
           color: #ffffff;
+          box-shadow: 0 2px 10px rgba(2, 132, 199, 0.45);
         }
         .field-group {
           background: #0f172a;
           border: 1px solid #1e293b;
-          border-radius: 10px;
-          padding: 12px;
-          margin-bottom: 12px;
+          border-radius: 12px;
+          padding: 14px;
+          margin-bottom: 14px;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
         .field-group-title {
           font-weight: 700;
-          font-size: 12px;
+          font-size: 13px;
           color: #38bdf8;
-          margin-bottom: 8px;
+          margin-bottom: 12px;
+          padding-bottom: 6px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
           display: flex;
           align-items: center;
           justify-content: space-between;
         }
         .field-row {
-          margin-bottom: 10px;
+          margin-bottom: 12px;
           display: flex;
           flex-direction: column;
-          gap: 4px;
+          gap: 5px;
         }
         label {
           font-size: 11px;
@@ -252,16 +348,19 @@ export class EnergyStationCardEditor extends HTMLElement {
           background: #080d19;
           border: 1px solid #334155;
           color: #f8fafc;
-          border-radius: 6px;
-          padding: 7px 10px;
+          border-radius: 8px;
+          padding: 8px 12px;
           font-size: 12px;
-          font-family: 'JetBrains Mono', monospace;
+          font-family: 'JetBrains Mono', 'Fira Code', monospace;
           outline: none;
           box-sizing: border-box;
           width: 100%;
+          transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
         }
         input[type="text"]:focus, input[type="number"]:focus, select:focus {
           border-color: #38bdf8;
+          background: #0b1324;
+          box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
         }
         .slider-row {
           display: flex;
@@ -271,32 +370,51 @@ export class EnergyStationCardEditor extends HTMLElement {
         input[type="range"] {
           flex: 1;
           accent-color: #0284c7;
-        }
-        .preset-badge {
-          background: #1e293b;
-          border: 1px solid #334155;
-          color: #f1f5f9;
-          padding: 6px 10px;
-          border-radius: 6px;
           cursor: pointer;
-          font-size: 11px;
-          font-weight: 600;
-          transition: background 0.2s;
         }
-        .preset-badge:hover {
-          background: #0284c7;
-          border-color: #38bdf8;
+        .field-hint {
+          font-size: 10.5px;
+          color: #94a3b8;
+          margin-top: 2px;
+          line-height: 1.35;
+        }
+        .checkbox-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          cursor: pointer;
+          background: rgba(8, 13, 25, 0.5);
+          border: 1px solid #1e293b;
+          border-radius: 8px;
+          padding: 8px 12px;
+          transition: all 0.2s;
+        }
+        .checkbox-row:hover {
+          border-color: #334155;
+          background: rgba(15, 23, 42, 0.8);
+        }
+        .checkbox-row input[type="checkbox"] {
+          width: 18px;
+          height: 18px;
+          accent-color: #0284c7;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
+        .checkbox-row span {
+          font-size: 11.5px;
+          color: #e2e8f0;
+          user-select: none;
         }
       </style>
 
       <div class="editor-header">
         <div class="editor-title">
           <span>⚡ Energy Station</span>
-          <span style="font-size: 10px; background: rgba(245,158,11,0.2); color: #fbbf24; padding: 2px 6px; border-radius: 4px;">HA PRO</span>
+          <span style="font-size: 10px; background: rgba(245,158,11,0.2); color: #fbbf24; padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(245,158,11,0.3);">HA PRO v1.2.8</span>
         </div>
-        <div>
-          <button class="preset-badge" id="btnPresetEsp">⚡ ESPHome Deye</button>
-          <button class="preset-badge" id="btnPresetSolarman">☀️ Solarman</button>
+        <div class="presets-row">
+          <button class="preset-badge" id="btnPresetEsp" title="Швидко застосувати типові сенсори прошивки ESPHome Deye">⚡ ESPHome Deye</button>
+          <button class="preset-badge" id="btnPresetSolarman" title="Швидко застосувати сенсори інтеграції Solarman">☀️ Solarman</button>
         </div>
       </div>
 
@@ -990,6 +1108,19 @@ export class EnergyStationCardEditor extends HTMLElement {
     `;
 
     this._bindEvents();
+
+    // 2. Restore active element focus and selection range
+    if (activeSelector) {
+      const newActive = this.shadowRoot.querySelector(activeSelector);
+      if (newActive) {
+        newActive.focus();
+        if (caretStart !== null && caretEnd !== null && 'setSelectionRange' in newActive) {
+          try {
+            newActive.setSelectionRange(caretStart, caretEnd);
+          } catch (e) {}
+        }
+      }
+    }
   }
 
   _bindEvents() {
@@ -1010,14 +1141,16 @@ export class EnergyStationCardEditor extends HTMLElement {
     const bindInput = (id, path) => {
       const el = root.getElementById(id);
       if (el) {
-        el.addEventListener('input', (e) => this._valueChanged(path, e.target.value));
+        el.addEventListener('input', (e) => this._valueChanged(path, e.target.value, false));
+        el.addEventListener('change', (e) => this._valueChanged(path, e.target.value, true));
+        el.addEventListener('blur', () => this._flushConfig());
       }
     };
 
     const bindCheckbox = (id, path) => {
       const el = root.getElementById(id);
       if (el) {
-        el.addEventListener('change', (e) => this._valueChanged(path, e.target.checked));
+        el.addEventListener('change', (e) => this._valueChanged(path, e.target.checked, true));
       }
     };
 
@@ -1030,8 +1163,13 @@ export class EnergyStationCardEditor extends HTMLElement {
             const disp = root.getElementById(displayId);
             if (disp) disp.innerText = `${val}${suffix}`;
           }
-          this._valueChanged(path, val);
+          this._valueChanged(path, isNaN(val) ? 0 : val, false);
         });
+        el.addEventListener('change', (e) => {
+          const val = parseFloat(e.target.value);
+          this._valueChanged(path, isNaN(val) ? 0 : val, true);
+        });
+        el.addEventListener('blur', () => this._flushConfig());
       }
     };
 
@@ -1044,6 +1182,7 @@ export class EnergyStationCardEditor extends HTMLElement {
       if (disp) disp.innerText = `${Math.round(val * 100)}%`;
       this._valueChanged('card_scale', val);
     });
+    root.getElementById('cardScale')?.addEventListener('change', () => this._flushConfig());
     bindInput('cardMaxWidth', 'max_width');
     bindCheckbox('showQuickSettings', 'show_quick_settings');
     bindInput('ctrlSolarCharge', 'controls.solar_charge_entity');
@@ -1069,8 +1208,8 @@ export class EnergyStationCardEditor extends HTMLElement {
           power_entity: `sensor.deye_12k_inverter_pv${i}_power`
         });
       }
-      this._valueChanged('solar.pv_count', val);
-      this._valueChanged('solar.strings', this._config.solar.strings);
+      this._valueChanged('solar.pv_count', val, true);
+      this._valueChanged('solar.strings', this._config.solar.strings, true);
       this.render();
     });
 
@@ -1083,6 +1222,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         this._config.solar.strings[idx].name = e.target.value;
         this._valueChanged('solar.strings', this._config.solar.strings);
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     root.querySelectorAll('.pv-str-volt-inp').forEach(inp => {
@@ -1093,6 +1233,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         this._config.solar.strings[idx].voltage_entity = e.target.value;
         this._valueChanged('solar.strings', this._config.solar.strings);
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     root.querySelectorAll('.pv-str-curr-inp').forEach(inp => {
@@ -1103,6 +1244,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         this._config.solar.strings[idx].current_entity = e.target.value;
         this._valueChanged('solar.strings', this._config.solar.strings);
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     root.querySelectorAll('.pv-str-power-inp').forEach(inp => {
@@ -1113,6 +1255,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         this._config.solar.strings[idx].power_entity = e.target.value;
         this._valueChanged('solar.strings', this._config.solar.strings);
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     root.querySelectorAll('.pv-str-cap-inp').forEach(inp => {
@@ -1123,6 +1266,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         this._config.solar.strings[idx].capacity_kw = parseFloat(e.target.value) || 0;
         this._valueChanged('solar.strings', this._config.solar.strings);
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     bindInput('solarTotalPower', 'solar.total_power_entity');
@@ -1157,8 +1301,8 @@ export class EnergyStationCardEditor extends HTMLElement {
       this._config.aux.title = title;
       const auxTitleInp = root.getElementById('auxTitle');
       if (auxTitleInp) auxTitleInp.value = title;
-      this._valueChanged('aux.type', type);
-      this._valueChanged('aux.title', title);
+      this._valueChanged('aux.type', type, true);
+      this._valueChanged('aux.title', title, true);
     });
     bindInput('auxTitle', 'aux.title');
     bindInput('auxPower', 'aux.power_entity');
@@ -1181,8 +1325,8 @@ export class EnergyStationCardEditor extends HTMLElement {
           animation_threshold: this._config.wind.animation_threshold || 50
         });
       }
-      this._valueChanged('wind.turbine_count', val);
-      this._valueChanged('wind.turbines', this._config.wind.turbines);
+      this._valueChanged('wind.turbine_count', val, true);
+      this._valueChanged('wind.turbines', this._config.wind.turbines, true);
       this.render();
     });
 
@@ -1203,6 +1347,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         this._config.wind.turbines[idx].name = e.target.value;
         this._valueChanged('wind.turbines', this._config.wind.turbines);
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     root.querySelectorAll('.turbine-power-inp').forEach(inp => {
@@ -1213,6 +1358,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         this._config.wind.turbines[idx].power_entity = e.target.value;
         this._valueChanged('wind.turbines', this._config.wind.turbines);
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     root.querySelectorAll('.turbine-speed-inp').forEach(inp => {
@@ -1224,6 +1370,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         this._config.wind.turbines[idx].speed_entity = e.target.value;
         this._valueChanged('wind.turbines', this._config.wind.turbines);
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     root.querySelectorAll('.turbine-daily-inp').forEach(inp => {
@@ -1234,6 +1381,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         this._config.wind.turbines[idx].daily_energy_entity = e.target.value;
         this._valueChanged('wind.turbines', this._config.wind.turbines);
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     root.querySelectorAll('.turbine-monthly-inp').forEach(inp => {
@@ -1244,6 +1392,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         this._config.wind.turbines[idx].monthly_energy_entity = e.target.value;
         this._valueChanged('wind.turbines', this._config.wind.turbines);
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     bindInput('batSoc', 'battery.soc_entity');
@@ -1275,8 +1424,8 @@ export class EnergyStationCardEditor extends HTMLElement {
           cell_delta_entity: `sensor.bms_rack${i}_cell_delta`
         });
       }
-      this._valueChanged('battery.parallel_batteries', val);
-      this._valueChanged('battery.modules', this._config.battery.modules);
+      this._valueChanged('battery.parallel_batteries', val, true);
+      this._valueChanged('battery.modules', this._config.battery.modules, true);
       this.render();
     });
 
@@ -1289,6 +1438,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         this._config.battery.modules[idx].name = e.target.value;
         this._valueChanged('battery.modules', this._config.battery.modules);
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     root.querySelectorAll('.bat-mod-soc-inp').forEach(inp => {
@@ -1299,6 +1449,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         this._config.battery.modules[idx].soc_entity = e.target.value;
         this._valueChanged('battery.modules', this._config.battery.modules);
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     root.querySelectorAll('.bat-mod-curr-inp').forEach(inp => {
@@ -1309,6 +1460,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         this._config.battery.modules[idx].current_entity = e.target.value;
         this._valueChanged('battery.modules', this._config.battery.modules);
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     root.querySelectorAll('.bat-mod-volt-inp').forEach(inp => {
@@ -1319,6 +1471,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         this._config.battery.modules[idx].voltage_entity = e.target.value;
         this._valueChanged('battery.modules', this._config.battery.modules);
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     root.querySelectorAll('.bat-mod-temp-inp').forEach(inp => {
@@ -1329,6 +1482,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         this._config.battery.modules[idx].temperature_entity = e.target.value;
         this._valueChanged('battery.modules', this._config.battery.modules);
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     root.querySelectorAll('.bat-mod-delta-inp').forEach(inp => {
@@ -1339,6 +1493,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         this._config.battery.modules[idx].cell_delta_entity = e.target.value;
         this._valueChanged('battery.modules', this._config.battery.modules);
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     root.querySelectorAll('.bat-mod-power-inp').forEach(inp => {
@@ -1349,6 +1504,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         this._config.battery.modules[idx].power_entity = e.target.value;
         this._valueChanged('battery.modules', this._config.battery.modules);
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     root.querySelectorAll('.bat-mod-cap-inp').forEach(inp => {
@@ -1359,6 +1515,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         this._config.battery.modules[idx].capacity_kwh = parseFloat(e.target.value) || 0;
         this._valueChanged('battery.modules', this._config.battery.modules);
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     bindCheckbox('gridSellingEnabled', 'grid.selling_enabled');
@@ -1391,7 +1548,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         icon: 'other',
         entity: ''
       });
-      this._valueChanged('load.subloads', this._config.load.subloads);
+      this._valueChanged('load.subloads', this._config.load.subloads, true);
       this.render();
     };
 
@@ -1405,7 +1562,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         const idx = parseInt(btnEl.dataset.idx);
         if (!this._config.load?.subloads) return;
         this._config.load.subloads.splice(idx, 1);
-        this._valueChanged('load.subloads', this._config.load.subloads);
+        this._valueChanged('load.subloads', this._config.load.subloads, true);
         this.render();
       });
     });
@@ -1419,6 +1576,7 @@ export class EnergyStationCardEditor extends HTMLElement {
           this._valueChanged('load.subloads', this._config.load.subloads);
         }
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     root.querySelectorAll('.subload-icon').forEach(sel => {
@@ -1426,7 +1584,7 @@ export class EnergyStationCardEditor extends HTMLElement {
         const idx = parseInt(e.target.dataset.idx);
         if (this._config.load?.subloads?.[idx]) {
           this._config.load.subloads[idx].icon = e.target.value;
-          this._valueChanged('load.subloads', this._config.load.subloads);
+          this._valueChanged('load.subloads', this._config.load.subloads, true);
         }
       });
     });
@@ -1439,6 +1597,7 @@ export class EnergyStationCardEditor extends HTMLElement {
           this._valueChanged('load.subloads', this._config.load.subloads);
         }
       });
+      inp.addEventListener('blur', () => this._flushConfig());
     });
 
     // Tariffs
