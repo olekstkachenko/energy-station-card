@@ -3368,29 +3368,53 @@ export class EnergyStationCard extends HTMLElement {
     const hasValidPositiveSensor = Boolean(sEss && rawSensorKw > 0);
 
     // 6. Grid Power Resolution & Disambiguation
-    // Try resolving an external CT / meter sensor first (measuring the street grid boundary)
     let sGridPower = null;
     let isExternalCt = false;
 
+    // Check if user EXPLICITLY configured an external CT / Smart Meter entity
     if (c.grid?.external_power_entity) {
-      sGridPower = this._getEntityState(c.grid.external_power_entity);
-      if (sGridPower && typeof sGridPower.val === 'number' && !isNaN(sGridPower.val)) {
+      const sExt = this._getEntityState(c.grid.external_power_entity);
+      if (sExt && typeof sExt.val === 'number' && !isNaN(sExt.val)) {
+        sGridPower = sExt;
         isExternalCt = true;
       }
     }
 
     if (!sGridPower) {
-      const sPrimary = this._getEntityState(c.grid?.power_entity);
+      // First resolve primary grid port sensor (with robust fallbacks)
+      let sPrimary = this._getEntityState(c.grid?.power_entity);
+      if (!sPrimary) {
+        const gridFallbacks = [
+          'sensor.deye_12k_inverter_total_grid_power',
+          'sensor.deye_12k_inverter_grid_power',
+          'sensor.esp32_deye_inverter_grid_power',
+          'sensor.deye_grid_power',
+          'sensor.grid_power',
+          'sensor.inverter_12_kvt_grid_power',
+          'sensor.solarman_total_grid_power',
+          'sensor.solarman_grid_power',
+          'sensor.sunsynk_grid_power',
+          'sensor.sunsynk_total_grid_power'
+        ];
+        for (const fb of gridFallbacks) {
+          const cand = this._getEntityState(fb);
+          if (cand && typeof cand.val === 'number' && !isNaN(cand.val)) {
+            sPrimary = cand;
+            break;
+          }
+        }
+      }
+
       const rawPrimaryKw = sPrimary ? (sPrimary.unit === 'W' ? sPrimary.val / 1000 : sPrimary.val) : 0;
       const totalGenKw = totalSolarKw + totalWindKw + (auxKw > 0 ? auxKw : 0) + batOutKw;
 
       // If primary grid sensor is importing power (e.g. charging battery or supplying loads),
       // adopt primary sensor directly unless user explicitly configured an external CT entity!
-      // This prevents inactive/disconnected CT sensors (reading 0 or floating noise) from hijacking grid import.
       if (sPrimary && rawPrimaryKw > 0.05) {
         sGridPower = sPrimary;
         isExternalCt = false;
       } else {
+        // Look for external CT candidate entities (e.g. Deye register 0x0234 or meter)
         const candidateExternalEntities = [
           'sensor.deye_12k_inverter_external_power',
           'sensor.deye_12k_inverter_external_ct_power',
@@ -3448,16 +3472,17 @@ export class EnergyStationCard extends HTMLElement {
         if (detectedExtCand) {
           const candKw = Math.abs(detectedExtCand.unit === 'kW' ? detectedExtCand.val : detectedExtCand.val / 1000);
           const isUnconnectedCt = (candKw < 0.03) && ((batInKw > 0.2 && totalGenKw < 0.1) || (rawPrimaryKw > 0.1 && totalGenKw < 0.1));
-          if (!isUnconnectedCt) {
+          if (!isUnconnectedCt && candKw > 0) {
             sGridPower = detectedExtCand;
             isExternalCt = true;
           }
         }
-      }
-    }
 
-    if (!sGridPower) {
-      sGridPower = this._getEntityState(c.grid?.power_entity);
+        if (!sGridPower) {
+          sGridPower = sPrimary;
+          isExternalCt = false;
+        }
+      }
     }
 
     const rawGridKw = sGridPower ? (sGridPower.unit === 'W' ? sGridPower.val / 1000 : sGridPower.val) : 0;
@@ -3553,6 +3578,40 @@ export class EnergyStationCard extends HTMLElement {
           if (totalInternalLoadKw > (totalGenKw + absGridKw + 0.1)) {
             absGridKw = absGridKw + houseLoadKw;
           }
+        }
+      }
+
+      // Physical Telemetry & Balance Failsafe:
+      // If grid is physically connected and station cannot be exporting (e.g. night/evening, no generation,
+      // or battery charging draw exceeds generation), street power is guaranteed to be importing.
+      // If primary grid power sensor is missing, 0, or reporting less than the battery charge:
+      // Derive active grid import from Inverter Mains telemetry (V * I * cos(phi)) or energy balance.
+      const totalGenKw = totalSolarKw + totalWindKw + (auxKw > 0 ? auxKw : 0) + batOutKw;
+      const isNightOrNoGen = (totalGenKw < 0.15);
+      const isUnderGenerated = (totalGenKw < (batInKw + 0.05));
+      const cannotBeExporting = isNightOrNoGen || isUnderGenerated;
+
+      if (!isExternalCt && cannotBeExporting) {
+        const sMainsVolt = this._getEntityState(c.grid?.voltage_entity || c.inverter?.voltage_entity);
+        const sMainsCurr = this._getEntityState(c.inverter?.current_entity || 'sensor.deye_12k_inverter_grid_current');
+        const mainsV = (sMainsVolt && typeof sMainsVolt.val === 'number' && !isNaN(sMainsVolt.val)) ? sMainsVolt.val : 0;
+        const mainsI = (sMainsCurr && typeof sMainsCurr.val === 'number' && !isNaN(sMainsCurr.val)) ? sMainsCurr.val : 0;
+
+        const hasPhysicalMainsCurrent = (mainsV >= voltThreshold) && (mainsI >= 1.0);
+        const isChargingWithoutGen = (batInKw > 0.2) && (totalGenKw < 0.1);
+
+        if (hasPhysicalMainsCurrent) {
+          const derivedMainsKw = (mainsV * mainsI * 0.90) / 1000.0;
+          if (absGridKw < 0.05 || derivedMainsKw > (absGridKw + 0.2)) {
+            absGridKw = derivedMainsKw;
+            isImport = true;
+            isExport = false;
+          }
+        } else if (isChargingWithoutGen && (absGridKw < 0.05 || absGridKw < (batInKw - 0.05))) {
+          const houseLoadKw = Math.max(rawSensorKw, subloadsTotalKw);
+          absGridKw = Math.max(absGridKw, batInKw + 0.25 + houseLoadKw);
+          isImport = true;
+          isExport = false;
         }
       }
 

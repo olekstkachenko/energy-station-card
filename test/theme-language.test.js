@@ -542,6 +542,28 @@ test('Energy Station Card - Theme & Language Customization', async (t) => {
     assert.strictEqual(domMap.gridPowerVal.innerText, '3.500 кВт');
     assert.strictEqual(domMap.gridDirectionLabel.innerText, '→ Імпорт');
     assert.strictEqual(domMap.essentialPowerVal.innerText, '1.113 кВт');
+
+    // 5. User Evening Grid Reconnection Scenario (No direct house meter, boiler OFF, grid port sensor 0 W / missing):
+    // Inverter telemetry: 232.20 V, 16.10 A, Battery charging: 2.140 kW, Solar = 0.
+    // Card derives 3.365 kW street import from V * I * 0.90, restores 1.125 kW house load and 100 W inverter standby!
+    card._config.grid.external_power_entity = '';
+    card._config.load.essential_power_entity = 'sensor.boiler_power';
+    card._config.load.subloads = [{ name: 'Бойлер', entity: 'sensor.boiler_power' }];
+    card._hass.states = {
+      'sensor.deye_12k_inverter_pv1_power': { state: '0', attributes: { unit_of_measurement: 'W' } },
+      'sensor.deye_12k_inverter_pv2_power': { state: '0', attributes: { unit_of_measurement: 'W' } },
+      'sensor.deye_12k_inverter_pv3_power': { state: '0', attributes: { unit_of_measurement: 'W' } },
+      'sensor.deye_12k_inverter_battery_power': { state: '-2140', attributes: { unit_of_measurement: 'W' } },
+      'sensor.deye_12k_inverter_grid_voltage': { state: '232.20', attributes: { unit_of_measurement: 'V' } },
+      'sensor.deye_12k_inverter_grid_current': { state: '16.10', attributes: { unit_of_measurement: 'A' } },
+      'sensor.boiler_power': { state: '0', attributes: { unit_of_measurement: 'W' } }
+    };
+    card._updateValues();
+
+    assert.strictEqual(domMap.gridPowerVal.innerText, '3.365 кВт');
+    assert.strictEqual(domMap.gridDirectionLabel.innerText, '→ Імпорт');
+    assert.strictEqual(domMap.essentialPowerVal.innerText, '1.125 кВт');
+    assert.strictEqual(domMap.inverterSelfConsumptionVal.innerText, '100 Вт');
   });
 
 });
