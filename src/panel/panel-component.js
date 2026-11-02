@@ -1,4 +1,6 @@
+import { load as yamlLoad, dump as yamlDump } from 'js-yaml';
 import { DEFAULT_CONFIG } from '../card/default-config.js';
+import '../card/energy-station-card-editor.js';
 
 export class EnergyStationPanel extends HTMLElement {
   constructor() {
@@ -7,9 +9,10 @@ export class EnergyStationPanel extends HTMLElement {
     this._hass = null;
     this._config = null;
     this._isDrawerOpen = false;
-    this._activeTab = 'typography';
     this._scale = 1.0;
     this._cardNode = null;
+    this._editorNode = null;
+    this._hasAttemptedAutoImport = false;
   }
 
   set hass(hass) {
@@ -17,15 +20,25 @@ export class EnergyStationPanel extends HTMLElement {
     if (this._cardNode) {
       this._cardNode.hass = hass;
     }
+    if (this._editorNode) {
+      this._editorNode.hass = hass;
+    }
     this._updateHaStatusBadge();
+    
+    // Auto-discover existing lovelace card config once on first connect
+    if (!this._hasAttemptedAutoImport) {
+      this._hasAttemptedAutoImport = true;
+      this._autoDiscoverLovelaceConfig();
+    }
   }
 
   connectedCallback() {
     this._loadConfig();
     this._render();
     this._bindEvents();
-    if (this._hass && this._cardNode) {
-      this._cardNode.hass = this._hass;
+    if (this._hass) {
+      if (this._cardNode) this._cardNode.hass = this._hass;
+      if (this._editorNode) this._editorNode.hass = this._hass;
     }
     setTimeout(() => {
       if (this._cardNode && typeof this._cardNode._updateFlowPaths === 'function') {
@@ -76,7 +89,120 @@ export class EnergyStationPanel extends HTMLElement {
     if (this._cardNode) {
       this._cardNode.setConfig(this._config);
     }
+    if (this._editorNode) {
+      this._editorNode.setConfig(this._config);
+    }
     this._saveConfig();
+  }
+
+  async _autoDiscoverLovelaceConfig() {
+    if (!this._hass) return;
+    try {
+      // If user has already saved a configured state in localStorage, do not overwrite unless requested
+      const stored = localStorage.getItem('energy_station_app_config');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.solar?.strings?.[0]?.voltage_entity && parsed.inverter?.voltage_entity) {
+          return;
+        }
+      }
+
+      await this._importFromLovelace(false);
+    } catch (e) {
+      console.warn('Lovelace auto-import skipped:', e);
+    }
+  }
+
+  async _importFromLovelace(notifyUser = true) {
+    if (!this._hass) {
+      if (notifyUser) alert('Немає підключення до Home Assistant');
+      return;
+    }
+
+    try {
+      const candidates = [];
+      const findInViews = (views) => {
+        for (const view of (views || [])) {
+          if (view.cards) {
+            for (const c of view.cards) {
+              if (c.type && (c.type === 'custom:energy-station-card' || c.type.includes('energy-station-card'))) {
+                candidates.push(c);
+              }
+              if (c.cards && Array.isArray(c.cards)) {
+                for (const sub of c.cards) {
+                  if (sub.type && (sub.type === 'custom:energy-station-card' || sub.type.includes('energy-station-card'))) {
+                    candidates.push(sub);
+                  }
+                }
+              }
+            }
+          }
+        }
+      };
+
+      // 1. Try default Lovelace dashboard
+      try {
+        const defLovelace = await this._hass.callWS({ type: 'lovelace/config' });
+        findInViews(defLovelace?.views);
+      } catch (e) {}
+
+      // 2. Try other dashboards (e.g. New Panel, Sansunk, solar, etc.)
+      if (candidates.length === 0 && this._hass.panels) {
+        const panels = Object.values(this._hass.panels).filter(p => p.component_name === 'lovelace');
+        for (const p of panels) {
+          if (p.url_path && p.url_path !== 'energy-station') {
+            try {
+              const dash = await this._hass.callWS({ type: 'lovelace/config', url_path: p.url_path });
+              findInViews(dash?.views);
+              if (candidates.length > 0) break;
+            } catch (err) {}
+          }
+        }
+      }
+
+      if (candidates.length > 0) {
+        const best = candidates[0];
+        const clone = JSON.parse(JSON.stringify(best));
+        delete clone.type;
+
+        clone.appearance = {
+          ...DEFAULT_CONFIG.appearance,
+          ...(this._config?.appearance || {}),
+          ...(clone.appearance || {})
+        };
+
+        this._config = clone;
+        this._saveConfig();
+        this._render();
+        this._bindEvents();
+        if (notifyUser) {
+          alert('✓ Успішно перенесено всі ваші налаштування (інвертор, PV, АКБ, бойлер) з дашборду Lovelace!');
+        }
+        return;
+      }
+
+      // Check DOM of parent document if in iframe or custom panel
+      if (typeof window !== 'undefined' && window.parent?.document) {
+        const domCards = window.parent.document.querySelectorAll('energy-station-card');
+        for (const domCard of domCards) {
+          if (domCard !== this._cardNode && domCard._config) {
+            this._config = JSON.parse(JSON.stringify(domCard._config));
+            this._saveConfig();
+            this._render();
+            this._bindEvents();
+            if (notifyUser) alert('✓ Успішно скопійовано конфігурацію з відкритої картки на дашборді!');
+            return;
+          }
+        }
+      }
+
+      if (notifyUser) {
+        alert('Не знайдено збереженої картки на дашборді. Ви можете вставити конфігурацію вручну через кнопку "Вставити YAML / JSON".');
+      }
+    } catch (err) {
+      console.error('Import from Lovelace error:', err);
+      if (notifyUser) alert('Помилка імпорту: ' + err.message);
+    }
   }
 
   _render() {
@@ -224,7 +350,7 @@ export class EnergyStationPanel extends HTMLElement {
         .panel-drawer-backdrop {
           position: fixed;
           inset: 0;
-          background: rgba(0, 0, 0, 0.6);
+          background: rgba(0, 0, 0, 0.65);
           backdrop-filter: blur(4px);
           z-index: 90;
           opacity: 0;
@@ -241,12 +367,12 @@ export class EnergyStationPanel extends HTMLElement {
           position: fixed;
           top: 0;
           right: 0;
-          width: 580px;
-          max-width: 95vw;
+          width: 660px;
+          max-width: 96vw;
           height: 100vh;
           background: #090f1d;
           border-left: 1px solid rgba(255, 255, 255, 0.12);
-          box-shadow: -15px 0 35px rgba(0, 0, 0, 0.8);
+          box-shadow: -15px 0 35px rgba(0, 0, 0, 0.85);
           z-index: 100;
           transform: translateX(100%);
           transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
@@ -264,7 +390,7 @@ export class EnergyStationPanel extends HTMLElement {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          background: rgba(14, 23, 42, 0.85);
+          background: rgba(14, 23, 42, 0.95);
         }
 
         .drawer-title {
@@ -292,48 +418,11 @@ export class EnergyStationPanel extends HTMLElement {
           background: rgba(255, 255, 255, 0.1);
         }
 
-        /* DRAWER TABS */
-        .drawer-tabs {
-          display: flex;
-          overflow-x: auto;
-          background: rgba(8, 14, 26, 0.95);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-          padding: 6px 12px;
-          gap: 6px;
-          scrollbar-width: none;
-        }
-        .drawer-tabs::-webkit-scrollbar { display: none; }
-
-        .drawer-tab {
-          padding: 7px 12px;
-          border-radius: 8px;
-          font-size: 12px;
-          font-weight: 600;
-          color: #94a3b8;
-          background: transparent;
-          border: 1px solid transparent;
-          cursor: pointer;
-          white-space: nowrap;
-          transition: all 0.2s;
-        }
-
-        .drawer-tab:hover {
-          color: #ffffff;
-          background: rgba(255, 255, 255, 0.05);
-        }
-
-        .drawer-tab.active {
-          color: #ffffff;
-          background: #0284c7;
-          border-color: #38bdf8;
-          box-shadow: 0 0 10px rgba(2, 132, 199, 0.4);
-        }
-
-        /* DRAWER BODY & SECTIONS */
+        /* DRAWER BODY */
         .drawer-body {
           flex: 1;
           overflow-y: auto;
-          padding: 20px;
+          padding: 18px 20px;
           display: flex;
           flex-direction: column;
           gap: 16px;
@@ -356,28 +445,6 @@ export class EnergyStationPanel extends HTMLElement {
           gap: 6px;
           border-bottom: 1px solid rgba(255, 255, 255, 0.06);
           padding-bottom: 6px;
-        }
-
-        .cfg-row {
-          margin-bottom: 14px;
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-
-        .cfg-label {
-          font-size: 12px;
-          font-weight: 600;
-          color: #cbd5e1;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
-        .cfg-hint {
-          font-size: 11px;
-          color: #64748b;
-          line-height: 1.35;
         }
 
         /* FONT PICKER TILES */
@@ -459,25 +526,6 @@ export class EnergyStationPanel extends HTMLElement {
           box-shadow: 0 0 8px rgba(2, 132, 199, 0.45);
         }
 
-        /* INPUTS & CONTROLS */
-        input[type="text"], input[type="number"], select {
-          background: #080d19;
-          border: 1px solid #334155;
-          color: #f8fafc;
-          border-radius: 8px;
-          padding: 8px 12px;
-          font-size: 12.5px;
-          font-family: 'JetBrains Mono', monospace;
-          outline: none;
-          width: 100%;
-          transition: border-color 0.2s;
-        }
-
-        input[type="text"]:focus, input[type="number"]:focus, select:focus {
-          border-color: #38bdf8;
-          box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
-        }
-
         .slider-row {
           display: flex;
           align-items: center;
@@ -492,7 +540,7 @@ export class EnergyStationPanel extends HTMLElement {
 
         /* DRAWER FOOTER */
         .drawer-footer {
-          padding: 16px 20px;
+          padding: 14px 20px;
           border-top: 1px solid rgba(255, 255, 255, 0.08);
           background: rgba(14, 23, 42, 0.95);
           display: flex;
@@ -533,6 +581,65 @@ export class EnergyStationPanel extends HTMLElement {
         .btn-action-secondary:hover {
           background: rgba(255, 255, 255, 0.14);
           color: #ffffff;
+        }
+
+        /* YAML IMPORT / EXPORT MODAL */
+        .panel-modal-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.75);
+          backdrop-filter: blur(6px);
+          z-index: 120;
+          display: none;
+          align-items: center;
+          justify-content: center;
+        }
+        .panel-modal-backdrop.active {
+          display: flex;
+        }
+
+        .panel-modal-box {
+          background: #090f1d;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 14px;
+          width: 680px;
+          max-width: 95vw;
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85);
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+
+        .panel-modal-header {
+          padding: 14px 18px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: rgba(14, 23, 42, 0.95);
+        }
+
+        .panel-modal-body {
+          padding: 16px 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        textarea.code-area {
+          width: 100%;
+          height: 340px;
+          background: #050a14;
+          border: 1px solid #334155;
+          border-radius: 8px;
+          color: #38bdf8;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 12px;
+          padding: 12px;
+          outline: none;
+          resize: vertical;
+          box-sizing: border-box;
+          line-height: 1.4;
         }
       </style>
 
@@ -598,26 +705,28 @@ export class EnergyStationPanel extends HTMLElement {
           <button class="drawer-close-btn" id="btnCloseDrawer">✕</button>
         </div>
 
-        <!-- TABS -->
-        <nav class="drawer-tabs">
-          <button class="drawer-tab active" data-tab="typography">🎨 Шрифти & Стиль</button>
-          <button class="drawer-tab" data-tab="inverter">⚡ Інвертор & Мережа</button>
-          <button class="drawer-tab" data-tab="solar">☀️ Сонячні PV</button>
-          <button class="drawer-tab" data-tab="battery">🔋 Акумулятори</button>
-          <button class="drawer-tab" data-tab="loads">🏠 Споживання</button>
-          <button class="drawer-tab" data-tab="tariffs">💰 Тарифи & Слайдери</button>
-          <button class="drawer-tab" data-tab="presets">💾 Пресети & Експорт</button>
-        </nav>
-
         <!-- DRAWER BODY -->
         <div class="drawer-body">
 
-          <!-- TAB 1: TYPOGRAPHY & APPEARANCE -->
-          <div class="tab-pane" id="pane-typography">
+          <!-- TOOLBAR: ONE-CLICK LOVELACE MIGRATION & YAML IMPORT -->
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <button class="panel-pill-btn" id="btnSyncFromLovelace" style="background: rgba(2, 132, 199, 0.2); border-color: #38bdf8; color: #38bdf8; font-weight: 700; padding: 8px 14px; flex: 1 1 auto; justify-content: center;">
+              <span>📥</span>
+              <span>Перенести налаштування з дашборду Lovelace</span>
+            </button>
+            <button class="panel-pill-btn" id="btnOpenYamlModal" style="background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); color: #fbbf24; font-weight: 700; padding: 8px 14px; flex: 1 1 auto; justify-content: center;">
+              <span>📋</span>
+              <span>Вставити / Експорт YAML</span>
+            </button>
+          </div>
+
+          <!-- SECTION 1: TYPOGRAPHY, SIZES & STYLES -->
+          <div class="cfg-card">
+            <div class="cfg-card-title">🎨 Шрифти, Розміри та Стилі</div>
             
             <!-- Font Family Selection -->
-            <div class="cfg-card">
-              <div class="cfg-card-title">🔤 Основний шрифт інтерфейсу</div>
+            <div style="margin-bottom: 14px;">
+              <div style="font-size: 11.5px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">🔤 Основний шрифт інтерфейсу:</div>
               <div class="font-tile-grid" id="mainFontGrid">
                 <div class="font-tile ${app.font_family === 'Inter' ? 'active' : ''}" data-val="Inter" style="font-family: 'Inter', sans-serif;">
                   <div class="font-tile-name">Inter</div>
@@ -629,7 +738,7 @@ export class EnergyStationPanel extends HTMLElement {
                 </div>
                 <div class="font-tile ${app.font_family === 'Orbitron' ? 'active' : ''}" data-val="Orbitron" style="font-family: 'Orbitron', sans-serif;">
                   <div class="font-tile-name">Orbitron</div>
-                  <div class="font-tile-sample">Cyberpunk / Sci-Fi</div>
+                  <div class="font-tile-sample">Cyberpunk</div>
                 </div>
                 <div class="font-tile ${app.font_family === 'Exo 2' ? 'active' : ''}" data-val="Exo 2" style="font-family: 'Exo 2', sans-serif;">
                   <div class="font-tile-name">Exo 2</div>
@@ -637,25 +746,25 @@ export class EnergyStationPanel extends HTMLElement {
                 </div>
                 <div class="font-tile ${app.font_family === 'Roboto' ? 'active' : ''}" data-val="Roboto" style="font-family: 'Roboto', sans-serif;">
                   <div class="font-tile-name">Roboto</div>
-                  <div class="font-tile-sample">Android / Material</div>
+                  <div class="font-tile-sample">Material</div>
                 </div>
                 <div class="font-tile ${app.font_family === 'Ubuntu' ? 'active' : ''}" data-val="Ubuntu" style="font-family: 'Ubuntu', sans-serif;">
                   <div class="font-tile-name">Ubuntu</div>
-                  <div class="font-tile-sample">Округлий плавний</div>
+                  <div class="font-tile-sample">Округлий</div>
                 </div>
                 <div class="font-tile ${app.font_family === 'system-ui' ? 'active' : ''}" data-val="system-ui" style="font-family: system-ui;">
                   <div class="font-tile-name">Системний</div>
-                  <div class="font-tile-sample">Рідний шрифт ОС</div>
+                  <div class="font-tile-sample">Рідний ОС</div>
                 </div>
               </div>
             </div>
 
             <!-- Monospace Numbers Font -->
-            <div class="cfg-card">
-              <div class="cfg-card-title">🔢 Шрифт числових показників (кВт / V / A)</div>
+            <div style="margin-bottom: 14px;">
+              <div style="font-size: 11.5px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">🔢 Шрифт числових показників (кВт / V / A):</div>
               <div class="font-tile-grid" id="monoFontGrid">
                 <div class="font-tile ${app.mono_font_family === 'JetBrains Mono' ? 'active' : ''}" data-val="JetBrains Mono" style="font-family: 'JetBrains Mono', monospace;">
-                  <div class="font-tile-name">JetBrains Mono</div>
+                  <div class="font-tile-name">JetBrains</div>
                   <div class="font-tile-sample">3.500 кВт</div>
                 </div>
                 <div class="font-tile ${app.mono_font_family === 'Orbitron' ? 'active' : ''}" data-val="Orbitron" style="font-family: 'Orbitron', monospace;">
@@ -674,8 +783,8 @@ export class EnergyStationPanel extends HTMLElement {
             </div>
 
             <!-- Power Value Size (Розмір цифр) -->
-            <div class="cfg-card">
-              <div class="cfg-card-title">📏 Розмір головних цифр потужності (кВт)</div>
+            <div style="margin-bottom: 14px;">
+              <div style="font-size: 11.5px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">📏 Розмір головних цифр потужності (кВт):</div>
               <div class="seg-btn-group" id="powerSizeSeg">
                 <button class="seg-btn ${app.power_font_size === 'compact' ? 'active' : ''}" data-val="compact">
                   <div>Компактний</div>
@@ -697,8 +806,8 @@ export class EnergyStationPanel extends HTMLElement {
             </div>
 
             <!-- Labels Font Size (Розмір підписів) -->
-            <div class="cfg-card">
-              <div class="cfg-card-title">🏷️ Розмір підписів блоків та статусів</div>
+            <div style="margin-bottom: 14px;">
+              <div style="font-size: 11.5px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">🏷️ Розмір підписів блоків та статусів:</div>
               <div class="seg-btn-group" id="labelSizeSeg">
                 <button class="seg-btn ${app.label_font_size === 'compact' ? 'active' : ''}" data-val="compact">Дрібний (10px)</button>
                 <button class="seg-btn ${app.label_font_size === 'normal' || !app.label_font_size ? 'active' : ''}" data-val="normal">Звичайний (12px)</button>
@@ -707,11 +816,11 @@ export class EnergyStationPanel extends HTMLElement {
             </div>
 
             <!-- Theme Preset Selection -->
-            <div class="cfg-card">
-              <div class="cfg-card-title">🌓 Колірна тема оформлення</div>
+            <div style="margin-bottom: 14px;">
+              <div style="font-size: 11.5px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">🌓 Колірна тема оформлення:</div>
               <div class="seg-btn-group" id="themePresetSeg">
                 <button class="seg-btn ${app.theme_preset === 'cyber_dark' || !app.theme_preset ? 'active' : ''}" data-val="cyber_dark">
-                  🌙 Cyber Dark (Неон)
+                  🌙 Cyber Dark
                 </button>
                 <button class="seg-btn ${app.theme_preset === 'oled_black' ? 'active' : ''}" data-val="oled_black">
                   ⬛ OLED True Black
@@ -720,217 +829,27 @@ export class EnergyStationPanel extends HTMLElement {
                   ☀️ Clean Light
                 </button>
               </div>
-              <div class="cfg-hint" style="margin-top: 6px;">
-                Режим OLED True Black вимикає синє підсвічування фону і робить його абсолютно чорним (#000000), що економить енергію на AMOLED/OLED планшетах.
-              </div>
             </div>
 
             <!-- Zoom & Scale Slider -->
-            <div class="cfg-card">
-              <div class="cfg-card-title">🔍 Масштаб та розмір станції (Zoom / Scale)</div>
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 11.5px; font-weight: 600; color: #cbd5e1;">🔍 Масштаб станції (Zoom / Scale):</span>
+                <span id="lblCardScale" style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #38bdf8;">${Math.round(this._scale * 100)}%</span>
+              </div>
               <div class="slider-row">
                 <input type="range" id="sliderCardScale" min="0.7" max="1.6" step="0.05" value="${this._scale}">
-                <span id="lblCardScale" style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #38bdf8; min-width: 44px;">${Math.round(this._scale * 100)}%</span>
-              </div>
-              <div style="display: flex; gap: 6px; margin-top: 10px;">
-                <button class="panel-pill-btn btn-scale-preset" data-val="0.85">85% Мобільний</button>
-                <button class="panel-pill-btn btn-scale-preset" data-val="1.0">100% Стандарт</button>
-                <button class="panel-pill-btn btn-scale-preset" data-val="1.2">120% Планшет</button>
-                <button class="panel-pill-btn btn-scale-preset" data-val="1.4">140% ТВ / Монітор</button>
-              </div>
-            </div>
-
-            <!-- Density / Paddings -->
-            <div class="cfg-card">
-              <div class="cfg-card-title">📦 Щільність розташування елементів (Відступи)</div>
-              <div class="seg-btn-group" id="densitySeg">
-                <button class="seg-btn ${app.density === 'compact' ? 'active' : ''}" data-val="compact">Компактна</button>
-                <button class="seg-btn ${app.density === 'balanced' || !app.density ? 'active' : ''}" data-val="balanced">Збалансована</button>
-                <button class="seg-btn ${app.density === 'spacious' ? 'active' : ''}" data-val="spacious">Простора</button>
-              </div>
-            </div>
-
-            <!-- Animations -->
-            <div class="cfg-card">
-              <div class="cfg-card-title">⚡ Анімація імпульсів енергії</div>
-              <div class="cfg-row">
-                <div class="cfg-label">
-                  <span>Швидкість анімації:</span>
-                  <span id="lblAnimSpeed" style="color: #38bdf8; font-family: 'JetBrains Mono', monospace;">${c.animations?.speed || 1.2}s</span>
-                </div>
-                <div class="slider-row">
-                  <input type="range" id="sliderAnimSpeed" min="0.6" max="3.0" step="0.1" value="${c.animations?.speed || 1.2}">
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          <!-- TAB 2: INVERTER & GRID -->
-          <div class="tab-pane" id="pane-inverter" style="display: none;">
-            <div class="cfg-card">
-              <div class="cfg-card-title">⚡ Гібридний інвертор</div>
-              <div class="cfg-row">
-                <label class="cfg-label">Модель / Заголовок інвертора:</label>
-                <input type="text" id="inpInverterModel" value="${c.inverter?.model_name || 'DEYE SUN-12K'}">
-              </div>
-              <div class="cfg-row">
-                <label class="cfg-label">Сенсор напруги мережі (Grid Voltage, V):</label>
-                <input type="text" id="inpGridVolt" value="${c.inverter?.voltage_entity || ''}" placeholder="sensor.deye_12k_inverter_grid_voltage">
-              </div>
-              <div class="cfg-row">
-                <label class="cfg-label">Сенсор струму мережі (Grid Current, A):</label>
-                <input type="text" id="inpGridCurr" value="${c.inverter?.current_entity || ''}" placeholder="sensor.deye_12k_inverter_grid_current">
-              </div>
-              <div class="cfg-row">
-                <label class="cfg-label">Сенсор потужності на порту інвертора (Total Grid Power):</label>
-                <input type="text" id="inpGridPower" value="${c.grid?.power_entity || ''}" placeholder="sensor.deye_12k_inverter_total_grid_power">
-              </div>
-              <div class="cfg-row">
-                <label class="cfg-label">Зовнішній лічильник мережі (External CT / Smart Meter):</label>
-                <input type="text" id="inpGridExtPower" value="${c.grid?.external_power_entity || ''}" placeholder="sensor.esp32_deye_inverter_external_power">
-                <span class="cfg-hint">Трансформатор струму на вводі від стовпа. Відображає реальний перетік вулиці.</span>
               </div>
             </div>
           </div>
 
-          <!-- TAB 3: SOLAR PV -->
-          <div class="tab-pane" id="pane-solar" style="display: none;">
-            <div class="cfg-card">
-              <div class="cfg-card-title">☀️ Сонячне поле (PV панелі)</div>
-              <div class="cfg-row">
-                <div class="cfg-label">
-                  <span>Кількість стрінгів / полів (1 - 16):</span>
-                  <span id="lblPvCount" style="color: #fbbf24; font-family: 'JetBrains Mono', monospace; font-weight: 700;">${c.solar?.pv_count || 3}</span>
-                </div>
-                <div class="slider-row">
-                  <input type="range" id="sliderPvCount" min="1" max="16" step="1" value="${c.solar?.pv_count || 3}">
-                </div>
-              </div>
-              <div class="cfg-row">
-                <label class="cfg-label">Встановлена пікова потужність СЕС (kWp / кВт):</label>
-                <input type="number" step="0.1" id="inpSolarInstalled" value="${c.solar?.installed_power || 12.0}">
-              </div>
-              <div class="cfg-row">
-                <label class="cfg-label">Ціль генерації на день (kWh):</label>
-                <input type="number" id="inpSolarTarget" value="${c.solar?.target_daily_yield || 55}">
-              </div>
-              <div class="cfg-row">
-                <label class="cfg-label">Сенсор щоденної генерації СЕС (kWh):</label>
-                <input type="text" id="inpSolarDailyYield" value="${c.solar?.daily_yield_entity || ''}">
-              </div>
+          <!-- SECTION 2: COMPREHENSIVE CARD CONFIGURATION (ALL 100+ FIELDS) -->
+          <div style="background: #0b1324; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 12px; padding: 12px; margin-top: 4px;">
+            <div style="font-size: 13px; font-weight: 800; color: #38bdf8; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+              <span>⚡</span>
+              <span>Повні параметри станції (Сенсори, Інвертор, PV, АКБ, Мережа, Дім, Тарифи):</span>
             </div>
-          </div>
-
-          <!-- TAB 4: BATTERY -->
-          <div class="tab-pane" id="pane-battery" style="display: none;">
-            <div class="cfg-card">
-              <div class="cfg-card-title">🔋 Акумуляторна система (АКБ)</div>
-              <div class="cfg-row">
-                <label class="cfg-label">Сенсор заряду батареї (SOC, %):</label>
-                <input type="text" id="inpBatSoc" value="${c.battery?.soc_entity || ''}">
-              </div>
-              <div class="cfg-row">
-                <label class="cfg-label">Сенсор потужності батареї (Power, W/kW):</label>
-                <input type="text" id="inpBatPower" value="${c.battery?.power_entity || ''}">
-              </div>
-              <div class="cfg-row">
-                <label class="cfg-label">Сенсор напруги батареї (Voltage, V):</label>
-                <input type="text" id="inpBatVolt" value="${c.battery?.voltage_entity || ''}">
-              </div>
-              <div class="cfg-row">
-                <label class="cfg-label">Сенсор струму батареї (Current, A):</label>
-                <input type="text" id="inpBatCurr" value="${c.battery?.current_entity || ''}">
-              </div>
-              <div class="cfg-row">
-                <div class="cfg-label">
-                  <span>Кількість паралельних блоків АКБ (1 - 8):</span>
-                  <span id="lblBatCount" style="color: #34d399; font-family: 'JetBrains Mono', monospace; font-weight: 700;">${c.battery?.parallel_batteries || 2}</span>
-                </div>
-                <div class="slider-row">
-                  <input type="range" id="sliderBatCount" min="1" max="8" step="1" value="${c.battery?.parallel_batteries || 2}">
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- TAB 5: LOADS -->
-          <div class="tab-pane" id="pane-loads" style="display: none;">
-            <div class="cfg-card">
-              <div class="cfg-card-title">🏠 Навантаження будинку</div>
-              <div class="cfg-row">
-                <label class="cfg-label">Сенсор споживання будинку (Essential Load Power):</label>
-                <input type="text" id="inpLoadPower" value="${c.load?.essential_power_entity || ''}">
-              </div>
-              <div class="cfg-row">
-                <label class="cfg-label">Сенсор щоденного споживання будинку (kWh):</label>
-                <input type="text" id="inpLoadDaily" value="${c.load?.daily_house_entity || ''}">
-              </div>
-            </div>
-          </div>
-
-          <!-- TAB 6: TARIFFS & CONTROLS -->
-          <div class="tab-pane" id="pane-tariffs" style="display: none;">
-            <div class="cfg-card">
-              <div class="cfg-card-title">💰 Тарифи на електроенергію</div>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <div class="cfg-row">
-                  <label class="cfg-label">Денний тариф (грн/кВт·год):</label>
-                  <input type="number" step="0.01" id="inpTariffDay" value="${c.tariffs?.day_rate || 4.32}">
-                </div>
-                <div class="cfg-row">
-                  <label class="cfg-label">Нічний тариф (грн/кВт·год):</label>
-                  <input type="number" step="0.01" id="inpTariffNight" value="${c.tariffs?.night_rate || 2.16}">
-                </div>
-              </div>
-              <div class="cfg-row">
-                <label class="cfg-label">Зелений тариф / Продаж (грн/кВт·год):</label>
-                <input type="number" step="0.01" id="inpTariffExport" value="${c.tariffs?.export_rate || 5.30}">
-              </div>
-            </div>
-
-            <div class="cfg-card">
-              <div class="cfg-card-title">🎛️ Сенсори керування струмом заряду</div>
-              <div class="cfg-row">
-                <label class="cfg-label">Струм заряду АКБ від сонця (number):</label>
-                <input type="text" id="inpCtrlSolar" value="${c.controls?.solar_charge_entity || ''}">
-              </div>
-              <div class="cfg-row">
-                <label class="cfg-label">Струм заряду АКБ від мережі (number):</label>
-                <input type="text" id="inpCtrlGrid" value="${c.controls?.grid_charge_entity || ''}">
-              </div>
-              <div class="cfg-row">
-                <label class="cfg-label">Потужність продажу в мережу (number):</label>
-                <input type="text" id="inpCtrlSell" value="${c.controls?.sell_power_entity || ''}">
-              </div>
-            </div>
-          </div>
-
-          <!-- TAB 7: PRESETS & EXPORT -->
-          <div class="tab-pane" id="pane-presets" style="display: none;">
-            <div class="cfg-card">
-              <div class="cfg-card-title">⚡ Швидкі готові пресети конфігурації</div>
-              <div style="display: flex; flex-direction: column; gap: 8px;">
-                <button class="btn-action-secondary" id="btnPresetDeye" style="text-align: left;">
-                  <div style="font-weight: 700; color: #38bdf8;">⚡ Deye SUN-12K (Ваш ESPHome)</div>
-                  <div style="font-size: 11px; color: #94a3b8;">Автоматичні сенсори ESPHome для Deye 12 кВт, 3 стрінги PV, 2 АКБ, бойлер</div>
-                </button>
-                <button class="btn-action-secondary" id="btnPresetSolarman" style="text-align: left;">
-                  <div style="font-weight: 700; color: #fbbf24;">☀️ Deye Solarman Інтеграція</div>
-                  <div style="font-size: 11px; color: #94a3b8;">Для інверторів, підключених через Solarman Wi-Fi логер</div>
-                </button>
-              </div>
-            </div>
-
-            <div class="cfg-card">
-              <div class="cfg-card-title">📋 Експорт / Резервна копія</div>
-              <button class="btn-action-secondary" id="btnCopyJson" style="width: 100%; margin-bottom: 8px;">
-                Скопіювати конфігурацію (JSON)
-              </button>
-              <button class="btn-action-secondary" id="btnResetDefaults" style="width: 100%; color: #f87171;">
-                Скинути все до стандартних
-              </button>
-            </div>
+            <energy-station-card-editor id="drawerCardEditor"></energy-station-card-editor>
           </div>
 
         </div>
@@ -938,15 +857,41 @@ export class EnergyStationPanel extends HTMLElement {
         <!-- DRAWER FOOTER -->
         <div class="drawer-footer">
           <button class="btn-action-secondary" id="btnCancelDrawer">Закрити</button>
-          <button class="btn-action-primary" id="btnSaveDrawer">✓ Застосувати зміни</button>
+          <button class="btn-action-primary" id="btnSaveDrawer">✓ Зберегти зміни</button>
         </div>
       </aside>
+
+      <!-- YAML / JSON MODAL -->
+      <div class="panel-modal-backdrop" id="yamlModal">
+        <div class="panel-modal-box">
+          <div class="panel-modal-header">
+            <span style="font-weight: 800; color: #38bdf8; font-size: 14px;">📋 Вставити або скопіювати YAML / JSON</span>
+            <button class="drawer-close-btn" id="btnCloseYamlModal">✕</button>
+          </div>
+          <div class="panel-modal-body">
+            <span style="font-size: 11.5px; color: #94a3b8;">
+              Вставте конфігурацію картки (YAML або JSON) з коду Lovelace або скопіюйте поточну для резервної копії:
+            </span>
+            <textarea class="code-area" id="yamlCodeArea"></textarea>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 6px;">
+              <button class="btn-action-secondary" id="btnCopyCurrentYaml">📋 Скопіювати поточну</button>
+              <button class="btn-action-primary" id="btnApplyYaml">✓ Застосувати конфігурацію</button>
+            </div>
+          </div>
+        </div>
+      </div>
     `;
 
     this._cardNode = this.shadowRoot.getElementById('stationCard');
+    this._editorNode = this.shadowRoot.getElementById('drawerCardEditor');
+
     if (this._cardNode) {
       this._cardNode.setConfig(this._config);
       if (this._hass) this._cardNode.hass = this._hass;
+    }
+    if (this._editorNode) {
+      this._editorNode.setConfig(this._config);
+      if (this._hass) this._editorNode.hass = this._hass;
     }
   }
 
@@ -961,9 +906,23 @@ export class EnergyStationPanel extends HTMLElement {
 
     // Save Drawer
     root.getElementById('btnSaveDrawer')?.addEventListener('click', () => {
-      this._collectFormData();
       this._updateCardConfig();
       this._closeDrawer();
+      alert('✓ Налаштування збережено!');
+    });
+
+    // Editor config-changed event listener (syncs immediately to station card)
+    this._editorNode?.addEventListener('config-changed', (e) => {
+      const newConfig = e.detail.config;
+      // Preserve current appearance (fonts & sizes)
+      newConfig.appearance = {
+        ...DEFAULT_CONFIG.appearance,
+        ...(this._config?.appearance || {}),
+        ...(newConfig.appearance || {})
+      };
+      this._config = newConfig;
+      if (this._cardNode) this._cardNode.setConfig(this._config);
+      this._saveConfig();
     });
 
     // Zoom buttons in top bar
@@ -996,17 +955,65 @@ export class EnergyStationPanel extends HTMLElement {
       }
     });
 
-    // Tabs navigation inside drawer
-    root.querySelectorAll('.drawer-tab').forEach((tabBtn) => {
-      tabBtn.addEventListener('click', () => {
-        const targetTab = tabBtn.dataset.tab;
-        root.querySelectorAll('.drawer-tab').forEach(b => b.classList.remove('active'));
-        tabBtn.classList.add('active');
+    // One-click sync from Lovelace dashboard
+    root.getElementById('btnSyncFromLovelace')?.addEventListener('click', () => {
+      this._importFromLovelace(true);
+    });
 
-        root.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
-        const targetPane = root.getElementById(`pane-${targetTab}`);
-        if (targetPane) targetPane.style.display = 'block';
-      });
+    // YAML Modal Open / Close
+    const yamlModal = root.getElementById('yamlModal');
+    const codeArea = root.getElementById('yamlCodeArea');
+
+    root.getElementById('btnOpenYamlModal')?.addEventListener('click', () => {
+      if (yamlModal && codeArea) {
+        try {
+          codeArea.value = yamlDump(this._config);
+        } catch (e) {
+          codeArea.value = JSON.stringify(this._config, null, 2);
+        }
+        yamlModal.classList.add('active');
+      }
+    });
+
+    root.getElementById('btnCloseYamlModal')?.addEventListener('click', () => {
+      yamlModal?.classList.remove('active');
+    });
+
+    root.getElementById('btnCopyCurrentYaml')?.addEventListener('click', () => {
+      if (codeArea) {
+        navigator.clipboard?.writeText(codeArea.value);
+        alert('✓ Скопійовано в буфер обміну!');
+      }
+    });
+
+    root.getElementById('btnApplyYaml')?.addEventListener('click', () => {
+      if (codeArea && codeArea.value.trim()) {
+        try {
+          const raw = codeArea.value.trim();
+          let parsed = null;
+          if (raw.startsWith('{')) {
+            parsed = JSON.parse(raw);
+          } else {
+            parsed = yamlLoad(raw);
+          }
+          if (parsed && typeof parsed === 'object') {
+            if (parsed.type) delete parsed.type;
+            parsed.appearance = {
+              ...DEFAULT_CONFIG.appearance,
+              ...(this._config?.appearance || {}),
+              ...(parsed.appearance || {})
+            };
+            this._config = parsed;
+            this._saveConfig();
+            this._render();
+            this._bindEvents();
+            yamlModal?.classList.remove('active');
+            alert('✓ Конфігурацію успішно застосовано!');
+          }
+        } catch (err) {
+          alert('Помилка формату YAML / JSON: ' + err.message);
+        }
+      }
     });
 
     // Font selection tiles
@@ -1061,16 +1068,6 @@ export class EnergyStationPanel extends HTMLElement {
       });
     });
 
-    // Density segmented buttons
-    root.querySelectorAll('#densitySeg .seg-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        root.querySelectorAll('#densitySeg .seg-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        this._config.appearance.density = btn.dataset.val;
-        this._updateCardConfig();
-      });
-    });
-
     // Scale slider in drawer
     const sliderScale = root.getElementById('sliderCardScale');
     const lblScale = root.getElementById('lblCardScale');
@@ -1080,139 +1077,6 @@ export class EnergyStationPanel extends HTMLElement {
         if (lblScale) lblScale.innerText = `${Math.round(val * 100)}%`;
         this._changeScale(val);
       });
-    }
-
-    // Scale presets buttons
-    root.querySelectorAll('.btn-scale-preset').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const val = parseFloat(btn.dataset.val);
-        if (sliderScale) sliderScale.value = val;
-        if (lblScale) lblScale.innerText = `${Math.round(val * 100)}%`;
-        this._changeScale(val);
-      });
-    });
-
-    // Animation speed slider
-    const sliderAnim = root.getElementById('sliderAnimSpeed');
-    const lblAnim = root.getElementById('lblAnimSpeed');
-    if (sliderAnim) {
-      sliderAnim.addEventListener('input', (e) => {
-        const val = parseFloat(e.target.value);
-        if (lblAnim) lblAnim.innerText = `${val}s`;
-        if (!this._config.animations) this._config.animations = {};
-        this._config.animations.speed = val;
-        this._updateCardConfig();
-      });
-    }
-
-    // PV Count slider
-    const sliderPv = root.getElementById('sliderPvCount');
-    const lblPv = root.getElementById('lblPvCount');
-    if (sliderPv) {
-      sliderPv.addEventListener('input', (e) => {
-        const val = parseInt(e.target.value, 10);
-        if (lblPv) lblPv.innerText = val;
-        if (!this._config.solar) this._config.solar = {};
-        this._config.solar.pv_count = val;
-        this._updateCardConfig();
-      });
-    }
-
-    // Battery Count slider
-    const sliderBat = root.getElementById('sliderBatCount');
-    const lblBat = root.getElementById('lblBatCount');
-    if (sliderBat) {
-      sliderBat.addEventListener('input', (e) => {
-        const val = parseInt(e.target.value, 10);
-        if (lblBat) lblBat.innerText = val;
-        if (!this._config.battery) this._config.battery = {};
-        this._config.battery.parallel_batteries = val;
-        this._updateCardConfig();
-      });
-    }
-
-    // Preset buttons
-    root.getElementById('btnPresetDeye')?.addEventListener('click', () => {
-      this._applyPreset('deye_esphome');
-    });
-
-    // Reset defaults
-    root.getElementById('btnResetDefaults')?.addEventListener('click', () => {
-      if (confirm('Скинути всі налаштування до початкових?')) {
-        this._config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-        this._scale = 1.0;
-        this._saveConfig();
-        this._render();
-        this._bindEvents();
-      }
-    });
-
-    // Copy JSON config
-    root.getElementById('btnCopyJson')?.addEventListener('click', () => {
-      navigator.clipboard?.writeText(JSON.stringify(this._config, null, 2));
-      alert('Конфігурацію скопійовано в буфер обміну!');
-    });
-  }
-
-  _collectFormData() {
-    const root = this.shadowRoot;
-    const c = this._config;
-
-    // Inverter
-    if (root.getElementById('inpInverterModel')) c.inverter.model_name = root.getElementById('inpInverterModel').value;
-    if (root.getElementById('inpGridVolt')) c.inverter.voltage_entity = root.getElementById('inpGridVolt').value;
-    if (root.getElementById('inpGridCurr')) c.inverter.current_entity = root.getElementById('inpGridCurr').value;
-    if (root.getElementById('inpGridPower')) c.grid.power_entity = root.getElementById('inpGridPower').value;
-    if (root.getElementById('inpGridExtPower')) c.grid.external_power_entity = root.getElementById('inpGridExtPower').value;
-
-    // Solar
-    if (root.getElementById('inpSolarInstalled')) c.solar.installed_power = parseFloat(root.getElementById('inpSolarInstalled').value) || 12.0;
-    if (root.getElementById('inpSolarTarget')) c.solar.target_daily_yield = parseFloat(root.getElementById('inpSolarTarget').value) || 55;
-    if (root.getElementById('inpSolarDailyYield')) c.solar.daily_yield_entity = root.getElementById('inpSolarDailyYield').value;
-
-    // Battery
-    if (root.getElementById('inpBatSoc')) c.battery.soc_entity = root.getElementById('inpBatSoc').value;
-    if (root.getElementById('inpBatPower')) c.battery.power_entity = root.getElementById('inpBatPower').value;
-    if (root.getElementById('inpBatVolt')) c.battery.voltage_entity = root.getElementById('inpBatVolt').value;
-    if (root.getElementById('inpBatCurr')) c.battery.current_entity = root.getElementById('inpBatCurr').value;
-
-    // Load
-    if (root.getElementById('inpLoadPower')) c.load.essential_power_entity = root.getElementById('inpLoadPower').value;
-    if (root.getElementById('inpLoadDaily')) c.load.daily_house_entity = root.getElementById('inpLoadDaily').value;
-
-    // Tariffs
-    if (root.getElementById('inpTariffDay')) c.tariffs.day_rate = parseFloat(root.getElementById('inpTariffDay').value) || 4.32;
-    if (root.getElementById('inpTariffNight')) c.tariffs.night_rate = parseFloat(root.getElementById('inpTariffNight').value) || 2.16;
-    if (root.getElementById('inpTariffExport')) c.tariffs.export_rate = parseFloat(root.getElementById('inpTariffExport').value) || 5.30;
-
-    // Controls
-    if (root.getElementById('inpCtrlSolar')) c.controls.solar_charge_entity = root.getElementById('inpCtrlSolar').value;
-    if (root.getElementById('inpCtrlGrid')) c.controls.grid_charge_entity = root.getElementById('inpCtrlGrid').value;
-    if (root.getElementById('inpCtrlSell')) c.controls.sell_power_entity = root.getElementById('inpCtrlSell').value;
-  }
-
-  _applyPreset(presetKey) {
-    if (presetKey === 'deye_esphome') {
-      this._config.inverter.model_name = 'DEYE SUN-12K';
-      this._config.solar.pv_count = 3;
-      this._config.solar.daily_yield_entity = 'sensor.deye_12k_inverter_daily_solar_energy';
-      this._config.battery.soc_entity = 'sensor.deye_12k_inverter_battery_soc';
-      this._config.battery.power_entity = 'sensor.deye_12k_inverter_battery_power';
-      this._config.battery.voltage_entity = 'sensor.deye_12k_inverter_battery_voltage';
-      this._config.battery.current_entity = 'sensor.deye_12k_inverter_battery_current';
-      this._config.grid.power_entity = 'sensor.deye_12k_inverter_total_grid_power';
-      this._config.grid.external_power_entity = 'sensor.esp32_deye_inverter_external_power';
-      this._config.load.essential_power_entity = 'sensor.boiler_power';
-      this._config.controls = {
-        show: true,
-        solar_charge_entity: 'number.inverter_12_kvt_battery_max_charging_current',
-        grid_charge_entity: 'number.inverter_12_kvt_battery_grid_charging_current',
-        sell_power_entity: 'number.inverter_12_kvt_export_surplus_power'
-      };
-      this._saveConfig();
-      this._render();
-      this._bindEvents();
-      alert('Застосовано пресет: Deye SUN-12K (ESPHome)!');
     }
   }
 

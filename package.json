@@ -1,6 +1,6 @@
 {
   "name": "energy-station-ha",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "Energy Station Dashboard & Custom Card for Home Assistant (Deye / SunSynk / Hybrid Inverter)",
   "type": "module",
   "scripts": {
@@ -24,5 +24,8 @@
   "license": "MIT",
   "devDependencies": {
     "vite": "^5.2.8"
+  },
+  "dependencies": {
+    "js-yaml": "^5.5.0"
   }
 }
