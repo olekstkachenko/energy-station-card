@@ -4861,6 +4861,13 @@ if (!customElements.get('energy-station-card')) {
   customElements.define('energy-station-card', EnergyStationCard);
 }
 
+// Auto-register EnergyStationPanel for custom panel support
+import { EnergyStationPanel } from '../panel/panel-component.js';
+export { EnergyStationPanel };
+if (typeof customElements !== 'undefined' && !customElements.get('energy-station-panel')) {
+  customElements.define('energy-station-panel', EnergyStationPanel);
+}
+
 // Register for Lovelace card picker UI
 window.customCards = window.customCards || [];
 if (!window.customCards.some(card => card.type === 'energy-station-card')) {
