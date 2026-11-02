@@ -585,6 +585,73 @@ describe('Energy Station Card - Inverter Self-Consumption & House Load Balance',
     const totalOutflow = batInKw + gridOutKw + essentialKw + selfConsumptionKw;
     assert.equal(totalOutflow.toFixed(3), totalSolarKw.toFixed(3));
   });
+
+  it('correctly handles night grid import when battery is charging at 3.112 kW and inverter reports 227.30 V, 19.31 A (exact user scenario)', () => {
+    // Exact user telemetry from screenshot:
+    // Solar: 0 kW (night)
+    // Battery: Charging 3.112 kW (53.21 V, -5.84 A)
+    // Inverter Mains Telemetry: 227.30 V, 19.31 A
+    // Grid port sensor: 0 kW (or dead CT reading 0)
+    const totalSolarKw = 0;
+    const totalWindKw = 0;
+    const auxKw = 0;
+    const batInKw = 3.112;
+    const batOutKw = 0;
+    const nonEssKw = 0;
+    const carKw = 0;
+    const subloadsTotalKw = 0;
+
+    const mainsV = 227.30;
+    const mainsI = 19.31;
+    const voltThreshold = 90;
+    const isGridConnected = mainsV >= voltThreshold;
+    assert.equal(isGridConnected, true, 'Grid must be detected as connected');
+
+    const totalGenKw = totalSolarKw + totalWindKw + auxKw + batOutKw;
+    const isNightOrNoGen = (totalGenKw < 0.15);
+    const isUnderGenerated = (totalGenKw < (batInKw + 0.05));
+    const cannotBeExporting = isNightOrNoGen || isUnderGenerated;
+    assert.equal(cannotBeExporting, true, 'Station cannot be exporting when charging with 0 generation');
+
+    let rawGridKw = 0; // Sensor reporting 0
+    let absGridKw = Math.abs(rawGridKw);
+    let isImport = false;
+    let isExport = false;
+
+    // Mains current resolution
+    const hasPhysicalMainsCurrent = (mainsV >= voltThreshold) && (mainsI >= 0.5);
+    assert.equal(hasPhysicalMainsCurrent, true);
+
+    if (hasPhysicalMainsCurrent) {
+      const derivedMainsKw = (mainsV * mainsI * 0.90) / 1000.0;
+      if (absGridKw < 0.05 || absGridKw < (batInKw - 0.05) || derivedMainsKw > (absGridKw + 0.3)) {
+        absGridKw = derivedMainsKw;
+        isImport = true;
+        isExport = false;
+      }
+    }
+
+    // Grid assertions:
+    assert.equal(isImport, true, 'Must be marked as grid import');
+    assert.equal(isExport, false, 'Must not be export');
+    assert.equal(absGridKw.toFixed(3), '3.950', 'Derived grid import must be ~3.95 kW');
+
+    // House & Inverter balance:
+    const gridInKw = isImport ? absGridKw : 0;
+    const gridOutKw = isExport ? absGridKw : 0;
+    const totalInflowKw = totalGenKw + gridInKw;
+    const totalOutflowKnownKw = batInKw + gridOutKw + nonEssKw + carKw;
+    const netAvailableKw = Math.max(0, totalInflowKw - totalOutflowKnownKw); // 3.950 - 3.112 = 0.838 kW
+
+    const standbyWatts = 100;
+    const nominalLossKw = standbyWatts / 1000;
+    const selfConsumptionKw = Math.min(netAvailableKw, nominalLossKw); // 0.100 kW
+    const essentialKw = Math.max(subloadsTotalKw, Math.max(0, netAvailableKw - selfConsumptionKw)); // 0.738 kW
+
+    assert.equal(selfConsumptionKw.toFixed(3), '0.100', 'Inverter standby is 100 W');
+    assert.equal(essentialKw.toFixed(3), '0.738', 'House load is 738 W');
+    assert.equal((essentialKw + selfConsumptionKw + batInKw).toFixed(3), absGridKw.toFixed(3), 'Perfect energy balance');
+  });
 });
 
 
