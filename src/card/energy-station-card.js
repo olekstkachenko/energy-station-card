@@ -1,5 +1,5 @@
 console.info(
-  '%c⚡ Energy Station Card v1.4.5 Loaded ⚡',
+  '%c⚡ Energy Station Card v1.4.6 Loaded ⚡',
   'background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
 );
 
@@ -1945,7 +1945,7 @@ export class EnergyStationCard extends HTMLElement {
         <div class="es-header">
           <div class="es-header-title">
             <span>${c.title || 'Energy Station'}</span>
-            <span class="es-header-badge">PRO FLOW v1.4.5</span>
+            <span class="es-header-badge">PRO FLOW v1.4.6</span>
           </div>
           <div class="es-header-controls">
             <button class="es-header-pill-btn es-header-edit-btn" id="headerEditCard" title="${this._t('edit_card')}">
@@ -3835,6 +3835,19 @@ export class EnergyStationCard extends HTMLElement {
           const houseLoadKw = Math.max(rawSensorKw, subloadsTotalKw);
           const baselineHouseKw = houseLoadKw > 0 ? houseLoadKw : 0.8;
           absGridKw = Math.max(absGridKw, batInKw + 0.15 + baselineHouseKw);
+          isImport = true;
+          isExport = false;
+        }
+
+        // Physical Conservation of Energy Lower Bound:
+        // When grid is connected, Grid Import physically cannot be less than internal demand minus generation!
+        const standbyWatts = (c.inverter?.standby_power !== undefined) ? c.inverter.standby_power : 100;
+        const nominalLossKw = standbyWatts / 1000;
+        const houseLoadKw = Math.max(rawSensorKw, subloadsTotalKw);
+        const totalInternalDemandKw = batInKw + houseLoadKw + nonEssKw + carKw + nominalLossKw;
+        const minimumRequiredGridImport = Math.max(0, totalInternalDemandKw - totalGenKw);
+        if (minimumRequiredGridImport > 0.05 && absGridKw < (minimumRequiredGridImport - 0.1)) {
+          absGridKw = minimumRequiredGridImport;
           isImport = true;
           isExport = false;
         }

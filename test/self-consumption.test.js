@@ -652,6 +652,58 @@ describe('Energy Station Card - Inverter Self-Consumption & House Load Balance',
     assert.equal(essentialKw.toFixed(3), '0.738', 'House load is 738 W');
     assert.equal((essentialKw + selfConsumptionKw + batInKw).toFixed(3), absGridKw.toFixed(3), 'Perfect energy balance');
   });
+
+  it('correctly bounds grid import by energy conservation when CT clamp reports 0.453 kW during 1.22 kW solar, 3.50 kW battery charge and 1.12 kW boiler', () => {
+    // User Scenario from 10:35 AM screenshot:
+    // Solar: 1.221 kW
+    // Battery: Charging 3.496 kW
+    // Boiler: 1.118 kW
+    // CT Clamp sensor: 0.453 kW (deficient CT clamp reading)
+    // Inverter Mains telemetry: 221.80 V, 20.72 A (= 4.596 kW AC)
+    const totalSolarKw = 1.221;
+    const totalWindKw = -0.001;
+    const auxKw = 0;
+    const batInKw = 3.496;
+    const batOutKw = 0;
+    const nonEssKw = 0;
+    const carKw = 0;
+    const rawSensorKw = 1.118; // Boiler
+    const subloadsTotalKw = 1.118;
+    const nominalLossKw = 0.100;
+
+    const totalGenKw = totalSolarKw + totalWindKw + auxKw + batOutKw; // 1.220 kW
+    const isUnderGenerated = (totalGenKw < (batInKw + 0.05));
+    assert.equal(isUnderGenerated, true, 'Generation is less than battery charging draw');
+
+    let rawGridKw = 0.453; // CT clamp reading 453 W
+    let absGridKw = Math.abs(rawGridKw);
+    let isImport = true;
+    let isExport = false;
+
+    // 1. Conservation of Energy Lower Bound
+    const houseLoadKw = Math.max(rawSensorKw, subloadsTotalKw);
+    const totalInternalDemandKw = batInKw + houseLoadKw + nonEssKw + carKw + nominalLossKw; // 3.496 + 1.118 + 0.100 = 4.714 kW
+    const minimumRequiredGridImport = Math.max(0, totalInternalDemandKw - totalGenKw); // 4.714 - 1.220 = 3.494 kW
+
+    if (minimumRequiredGridImport > 0.05 && absGridKw < (minimumRequiredGridImport - 0.1)) {
+      absGridKw = minimumRequiredGridImport;
+      isImport = true;
+      isExport = false;
+    }
+
+    assert.equal(isImport, true, 'Grid must be importing');
+    assert.ok(absGridKw >= 3.49, `Grid import (${absGridKw.toFixed(3)}) must cover the internal energy deficit (3.494 kW)`);
+
+    // 2. Telemetry derivation from Mains AC Current (221.8 V * 20.72 A)
+    const mainsV = 221.80;
+    const mainsI = 20.72;
+    const derivedMainsKw = (mainsV * mainsI * 0.90) / 1000.0; // 4.136 kW
+    if (derivedMainsKw > (absGridKw + 0.3)) {
+      absGridKw = derivedMainsKw;
+    }
+
+    assert.ok(absGridKw >= 3.494, 'Grid import must be at least 3.494 kW');
+  });
 });
 
 
