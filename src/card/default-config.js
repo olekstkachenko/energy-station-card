@@ -233,7 +233,9 @@ export const DEFAULT_CONFIG = {
     show_daily_cost: true, // показувати вартість біля імпорту з мережі
     show_export_income: true, // показувати дохід від експорту (Зелений тариф)
     show_active_badge: true, // показувати бейдж поточного активного тарифу
-    show_solar_savings: true // показувати суму заощаджень від сонця
+    show_solar_savings: true, // показувати суму заощаджень від сонця
+    show_night_savings: true, // показувати заощадження від нічного тарифу АКБ
+    show_net_benefit: true   // показувати чистий баланс вигоди/витрат за добу
   }
 };
 

@@ -222,6 +222,18 @@ test('Energy Station Card - Theme & Language Customization', async (t) => {
     card._calculateTariffs(12.90, 0, 1.2);
     assert.strictEqual(card._nodes.gridCostSplitVal.innerText, '(🌙 12.5 + ☀️ 0.4)');
     assert.strictEqual(card._nodes.gridCostDailyVal.innerText, '~28.73 грн');
+
+    // Test Night Savings & Net Financial Balance (Point 4)
+    card._nodes.gridNightSavingsRow = { style: { display: 'none' } };
+    card._nodes.gridNightSavingsVal = { innerText: '' };
+    card._nodes.netBenefitDailyRow = { style: { display: 'none' } };
+    card._nodes.netBenefitDailyBadge = { style: { background: '', border: '', color: '' }, innerText: '' };
+
+    card._calculateTariffs(12.90, 0, 20.0);
+    assert.strictEqual(card._nodes.gridNightSavingsRow.style.display, 'block');
+    assert.match(card._nodes.gridNightSavingsVal.innerText, /27\.00/);
+    assert.strictEqual(card._nodes.netBenefitDailyRow.style.display, 'block');
+    assert.match(card._nodes.netBenefitDailyBadge.innerText, /\+57\.67 грн/);
   });
 
   await t.test('battery telemetry displays temperature, remaining capacity, and cell delta unbalance', () => {

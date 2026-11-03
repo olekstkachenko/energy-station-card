@@ -1,5 +1,5 @@
 console.info(
-  '%c⚡ Energy Station Card v1.4.8 Loaded ⚡',
+  '%c⚡ Energy Station Card v1.4.9 Loaded ⚡',
   'background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
 );
 
@@ -63,6 +63,11 @@ export const I18N = {
     tariff_cost: 'Вартість',
     export_income: 'Дохід від експорту',
     solar_saved: 'Заощаджено',
+    tariff_night_saved: 'Нічна економія',
+    tariff_net_benefit: 'Чиста вигода',
+    tariff_net_cost: 'Чисті витрати',
+    autarky_title: 'Автономність',
+    self_consumption_title: 'Власне споживання',
     bat_delta: 'Розбаланс',
     bat_remaining: 'Залишок',
     edit_card: 'Редагувати',
@@ -123,6 +128,11 @@ export const I18N = {
     tariff_cost: 'Cost',
     export_income: 'Export Income',
     solar_saved: 'Saved',
+    tariff_night_saved: 'Night Savings',
+    tariff_net_benefit: 'Net Benefit',
+    tariff_net_cost: 'Net Cost',
+    autarky_title: 'Autarky',
+    self_consumption_title: 'Self-Consumption',
     bat_delta: 'Cell Delta',
     bat_remaining: 'Remaining',
     edit_card: 'Edit',
@@ -1946,7 +1956,7 @@ export class EnergyStationCard extends HTMLElement {
         <div class="es-header">
           <div class="es-header-title">
             <span>${c.title || 'Energy Station'}</span>
-            <span class="es-header-badge">PRO FLOW v1.4.8</span>
+            <span class="es-header-badge">PRO FLOW v1.4.9</span>
           </div>
           <div class="es-header-controls">
             <button class="es-header-pill-btn es-header-edit-btn" id="headerEditCard" title="${this._t('edit_card')}">
@@ -1981,6 +1991,18 @@ export class EnergyStationCard extends HTMLElement {
               <div id="solarProgressBar" style="height: 100%; width: 88%; background: linear-gradient(90deg, #f59e0b, #fde047); border-radius: 9999px; transition: width 0.7s;"></div>
             </div>
             <div class="es-mono" id="solarSavingsDaily" style="font-size: 11px; font-weight: 700; color: #34d399; margin-top: 4px; display: none;"></div>
+
+            <!-- Energy Balance Metrics (DuckSolar Model) -->
+            <div class="es-energy-balance-row" id="energyBalanceRow" style="display: flex; gap: 6px; justify-content: center; align-items: center; margin-top: 5px; flex-wrap: wrap;">
+              <div class="es-mono" id="autarkyBadge" title="Автономність: частка споживання будинку, забезпечена сонцем та АКБ" style="font-size: 10px; font-weight: 700; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399; padding: 1.5px 7px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 3px;">
+                <span>🛡️ ${this._t('autarky_title')}:</span>
+                <span id="autarkyVal">--%</span>
+              </div>
+              <div class="es-mono" id="selfConsBadge" title="Власне споживання: частка генерації СЕС, використана локально" style="font-size: 10px; font-weight: 700; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; padding: 1.5px 7px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 3px;">
+                <span>☀️ ${this._t('self_consumption_title')}:</span>
+                <span id="selfConsVal">--%</span>
+              </div>
+            </div>
           </div>
 
           <!-- PV Panels Grid -->
@@ -2026,6 +2048,12 @@ export class EnergyStationCard extends HTMLElement {
               <div>${this._t('grid_export')} <span id="gridExportDaily" style="color: #34d399; font-weight: 700;">4,80 kWh</span></div>
               <div id="gridExportIncomeRow" style="font-size: 11px; display: none; margin-top: -1px; text-align: right;">
                 <span id="gridExportIncomeVal" style="color: #34d399; font-weight: 700;">+0.00 грн</span>
+              </div>
+              <div id="gridNightSavingsRow" style="font-size: 11px; display: none; margin-top: -1px; text-align: right;" title="Економія від зарядки АКБ або споживання за дешевим нічним тарифом замість денного">
+                <span id="gridNightSavingsVal" style="color: #a5b4fc; font-weight: 700;">~0.00 грн</span>
+              </div>
+              <div id="netBenefitDailyRow" style="font-size: 11px; display: none; margin-top: 2px; text-align: right;">
+                <span id="netBenefitDailyBadge" class="es-mono" style="font-size: 10px; font-weight: 800; border-radius: 9999px; padding: 1.5px 7px; display: inline-flex; align-items: center; gap: 3px;"></span>
               </div>
             </div>
 
@@ -2209,6 +2237,9 @@ export class EnergyStationCard extends HTMLElement {
       targetSolarYield: root.getElementById('targetSolarYield'),
       solarProgressBar: root.getElementById('solarProgressBar'),
       solarSavingsDaily: root.getElementById('solarSavingsDaily'),
+      autarkyVal: root.getElementById('autarkyVal'),
+      selfConsVal: root.getElementById('selfConsVal'),
+      energyBalanceRow: root.getElementById('energyBalanceRow'),
       totalPvPowerBadge: root.getElementById('totalPvPowerBadge'),
       totalPvPowerVal: root.getElementById('totalPvPowerVal'),
       totalPvPercentBadge: root.getElementById('totalPvPercentBadge'),
@@ -2225,6 +2256,10 @@ export class EnergyStationCard extends HTMLElement {
       gridExportDaily: root.getElementById('gridExportDaily'),
       gridExportIncomeRow: root.getElementById('gridExportIncomeRow'),
       gridExportIncomeVal: root.getElementById('gridExportIncomeVal'),
+      gridNightSavingsRow: root.getElementById('gridNightSavingsRow'),
+      gridNightSavingsVal: root.getElementById('gridNightSavingsVal'),
+      netBenefitDailyRow: root.getElementById('netBenefitDailyRow'),
+      netBenefitDailyBadge: root.getElementById('netBenefitDailyBadge'),
       gridPowerVal: root.getElementById('gridPowerVal'),
       gridDirectionLabel: root.getElementById('gridDirectionLabel'),
       carPowerVal: root.getElementById('carPowerVal'),
@@ -2870,6 +2905,8 @@ export class EnergyStationCard extends HTMLElement {
       if (this._nodes?.gridExportIncomeRow) this._nodes.gridExportIncomeRow.style.display = 'none';
       if (this._nodes?.gridTariffBadge) this._nodes.gridTariffBadge.style.display = 'none';
       if (this._nodes?.solarSavingsDaily) this._nodes.solarSavingsDaily.style.display = 'none';
+      if (this._nodes?.gridNightSavingsRow) this._nodes.gridNightSavingsRow.style.display = 'none';
+      if (this._nodes?.netBenefitDailyRow) this._nodes.netBenefitDailyRow.style.display = 'none';
       return;
     }
 
@@ -2929,6 +2966,8 @@ export class EnergyStationCard extends HTMLElement {
     // Grid daily cost calculation
     if (typeof gridImportKwh !== 'number' || isNaN(gridImportKwh) || gridImportKwh < 0) {
       if (this._nodes?.gridCostDailyRow) this._nodes.gridCostDailyRow.style.display = 'none';
+      if (this._nodes?.gridNightSavingsRow) this._nodes.gridNightSavingsRow.style.display = 'none';
+      if (this._nodes?.netBenefitDailyRow) this._nodes.netBenefitDailyRow.style.display = 'none';
       return;
     }
 
@@ -3021,6 +3060,41 @@ export class EnergyStationCard extends HTMLElement {
       this._nodes.gridCostDailyRow.style.display = 'block';
     } else if (this._nodes?.gridCostDailyRow) {
       this._nodes.gridCostDailyRow.style.display = 'none';
+    }
+
+    // 3. Night Shift Savings (Battery charged from cheap night grid instead of daytime grid)
+    const nightShiftSaved = (nightKwh > 0 && dayRate > nightRate) ? (nightKwh * (dayRate - nightRate)) : 0;
+    if (this._nodes?.gridNightSavingsRow && tCfg.show_night_savings !== false && nightShiftSaved > 0.05) {
+      if (this._nodes.gridNightSavingsVal) {
+        this._nodes.gridNightSavingsVal.innerText = `🌙 ${this._t('tariff_night_saved')}: ~${nightShiftSaved.toFixed(2)} ${currency}`;
+      }
+      this._nodes.gridNightSavingsRow.style.display = 'block';
+    } else if (this._nodes?.gridNightSavingsRow) {
+      this._nodes.gridNightSavingsRow.style.display = 'none';
+    }
+
+    // 4. Net Daily Financial Balance (Solar benefit + Export income - Grid cost)
+    if (this._nodes?.netBenefitDailyRow && tCfg.show_net_benefit !== false) {
+      const solarBenefit = (typeof solarDailyKwh === 'number' && solarDailyKwh > 0) ? (solarDailyKwh * dayRate) : 0;
+      const exportIncome = (typeof gridExportKwh === 'number' && gridExportKwh > 0) ? (gridExportKwh * exportRate) : 0;
+      const netBenefit = (solarBenefit + exportIncome) - totalCost;
+
+      if (this._nodes.netBenefitDailyBadge) {
+        if (netBenefit >= 0) {
+          this._nodes.netBenefitDailyBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+          this._nodes.netBenefitDailyBadge.style.border = '1px solid rgba(16, 185, 129, 0.35)';
+          this._nodes.netBenefitDailyBadge.style.color = '#34d399';
+          this._nodes.netBenefitDailyBadge.innerText = `💰 ${this._t('tariff_net_benefit')}: +${netBenefit.toFixed(2)} ${currency}`;
+        } else {
+          this._nodes.netBenefitDailyBadge.style.background = 'rgba(56, 189, 248, 0.12)';
+          this._nodes.netBenefitDailyBadge.style.border = '1px solid rgba(56, 189, 248, 0.3)';
+          this._nodes.netBenefitDailyBadge.style.color = '#38bdf8';
+          this._nodes.netBenefitDailyBadge.innerText = `💰 ${this._t('tariff_net_cost')}: ${netBenefit.toFixed(2)} ${currency}`;
+        }
+      }
+      this._nodes.netBenefitDailyRow.style.display = 'block';
+    } else if (this._nodes?.netBenefitDailyRow) {
+      this._nodes.netBenefitDailyRow.style.display = 'none';
     }
   }
 
@@ -3643,7 +3717,8 @@ export class EnergyStationCard extends HTMLElement {
           (batInKw > 0.1 && totalGenKw < 0.1) ||
           (rawPrimaryKw > 0.1)
         );
-        if (!isDeadOrZeroCt) {
+        const isSubBranchCt = (batInKw > 0.5 && totalGenKw < 0.15 && extKw < (batInKw - 0.2));
+        if (!isDeadOrZeroCt && !isSubBranchCt) {
           sGridPower = sExt;
           isExternalCt = true;
         }
@@ -3715,7 +3790,8 @@ export class EnergyStationCard extends HTMLElement {
         if (detectedExtCand) {
           const candKw = Math.abs(detectedExtCand.unit === 'kW' ? detectedExtCand.val : detectedExtCand.val / 1000);
           const isUnconnectedCt = (candKw < 0.03) && ((batInKw > 0.1 && totalGenKw < 0.1) || (rawPrimaryKw > 0.1 && totalGenKw < 0.1));
-          if (!isUnconnectedCt && candKw > 0) {
+          const isSubBranchCt = (batInKw > 0.5 && totalGenKw < 0.15 && candKw < (batInKw - 0.2));
+          if (!isUnconnectedCt && !isSubBranchCt && candKw > 0) {
             sGridPower = detectedExtCand;
             isExternalCt = true;
           }
@@ -4028,6 +4104,38 @@ export class EnergyStationCard extends HTMLElement {
 
     const sHouseDaily = this._getEntityState(c.load?.daily_house_entity);
     this._nodes.dailyHouseKwh.innerText = sHouseDaily ? `${sHouseDaily.val.toFixed(2)} kWh` : '12,40 kWh';
+
+    // DuckSolar Energy Balance Metrics (Autarky & Self-Consumption)
+    const sAutarky = this._getEntityState(c.solar?.autarky_entity || 'sensor.deye_inverter_daily_autarky');
+    const sSelfCons = this._getEntityState(c.solar?.self_consumption_entity || 'sensor.deye_inverter_daily_self_consumption');
+
+    let autarkyPct = (sAutarky && typeof sAutarky.val === 'number' && !isNaN(sAutarky.val)) ? sAutarky.val : null;
+    if (autarkyPct === null) {
+      const hDaily = (sHouseDaily && typeof sHouseDaily.val === 'number' && !isNaN(sHouseDaily.val)) ? sHouseDaily.val : 12.4;
+      const gImport = (sGridImport && typeof sGridImport.val === 'number' && !isNaN(sGridImport.val)) ? sGridImport.val : 0;
+      if (hDaily > 0.05) {
+        autarkyPct = Math.min(100, Math.max(0, ((hDaily - gImport) / hDaily) * 100));
+      } else {
+        autarkyPct = 100;
+      }
+    }
+
+    let selfConsPct = (sSelfCons && typeof sSelfCons.val === 'number' && !isNaN(sSelfCons.val)) ? sSelfCons.val : null;
+    if (selfConsPct === null) {
+      const gExport = (sGridExport && typeof sGridExport.val === 'number' && !isNaN(sGridExport.val)) ? sGridExport.val : 0;
+      if (dailyKwh > 0.05) {
+        selfConsPct = Math.min(100, Math.max(0, ((dailyKwh - gExport) / dailyKwh) * 100));
+      } else {
+        selfConsPct = 0;
+      }
+    }
+
+    if (this._nodes.autarkyVal) {
+      this._nodes.autarkyVal.innerText = `${Math.round(autarkyPct)}%`;
+    }
+    if (this._nodes.selfConsVal) {
+      this._nodes.selfConsVal.innerText = `${Math.round(selfConsPct)}%`;
+    }
 
     // Total battery capacity
     const batCount = c.battery?.parallel_batteries || (c.battery?.modules?.length || 2);
