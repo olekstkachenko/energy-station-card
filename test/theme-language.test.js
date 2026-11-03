@@ -205,6 +205,23 @@ test('Energy Station Card - Theme & Language Customization', async (t) => {
     // Verify solar savings: 15 kWh * 4.32 = ~64.80 грн
     assert.strictEqual(card._nodes.solarSavingsDaily.style.display, 'block');
     assert.strictEqual(card._nodes.solarSavingsDaily.innerText, '💰 Заощаджено: ~64.80 грн');
+
+    // Test scenario: Battery charged at night with 12.5 kWh, total grid import 12.90 kWh
+    card._calculateTariffs(12.90, 0, 1.2, 12.50);
+    assert.match(card._nodes.gridCostSplitVal.innerText, /🌙 12\.5/);
+
+    // Test dedicated day/night entities
+    card._config.tariffs.import_night_entity = 'sensor.grid_import_night';
+    card._config.tariffs.import_day_entity = 'sensor.grid_import_day';
+    card._hass = {
+      states: {
+        'sensor.grid_import_night': { state: '12.50', attributes: {} },
+        'sensor.grid_import_day': { state: '0.40', attributes: {} }
+      }
+    };
+    card._calculateTariffs(12.90, 0, 1.2);
+    assert.strictEqual(card._nodes.gridCostSplitVal.innerText, '(🌙 12.5 + ☀️ 0.4)');
+    assert.strictEqual(card._nodes.gridCostDailyVal.innerText, '~28.73 грн');
   });
 
   await t.test('battery telemetry displays temperature, remaining capacity, and cell delta unbalance', () => {

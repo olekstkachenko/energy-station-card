@@ -1279,9 +1279,19 @@ export class EnergyStationCardEditor extends HTMLElement {
                 ${Array.from({length: 24}, (_, i) => `<option value="${i}" ${(c.tariffs?.night_end_hour ?? 7) === i ? 'selected' : ''}>${String(i).padStart(2, '0')}:00</option>`).join('')}
               </select>
             </div>
+
+            <div class="field-row">
+              <label>☀️ Прямий сенсор денного імпорту (опціонально):</label>
+              <input type="text" id="tariffImportDayEntity" value="${c.tariffs?.import_day_entity || ''}" placeholder="sensor.daily_energy_day">
+            </div>
+
+            <div class="field-row">
+              <label>🌙 Прямий сенсор нічного імпорту (опціонально):</label>
+              <input type="text" id="tariffImportNightEntity" value="${c.tariffs?.import_night_entity || ''}" placeholder="sensor.daily_energy_night">
+            </div>
           </div>
           <div style="font-size: 11px; color: #94a3b8; margin-top: 10px; line-height: 1.4;">
-            💡 Картка автоматично ділить добовий імпорт з мережі на нічну (з 23:00 до 07:00) та денну зону за годинником або з історії Home Assistant.
+            💡 Картка автоматично ділить добовий імпорт з мережі на нічну (з 23:00 до 07:00) та денну зону з історії Home Assistant та енергії заряду АКБ, або використовує вказані вище окремі сенсори.
           </div>
         </div>
 
@@ -1816,6 +1826,8 @@ export class EnergyStationCardEditor extends HTMLElement {
     bindNumber('tariffExportRate', 'tariffs.export_rate');
     bindNumber('tariffNightStart', 'tariffs.night_start_hour');
     bindNumber('tariffNightEnd', 'tariffs.night_end_hour');
+    bindInput('tariffImportDayEntity', 'tariffs.import_day_entity');
+    bindInput('tariffImportNightEntity', 'tariffs.import_night_entity');
     bindCheckbox('tariffShowDailyCost', 'tariffs.show_daily_cost');
     bindCheckbox('tariffShowExportIncome', 'tariffs.show_export_income');
     bindCheckbox('tariffShowActiveBadge', 'tariffs.show_active_badge');

@@ -1,5 +1,5 @@
 console.info(
-  '%c⚡ Energy Station Card v1.4.7 Loaded ⚡',
+  '%c⚡ Energy Station Card v1.4.8 Loaded ⚡',
   'background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
 );
 
@@ -1946,7 +1946,7 @@ export class EnergyStationCard extends HTMLElement {
         <div class="es-header">
           <div class="es-header-title">
             <span>${c.title || 'Energy Station'}</span>
-            <span class="es-header-badge">PRO FLOW v1.4.7</span>
+            <span class="es-header-badge">PRO FLOW v1.4.8</span>
           </div>
           <div class="es-header-controls">
             <button class="es-header-pill-btn es-header-edit-btn" id="headerEditCard" title="${this._t('edit_card')}">
@@ -2818,8 +2818,9 @@ export class EnergyStationCard extends HTMLElement {
 
     this._fetchingHistoryForDate = todayStr;
     const now = new Date();
-    const dStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), nightEndHour, 0, 0);
-    const dEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), nightEndHour, 15, 0);
+    // Query history from today 00:00:00 to 07:05:00 to find cumulative reading at end of night
+    const dStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const dEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), nightEndHour, 5, 0);
 
     this._hass.callWS({
       type: 'history/history_during_period',
@@ -2830,8 +2831,15 @@ export class EnergyStationCard extends HTMLElement {
     }).then(res => {
       const records = res?.[gridEntity];
       if (records && records.length > 0) {
-        const val = parseFloat(records[0].state);
-        if (!isNaN(val) && val >= 0) {
+        let lastVal = null;
+        for (let i = records.length - 1; i >= 0; i--) {
+          const v = parseFloat(records[i].state);
+          if (!isNaN(v) && v >= 0) {
+            lastVal = v;
+            break;
+          }
+        }
+        if (lastVal !== null) {
           const storageKey = `es_tariff_split_${todayStr}`;
           let snap = {};
           if (typeof localStorage !== 'undefined') {
@@ -2840,19 +2848,21 @@ export class EnergyStationCard extends HTMLElement {
               if (cur) snap = JSON.parse(cur);
             } catch (e) {}
           }
-          snap.night_end = val;
+          snap.night_end = lastVal;
+          snap.night_end_hour = nightEndHour;
+          snap.night_end_verified = true;
           if (typeof localStorage !== 'undefined') {
             try { localStorage.setItem(storageKey, JSON.stringify(snap)); } catch (e) {}
           }
           if (this._hass) this._updateValues();
         }
       }
-    }).catch(() => {
-      // Quiet fail if HA history not enabled
+    }).catch(err => {
+      console.warn('Could not fetch night tariff history from HA:', err);
     });
   }
 
-  _calculateTariffs(gridImportKwh, gridExportKwh, solarDailyKwh) {
+  _calculateTariffs(gridImportKwh, gridExportKwh, solarDailyKwh, batChargeDailyKwh = 0) {
     const c = this._config || DEFAULT_CONFIG;
     const tCfg = c.tariffs || {};
     if (tCfg.enabled === false) {
@@ -2922,50 +2932,81 @@ export class EnergyStationCard extends HTMLElement {
       return;
     }
 
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const storageKey = `es_tariff_split_${todayStr}`;
-    let snapshot = {};
-    if (typeof localStorage !== 'undefined') {
-      try {
-        const stored = localStorage.getItem(storageKey);
-        if (stored) snapshot = JSON.parse(stored);
-      } catch (e) {}
+    let nightKwh = null;
+    let dayKwh = null;
+
+    // 1. Direct dedicated sensors for day/night tariff (if configured)
+    if (tCfg.import_night_entity || tCfg.import_day_entity) {
+      const sNight = tCfg.import_night_entity ? this._getEntityState(tCfg.import_night_entity) : null;
+      const sDay = tCfg.import_day_entity ? this._getEntityState(tCfg.import_day_entity) : null;
+      if (sNight && typeof sNight.val === 'number') nightKwh = sNight.val;
+      if (sDay && typeof sDay.val === 'number') dayKwh = sDay.val;
+
+      if (nightKwh !== null && dayKwh === null) {
+        dayKwh = Math.max(0, gridImportKwh - nightKwh);
+      } else if (dayKwh !== null && nightKwh === null) {
+        nightKwh = Math.max(0, gridImportKwh - dayKwh);
+      }
     }
 
-    let nightKwh = 0;
-    let dayKwh = 0;
+    // 2. Intelligent Auto-Split from gridImportKwh
+    if (nightKwh === null || dayKwh === null) {
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const storageKey = `es_tariff_split_${todayStr}`;
+      let snapshot = {};
+      if (typeof localStorage !== 'undefined') {
+        try {
+          const stored = localStorage.getItem(storageKey);
+          if (stored) snapshot = JSON.parse(stored);
+        } catch (e) {}
+      }
 
-    if (curHour < nightEnd) {
-      // Early morning (00:00 - 07:00): 100% night energy
-      nightKwh = gridImportKwh;
-      dayKwh = 0;
-      snapshot.night_end = gridImportKwh;
-      if (typeof localStorage !== 'undefined') {
-        try { localStorage.setItem(storageKey, JSON.stringify(snapshot)); } catch (e) {}
-      }
-    } else if (curHour >= nightEnd && curHour < nightStart) {
-      // Daytime (07:00 - 23:00)
-      if (typeof snapshot.night_end === 'number' && snapshot.night_end <= gridImportKwh) {
-        nightKwh = snapshot.night_end;
-        dayKwh = Math.max(0, gridImportKwh - nightKwh);
+      if (curHour < nightEnd) {
+        // Early morning (00:00 - 07:00): 100% night energy
+        nightKwh = gridImportKwh;
+        dayKwh = 0;
+        snapshot.ongoing_night_val = gridImportKwh;
+        snapshot.ongoing_night_hour = curHour;
+        snapshot.night_end = gridImportKwh;
+        snapshot.night_end_hour = curHour;
+        snapshot.night_end_verified = false;
+        if (typeof localStorage !== 'undefined') {
+          try { localStorage.setItem(storageKey, JSON.stringify(snapshot)); } catch (e) {}
+        }
+      } else if (curHour >= nightEnd && curHour < nightStart) {
+        // Daytime (07:00 - 23:00)
+        const isNightEndVerified = snapshot.night_end_verified === true;
+        const isNightEndNear7 = (typeof snapshot.night_end_hour === 'number' && snapshot.night_end_hour >= (nightEnd - 0.25));
+
+        if ((isNightEndVerified || isNightEndNear7) && typeof snapshot.night_end === 'number' && snapshot.night_end <= gridImportKwh) {
+          nightKwh = snapshot.night_end;
+          dayKwh = Math.max(0, gridImportKwh - nightKwh);
+        } else {
+          // Query HA history for 07:00 checkpoint
+          this._fetchNightEndFromHa(todayStr, nightEnd);
+
+          // Intelligent heuristic: if battery was charged from grid (e.g. 12.5 kWh), it happened at night!
+          let estimatedNight = gridImportKwh * Math.min(1.0, nightEnd / Math.max(curHour, 1));
+          if (typeof batChargeDailyKwh === 'number' && batChargeDailyKwh > 0.5) {
+            estimatedNight = Math.min(gridImportKwh, Math.max(estimatedNight, batChargeDailyKwh));
+          }
+          nightKwh = estimatedNight;
+          dayKwh = Math.max(0, gridImportKwh - nightKwh);
+        }
+        snapshot.day_end = gridImportKwh;
+        if (typeof localStorage !== 'undefined') {
+          try { localStorage.setItem(storageKey, JSON.stringify(snapshot)); } catch (e) {}
+        }
       } else {
-        // Query HA history for 07:00 checkpoint or fallback to time proportion
-        this._fetchNightEndFromHa(todayStr, nightEnd);
-        const nightPortion = Math.min(1.0, nightEnd / curHour);
-        nightKwh = gridImportKwh * nightPortion;
-        dayKwh = Math.max(0, gridImportKwh - nightKwh);
+        // Late night (23:00 - 24:00)
+        const nightEndVal = (typeof snapshot.night_end === 'number' && snapshot.night_end_verified)
+          ? snapshot.night_end
+          : (gridImportKwh * (nightEnd / curHour));
+        const dayEndVal = typeof snapshot.day_end === 'number' ? snapshot.day_end : gridImportKwh;
+        dayKwh = Math.max(0, dayEndVal - nightEndVal);
+        const extraNight = Math.max(0, gridImportKwh - dayEndVal);
+        nightKwh = nightEndVal + extraNight;
       }
-      snapshot.day_end = gridImportKwh;
-      if (typeof localStorage !== 'undefined') {
-        try { localStorage.setItem(storageKey, JSON.stringify(snapshot)); } catch (e) {}
-      }
-    } else {
-      // Late night (23:00 - 24:00)
-      const nightEndVal = typeof snapshot.night_end === 'number' ? snapshot.night_end : (gridImportKwh * (nightEnd / curHour));
-      const dayEndVal = typeof snapshot.day_end === 'number' ? snapshot.day_end : gridImportKwh;
-      dayKwh = Math.max(0, dayEndVal - nightEndVal);
-      const extraNight = Math.max(0, gridImportKwh - dayEndVal);
-      nightKwh = nightEndVal + extraNight;
     }
 
     const totalCost = (nightKwh * nightRate) + (dayKwh * dayRate);
@@ -3917,8 +3958,17 @@ export class EnergyStationCard extends HTMLElement {
     const sGridExport = this._getEntityState(c.grid?.export_daily_entity);
     this._nodes.gridExportDaily.innerText = sGridExport ? `${sGridExport.val.toFixed(2)} kWh` : '0.00 kWh';
 
+    const chgEnt = c.battery?.charge_daily_entity;
+    let sBatChg = this._getEntityState(chgEnt);
+    if (!sBatChg) {
+      sBatChg = this._getEntityState('sensor.inverter_12_kvt_daily_battery_charge') ||
+                this._getEntityState('sensor.deye_12k_inverter_daily_battery_charge') ||
+                this._getEntityState('sensor.daily_battery_charge');
+    }
+    const batDailyChargeKwh = (sBatChg && typeof sBatChg.val === 'number') ? sBatChg.val : 0;
+
     // Calculate & render dual-zone tariffs, grid costs and export income
-    this._calculateTariffs(sGridImport ? sGridImport.val : 0, sGridExport ? sGridExport.val : 0, dailyKwh);
+    this._calculateTariffs(sGridImport ? sGridImport.val : 0, sGridExport ? sGridExport.val : 0, dailyKwh, batDailyChargeKwh);
 
     // 7. Inverter Self-Consumption & Essential House Loads Balance
     const gridInKw = isImport ? absGridKw : 0;
@@ -4016,13 +4066,9 @@ export class EnergyStationCard extends HTMLElement {
       this._nodes.batMasterTempVal.innerText = `${masterTempNum.toFixed(1).replace('.', ',')}`;
     }
 
-    const chgEnt = c.battery?.charge_daily_entity;
-    let sBatChg = this._getEntityState(chgEnt);
+    // Battery daily charge and discharge
     if (!sBatChg) {
-      sBatChg = this._getEntityState('sensor.inverter_12_kvt_daily_battery_charge') ||
-                this._getEntityState('sensor.deye_12k_inverter_daily_battery_charge') ||
-                this._getEntityState('sensor.daily_battery_charge') ||
-                this._getEntityState('sensor.solarman_daily_battery_charge') ||
+      sBatChg = this._getEntityState('sensor.solarman_daily_battery_charge') ||
                 this._getEntityState('sensor.solarman_battery_charge_energy_day');
     }
 

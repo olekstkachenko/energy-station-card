@@ -228,6 +228,8 @@ export const DEFAULT_CONFIG = {
     export_rate: 5.30, // Зелений тариф / продаж в мережу (грн/кВт·год)
     night_start_hour: 23, // 23:00
     night_end_hour: 7,    // 07:00
+    import_day_entity: '',   // Опціональний прямий сенсор денного імпорту (кВт·год)
+    import_night_entity: '', // Опціональний прямий сенсор нічного імпорту (кВт·год)
     show_daily_cost: true, // показувати вартість біля імпорту з мережі
     show_export_income: true, // показувати дохід від експорту (Зелений тариф)
     show_active_badge: true, // показувати бейдж поточного активного тарифу
