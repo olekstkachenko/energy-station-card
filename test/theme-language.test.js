@@ -553,7 +553,7 @@ test('Energy Station Card - Theme & Language Customization', async (t) => {
 
     // 5. User Evening Grid Reconnection Scenario (No direct house meter, boiler OFF, grid port sensor 0 W / missing):
     // Inverter telemetry: 232.20 V, 16.10 A, Battery charging: 2.140 kW, Solar = 0.
-    // Card derives 3.365 kW street import from V * I * 0.90, restores 1.125 kW house load and 100 W inverter standby!
+    // Card derives 3.738 kW street import from V * I (matching utility meter 1:1), restores 1.498 kW house load and 100 W inverter standby!
     card._config.grid.external_power_entity = '';
     card._config.load.essential_power_entity = 'sensor.boiler_power';
     card._config.load.subloads = [{ name: 'Бойлер', entity: 'sensor.boiler_power' }];
@@ -568,9 +568,9 @@ test('Energy Station Card - Theme & Language Customization', async (t) => {
     };
     card._updateValues();
 
-    assert.strictEqual(domMap.gridPowerVal.innerText, '3.365 кВт');
+    assert.strictEqual(domMap.gridPowerVal.innerText, '3.738 кВт');
     assert.strictEqual(domMap.gridDirectionLabel.innerText, '→ Імпорт');
-    assert.strictEqual(domMap.essentialPowerVal.innerText, '1.125 кВт');
+    assert.strictEqual(domMap.essentialPowerVal.innerText, '1.498 кВт');
     assert.strictEqual(domMap.inverterSelfConsumptionVal.innerText, '100 Вт');
   });
 

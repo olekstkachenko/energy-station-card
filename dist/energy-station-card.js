@@ -4124,7 +4124,7 @@ function ad(e, t = {}) {
   });
 }
 console.info(
-  "%c⚡ Energy Station Panel v1.4.6 Loaded ⚡",
+  "%c⚡ Energy Station Panel v1.4.7 Loaded ⚡",
   "background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;"
 );
 class sd extends HTMLElement {
@@ -4357,9 +4357,7 @@ class sd extends HTMLElement {
           width: 100%;
           box-sizing: border-box;
           padding: 20px 24px 60px 24px;
-          display: flex;
-          justify-content: center;
-          align-items: flex-start;
+          display: block;
           transition: margin-right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
@@ -4368,8 +4366,7 @@ class sd extends HTMLElement {
           display: block;
           width: 100%;
           max-width: 1600px;
-          min-width: 0;
-          flex: 1 1 100%;
+          margin: 0 auto;
           box-sizing: border-box;
         }
 
@@ -4679,7 +4676,7 @@ class sd extends HTMLElement {
           <div>
             <div class="panel-brand-title">
               <span>Energy Station</span>
-              <span class="panel-brand-badge">PRO APP v1.4.6</span>
+              <span class="panel-brand-badge">PRO APP v1.4.7</span>
             </div>
           </div>
         </div>
@@ -5022,7 +5019,7 @@ class sd extends HTMLElement {
   }
 }
 console.info(
-  "%c⚡ Energy Station Card v1.4.6 Loaded ⚡",
+  "%c⚡ Energy Station Card v1.4.7 Loaded ⚡",
   "background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;"
 );
 const wo = {
@@ -5406,6 +5403,7 @@ class ld extends HTMLElement {
           border: 1px solid var(--es-border);
           position: relative;
           width: 100%;
+          min-width: 280px;
           max-width: var(--es-card-max-width, ${t.max_width || "1400px"});
           margin: 0 auto;
           padding: ${s[i.density] || "22px 28px 24px 28px"};
@@ -6866,7 +6864,7 @@ class ld extends HTMLElement {
         <div class="es-header">
           <div class="es-header-title">
             <span>${t.title || "Energy Station"}</span>
-            <span class="es-header-badge">PRO FLOW v1.4.6</span>
+            <span class="es-header-badge">PRO FLOW v1.4.7</span>
           </div>
           <div class="es-header-controls">
             <button class="es-header-pill-btn es-header-edit-btn" id="headerEditCard" title="${this._t("edit_card")}">
@@ -7897,7 +7895,7 @@ class ld extends HTMLElement {
       if (Ee) {
         const N = this._getEntityState((Sr = t.grid) == null ? void 0 : Sr.voltage_entity) || this._getEntityState((Cr = t.inverter) == null ? void 0 : Cr.voltage_entity) || this._getEntityState("sensor.inverter_12_kvt_grid_voltage") || this._getEntityState("sensor.esp32_deye_inverter_grid_voltage") || this._getEntityState("sensor.deye_12k_inverter_grid_voltage"), q = this._getEntityState(($r = t.inverter) == null ? void 0 : $r.current_entity) || this._getEntityState((Ir = t.grid) == null ? void 0 : Ir.current_entity) || this._getEntityState("sensor.inverter_12_kvt_grid_current") || this._getEntityState("sensor.inverter_12_kvt_current_l1") || this._getEntityState("sensor.esp32_deye_inverter_grid_current") || this._getEntityState("sensor.deye_12k_inverter_grid_current") || this._getEntityState("sensor.grid_current"), $ = N && typeof N.val == "number" && !isNaN(N.val) ? N.val : 0, _e = q && typeof q.val == "number" && !isNaN(q.val) ? q.val : 0, U = $ >= D && _e >= 0.5, be = ye > 0.1 && Me < 0.1;
         if (U) {
-          const ie = $ * _e * 0.9 / 1e3;
+          const ie = $ * _e / 1e3;
           (z < 0.05 || z < ye - 0.05 || ie > z + 0.3) && (z = ie, ce = !0, te = !1);
         } else if (be && (z < 0.05 || z < ye - 0.05)) {
           const ie = Math.max(Re, C), ne = ie > 0 ? ie : 0.8;

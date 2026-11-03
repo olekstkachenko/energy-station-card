@@ -1,5 +1,5 @@
 console.info(
-  '%c⚡ Energy Station Card v1.4.6 Loaded ⚡',
+  '%c⚡ Energy Station Card v1.4.7 Loaded ⚡',
   'background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
 );
 
@@ -485,6 +485,7 @@ export class EnergyStationCard extends HTMLElement {
           border: 1px solid var(--es-border);
           position: relative;
           width: 100%;
+          min-width: 280px;
           max-width: var(--es-card-max-width, ${c.max_width || '1400px'});
           margin: 0 auto;
           padding: ${densityPaddingMap[app.density] || '22px 28px 24px 28px'};
@@ -1945,7 +1946,7 @@ export class EnergyStationCard extends HTMLElement {
         <div class="es-header">
           <div class="es-header-title">
             <span>${c.title || 'Energy Station'}</span>
-            <span class="es-header-badge">PRO FLOW v1.4.6</span>
+            <span class="es-header-badge">PRO FLOW v1.4.7</span>
           </div>
           <div class="es-header-controls">
             <button class="es-header-pill-btn es-header-edit-btn" id="headerEditCard" title="${this._t('edit_card')}">
@@ -3824,8 +3825,8 @@ export class EnergyStationCard extends HTMLElement {
         const isChargingWithoutGen = (batInKw > 0.1) && (totalGenKw < 0.1);
 
         if (hasPhysicalMainsCurrent) {
-          // Mains AC power: P = V * I * cos(phi) (typical power factor is ~0.90)
-          const derivedMainsKw = (mainsV * mainsI * 0.90) / 1000.0;
+          // Mains AC power: P = V * I (matches physical utility meter reading directly)
+          const derivedMainsKw = (mainsV * mainsI) / 1000.0;
           if (absGridKw < 0.05 || absGridKw < (batInKw - 0.05) || derivedMainsKw > (absGridKw + 0.3)) {
             absGridKw = derivedMainsKw;
             isImport = true;

@@ -1,5 +1,5 @@
 console.info(
-  '%c⚡ Energy Station Panel v1.4.6 Loaded ⚡',
+  '%c⚡ Energy Station Panel v1.4.7 Loaded ⚡',
   'background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
 );
 
@@ -335,9 +335,7 @@ export class EnergyStationPanel extends HTMLElement {
           width: 100%;
           box-sizing: border-box;
           padding: 20px 24px 60px 24px;
-          display: flex;
-          justify-content: center;
-          align-items: flex-start;
+          display: block;
           transition: margin-right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
@@ -346,8 +344,7 @@ export class EnergyStationPanel extends HTMLElement {
           display: block;
           width: 100%;
           max-width: 1600px;
-          min-width: 0;
-          flex: 1 1 100%;
+          margin: 0 auto;
           box-sizing: border-box;
         }
 
@@ -657,7 +654,7 @@ export class EnergyStationPanel extends HTMLElement {
           <div>
             <div class="panel-brand-title">
               <span>Energy Station</span>
-              <span class="panel-brand-badge">PRO APP v1.4.6</span>
+              <span class="panel-brand-badge">PRO APP v1.4.7</span>
             </div>
           </div>
         </div>
