@@ -195,7 +195,7 @@ tariffs:
 ## 💻 Локальний запуск веб-застосунку
 
 ```bash
-cd C:\Users\Oleksandr\.gemini\antigravity-ide\scratch\energy-station-ha
+cd energy-station-ha
 npm run dev
 ```
 Відкрийте в браузері: [http://localhost:3000](http://localhost:3000)

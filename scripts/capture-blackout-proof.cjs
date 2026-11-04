@@ -5,7 +5,7 @@ const path = require('path');
 
 const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const userDataDir = path.join(process.env.TEMP, 'chrome_cap_' + Date.now());
-const artifactDir = 'C:\\Users\\Oleksandr\\.gemini\\antigravity-ide\\brain\\70724c5e-4a07-443b-8584-cb23f3824ff5';
+const artifactDir = process.env.ARTIFACT_DIR || path.join(__dirname, '../screenshots');
 
 const chrome = spawn(chromePath, [
   '--headless=new',
