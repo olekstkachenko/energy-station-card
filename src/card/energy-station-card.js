@@ -1,5 +1,5 @@
 console.info(
-  '%c⚡ Energy Station Card v1.5.0 Loaded ⚡',
+  '%c⚡ Energy Station Card v1.5.1 Loaded ⚡',
   'background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
 );
 
@@ -2244,30 +2244,182 @@ export class EnergyStationCard extends HTMLElement {
 }
 
 /* Responsive Desktop vs Mobile Breakpoints */
-@media (min-width: 768px) {
-  .es-view-3d #topGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  }
-  .es-view-3d #centerRow {
-    margin: 24px 0 !important;
-  }
-  .es-view-3d #inverterCard {
-    flex-direction: row !important;
-    text-align: left !important;
-    max-width: 640px !important;
-  }
-  .es-view-3d #inverterSpecsGrid {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  }
-  .es-view-3d #bottomGrid {
-    grid-template-columns: 7fr 5fr !important;
-  }
-  .es-view-3d #batteryRacksContainer {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
+/* Fluid Adaptive Layout based on Container Width */
+.es-view-3d #topGrid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+  gap: 14px !important;
 }
 
-@media (max-width: 767px) {
+.es-view-3d #centerRow {
+  margin: 16px 0 !important;
+}
+
+.es-view-3d #inverterCard {
+  display: flex !important;
+  flex-direction: row !important;
+  text-align: left !important;
+  max-width: 660px !important;
+  margin: 0 auto !important;
+}
+
+.es-view-3d #inverterSpecsGrid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(85px, 1fr)) !important;
+  gap: 6px !important;
+}
+
+.es-view-3d #bottomGrid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important;
+  gap: 14px !important;
+}
+
+/* Battery Racks Container: Auto-fit min 260px (Stacks if container < 540px, 2-col if wider) */
+.es-view-3d #batteryRacksContainer {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+
+/* Individual Rack Card & Robust Scoped Layout */
+.es-view-3d .rack-card {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 12px 14px !important;
+  background: rgba(15, 23, 42, 0.9) !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.es-view-3d .rack-card.rack-discharge {
+  border: 1px solid rgba(244, 63, 94, 0.5) !important;
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.25) !important;
+}
+
+.es-view-3d .rack-svg-wrapper {
+  width: 72px !important;
+  min-width: 72px !important;
+  max-width: 72px !important;
+  flex-shrink: 0 !important;
+}
+
+.es-view-3d .rack-telemetry-col {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  overflow: hidden !important;
+}
+
+.es-view-3d .rack-telemetry-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding-bottom: 4px !important;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.6) !important;
+  gap: 6px !important;
+}
+
+.es-view-3d .rack-title-text {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  color: #34d399 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.es-view-3d .rack-soc-badge {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  padding: 2px 7px !important;
+  border-radius: 4px !important;
+  background: rgba(6, 78, 59, 0.8) !important;
+  color: #6ee7b7 !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+  white-space: nowrap !important;
+}
+
+.es-view-3d .rack-power-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  font-size: 11.5px !important;
+  white-space: nowrap !important;
+}
+
+.es-view-3d .rack-power-val {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 13.5px !important;
+  font-weight: 800 !important;
+  color: #6ee7b7 !important;
+}
+
+.es-view-3d .rack-metrics-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 4px !important;
+  background: rgba(3, 7, 18, 0.8) !important;
+  padding: 6px 4px !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(51, 65, 85, 0.5) !important;
+  text-align: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.es-view-3d .rack-metric-cell {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+
+.es-view-3d .rack-metric-label {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 9.5px !important;
+  color: #94a3b8 !important;
+  white-space: nowrap !important;
+  line-height: 1.1 !important;
+}
+
+.es-view-3d .rack-metric-val {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  color: #e2e8f0 !important;
+  white-space: nowrap !important;
+  line-height: 1.2 !important;
+}
+
+.es-view-3d .rack-energy-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  font-size: 11px !important;
+  color: #94a3b8 !important;
+  white-space: nowrap !important;
+}
+
+.es-view-3d .rack-energy-val {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-weight: 700 !important;
+  color: #cbd5e1 !important;
+}
+
+@media (max-width: 640px) {
   .es-view-3d #flowSvg3d {
     display: none !important;
   }
@@ -2276,26 +2428,11 @@ export class EnergyStationCard extends HTMLElement {
     padding: 10px !important;
     gap: 12px !important;
   }
-  .es-view-3d #topGrid,
-  .es-view-3d #bottomGrid {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 12px !important;
-  }
-  .es-view-3d #centerRow {
-    margin: 8px 0 !important;
-  }
   .es-view-3d #inverterCard {
     flex-direction: column !important;
     text-align: center !important;
-    padding: 16px !important;
-    gap: 14px !important;
-  }
-  .es-view-3d #inverterSpecsGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-  .es-view-3d #batteryRacksContainer {
-    grid-template-columns: 1fr !important;
+    padding: 14px !important;
+    gap: 12px !important;
   }
 }
 
@@ -2377,7 +2514,7 @@ export class EnergyStationCard extends HTMLElement {
         <div class="es-header">
           <div class="es-header-title">
             <span>${c.title || 'Energy Station'}</span>
-            <span class="es-header-badge">PRO FLOW v1.5.0</span>
+            <span class="es-header-badge">PRO FLOW v1.5.1</span>
           </div>
           <div class="es-header-controls">
             <button class="es-header-pill-btn" id="headerViewToggle" title="${this._viewMode === '3d' ? this._t('view_toggle_to_2d') : this._t('view_toggle_to_3d')}">
@@ -2806,12 +2943,12 @@ export class EnergyStationCard extends HTMLElement {
             </div>
 
             <!-- TWO RACKS CONTAINER (PRO HARDWARE RENDER WITHOUT BLURRY TEXT) -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4" id="batteryRacksContainer">
+            <div id="batteryRacksContainer">
 
               <!-- RACK 1 -->
-              <div class="bg-slate-900/90 rounded-xl p-3 border border-emerald-500/30 shadow-lg flex items-center gap-3.5 transition-all" id="rack1Card">
-                <!-- 3D Rack 1 SVG (Realistic hardware without fake blurry text) -->
-                <div class="w-[72px] sm:w-[84px] flex-shrink-0 hardware-render">
+              <div class="rack-card card-3d-glow transition-all" id="rack1Card">
+                <!-- 3D Rack 1 SVG -->
+                <div class="rack-svg-wrapper hardware-render">
                   <svg viewBox="0 0 110 160" class="w-full h-auto">
                     <!-- Cabinet Frame -->
                     <polygon points="10,10 95,10 104,18 104,154 95,148 10,148" fill="#0f172a" stroke="#334155" stroke-width="1.5" />
@@ -2819,23 +2956,21 @@ export class EnergyStationCard extends HTMLElement {
                     <!-- Smoked Glass Door -->
                     <rect x="15" y="16" width="76" height="126" rx="4" fill="url(#rackDoorGlow1)" stroke="#10b981" stroke-width="1.2" id="rack1Door" />
 
-                    <!-- Top OLED Display Box (Clean, readable text without overlap) -->
+                    <!-- Top OLED Display Box -->
                     <rect x="22" y="22" width="62" height="34" rx="4" fill="#030712" stroke="#34d399" stroke-width="1.5" id="rack1ScreenBorder" />
                     <text x="53" y="37" font-family="'Orbitron', sans-serif" font-weight="900" font-size="14" fill="#34d399" text-anchor="middle" id="rack1SocDisplay">77%</text>
                     <text x="53" y="49" font-family="'JetBrains Mono', monospace" font-size="7" font-weight="700" fill="#a7f3d0" text-anchor="middle" id="rack1PowerDisplay">1.40 кВт ↓</text>
 
-                    <!-- Industrial Hardware Module Trays (Realistic Handles, Status LEDs, DC Terminals) -->
+                    <!-- Industrial Hardware Module Trays -->
                     <!-- Tray 1 -->
                     <rect x="20" y="62" width="66" height="16" rx="2" fill="#1e293b" stroke="#475569" stroke-width="0.8" />
                     <rect x="22" y="65" width="2.5" height="10" rx="1" fill="#94a3b8" />
                     <rect x="81.5" y="65" width="2.5" height="10" rx="1" fill="#94a3b8" />
-                    <!-- LED Cell Level Bar -->
                     <circle cx="30" cy="70" r="1.8" fill="#10b981" id="rack1Mod1Led" />
                     <rect x="36" y="68" width="5" height="4" rx="1" fill="#10b981" opacity="0.8" />
                     <rect x="43" y="68" width="5" height="4" rx="1" fill="#10b981" opacity="0.8" />
                     <rect x="50" y="68" width="5" height="4" rx="1" fill="#10b981" opacity="0.8" />
                     <rect x="57" y="68" width="5" height="4" rx="1" fill="#334155" />
-                    <!-- Cooling vents -->
                     <line x1="68" y1="68" x2="78" y2="68" stroke="#475569" stroke-width="1" />
                     <line x1="68" y1="72" x2="78" y2="72" stroke="#475569" stroke-width="1" />
 
@@ -2863,67 +2998,66 @@ export class EnergyStationCard extends HTMLElement {
                     <line x1="68" y1="108" x2="78" y2="108" stroke="#475569" stroke-width="1" />
                     <line x1="68" y1="112" x2="78" y2="112" stroke="#475569" stroke-width="1" />
 
-                    <!-- Bottom Master BMS Controller Hub -->
+                    <!-- Master BMS Unit at bottom -->
                     <rect x="20" y="122" width="66" height="16" rx="2" fill="#0b1329" stroke="#0284c7" stroke-width="1" />
                     <circle cx="28" cy="130" r="2.2" fill="#38bdf8" style="filter: drop-shadow(0 0 2px #38bdf8);" />
                     <circle cx="36" cy="130" r="2.2" fill="#10b981" />
-                    <!-- DC Power Studs (+ and -) -->
                     <circle cx="70" cy="130" r="2.8" fill="#ef4444" />
                     <circle cx="78" cy="130" r="2.8" fill="#0284c7" />
                   </svg>
                 </div>
 
                 <!-- Telemetry -->
-                <div class="flex-1 min-w-0 font-mono">
-                  <div class="flex items-center justify-between pb-1 border-b border-slate-800 gap-1">
-                    <span class="font-bold text-xs text-emerald-400 font-sans" id="rack1Title">Стійка 1 (АКБ 1)</span>
-                    <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 font-bold" id="rack1SocBadge">77%</span>
+                <div class="rack-telemetry-col">
+                  <div class="rack-telemetry-header">
+                    <span class="rack-title-text" id="rack1Title">Стійка 1 (АКБ 1)</span>
+                    <span class="rack-soc-badge" id="rack1SocBadge">77%</span>
                   </div>
 
-                  <div class="mt-2 space-y-1.5 text-xs">
-                    <div class="flex justify-between items-center">
-                      <span class="text-slate-400 text-xs font-sans">Потужність:</span>
-                      <span class="font-bold text-emerald-300 text-sm" id="rack1PowerVal">1.40 кВт ↓</span>
-                    </div>
+                  <div class="rack-power-row">
+                    <span style="color: #94a3b8;">Потужність:</span>
+                    <span class="rack-power-val" id="rack1PowerVal">1.40 кВт ↓</span>
+                  </div>
 
-                    <div class="grid grid-cols-3 gap-1 bg-slate-950/80 p-1.5 rounded-lg text-xs my-1 border border-slate-800 text-center">
-                      <div>
-                        <span class="text-slate-500 block text-[10px] font-sans">Напруга</span>
-                        <span class="text-slate-200 font-bold" id="rack1Volt">54.2 V</span>
-                      </div>
-                      <div>
-                        <span class="text-slate-500 block text-[10px] font-sans">Темп.</span>
-                        <span class="text-amber-300 font-bold" id="rack1Temp">39.2 °C</span>
-                      </div>
-                      <div>
-                        <span class="text-slate-500 block text-[10px] font-sans">Дельта</span>
-                        <span class="text-emerald-300 font-bold" id="rack1Delta">Δ13 mV</span>
-                      </div>
+                  <div class="rack-metrics-grid">
+                    <div class="rack-metric-cell">
+                      <span class="rack-metric-label">Напруга</span>
+                      <span class="rack-metric-val" id="rack1Volt">54.2 V</span>
                     </div>
+                    <div class="rack-metric-cell">
+                      <span class="rack-metric-label">Темп.</span>
+                      <span class="rack-metric-val" style="color: #fcd34d;" id="rack1Temp">39.2 °C</span>
+                    </div>
+                    <div class="rack-metric-cell">
+                      <span class="rack-metric-label">Дельта</span>
+                      <span class="rack-metric-val" style="color: #6ee7b7;" id="rack1Delta">Δ13 mV</span>
+                    </div>
+                  </div>
 
-                    <div class="flex justify-between items-center text-xs text-slate-400">
-                      <span class="font-sans">Запас енергії:</span>
-                      <span class="font-bold text-slate-200" id="rack1Kwh">~10.78 кВт·г</span>
-                    </div>
+                  <div class="rack-energy-row">
+                    <span>Запас енергії:</span>
+                    <span class="rack-energy-val" id="rack1Kwh">~10.78 кВт·г</span>
                   </div>
                 </div>
               </div>
 
               <!-- RACK 2 -->
-              <div class="bg-slate-900/90 rounded-xl p-3 border border-emerald-500/30 shadow-lg flex items-center gap-3.5 transition-all" id="rack2Card">
+              <div class="rack-card card-3d-glow transition-all" id="rack2Card">
                 <!-- 3D Rack 2 SVG -->
-                <div class="w-[72px] sm:w-[84px] flex-shrink-0 hardware-render">
+                <div class="rack-svg-wrapper hardware-render">
                   <svg viewBox="0 0 110 160" class="w-full h-auto">
+                    <!-- Cabinet Frame -->
                     <polygon points="10,10 95,10 104,18 104,154 95,148 10,148" fill="#0f172a" stroke="#334155" stroke-width="1.5" />
                     <polygon points="95,10 104,18 104,154 95,148" fill="#1e293b" />
-                    <rect x="15" y="16" width="76" height="126" rx="4" fill="url(#rackDoorGlow2)" stroke="#059669" stroke-width="1.2" id="rack2Door" />
+                    <!-- Smoked Glass Door -->
+                    <rect x="15" y="16" width="76" height="126" rx="4" fill="url(#rackDoorGlow2)" stroke="#10b981" stroke-width="1.2" id="rack2Door" />
 
-                    <!-- Top Display -->
-                    <rect x="22" y="22" width="62" height="34" rx="4" fill="#030712" stroke="#10b981" stroke-width="1.5" id="rack2ScreenBorder" />
+                    <!-- Top OLED Display Box -->
+                    <rect x="22" y="22" width="62" height="34" rx="4" fill="#030712" stroke="#34d399" stroke-width="1.5" id="rack2ScreenBorder" />
                     <text x="53" y="37" font-family="'Orbitron', sans-serif" font-weight="900" font-size="14" fill="#34d399" text-anchor="middle" id="rack2SocDisplay">72%</text>
                     <text x="53" y="49" font-family="'JetBrains Mono', monospace" font-size="7" font-weight="700" fill="#a7f3d0" text-anchor="middle" id="rack2PowerDisplay">1.79 кВт ↓</text>
 
-                    <!-- Trays with LED level bars (no fake illegible text) -->
+                    <!-- Industrial Hardware Module Trays -->
                     <!-- Tray 1 -->
                     <rect x="20" y="62" width="66" height="16" rx="2" fill="#1e293b" stroke="#475569" stroke-width="0.8" />
                     <rect x="22" y="65" width="2.5" height="10" rx="1" fill="#94a3b8" />
@@ -2960,7 +3094,7 @@ export class EnergyStationCard extends HTMLElement {
                     <line x1="68" y1="108" x2="78" y2="108" stroke="#475569" stroke-width="1" />
                     <line x1="68" y1="112" x2="78" y2="112" stroke="#475569" stroke-width="1" />
 
-                    <!-- Controller Hub -->
+                    <!-- Master BMS Unit at bottom -->
                     <rect x="20" y="122" width="66" height="16" rx="2" fill="#0b1329" stroke="#0284c7" stroke-width="1" />
                     <circle cx="28" cy="130" r="2.2" fill="#38bdf8" style="filter: drop-shadow(0 0 2px #38bdf8);" />
                     <circle cx="36" cy="130" r="2.2" fill="#10b981" />
@@ -2970,41 +3104,38 @@ export class EnergyStationCard extends HTMLElement {
                 </div>
 
                 <!-- Telemetry -->
-                <div class="flex-1 min-w-0 font-mono">
-                  <div class="flex items-center justify-between pb-1 border-b border-slate-800 gap-1">
-                    <span class="font-bold text-xs text-emerald-400 font-sans" id="rack2Title">Стійка 2 (АКБ 2)</span>
-                    <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 font-bold" id="rack2SocBadge">72%</span>
+                <div class="rack-telemetry-col">
+                  <div class="rack-telemetry-header">
+                    <span class="rack-title-text" id="rack2Title">Стійка 2 (АКБ 2)</span>
+                    <span class="rack-soc-badge" id="rack2SocBadge">72%</span>
                   </div>
 
-                  <div class="mt-2 space-y-1.5 text-xs">
-                    <div class="flex justify-between items-center">
-                      <span class="text-slate-400 text-xs font-sans">Потужність:</span>
-                      <span class="font-bold text-emerald-300 text-sm" id="rack2PowerVal">1.79 кВт ↓</span>
-                    </div>
+                  <div class="rack-power-row">
+                    <span style="color: #94a3b8;">Потужність:</span>
+                    <span class="rack-power-val" id="rack2PowerVal">1.79 кВт ↓</span>
+                  </div>
 
-                    <div class="grid grid-cols-3 gap-1 bg-slate-950/80 p-1.5 rounded-lg text-xs my-1 border border-slate-800 text-center">
-                      <div>
-                        <span class="text-slate-500 block text-[10px] font-sans">Напруга</span>
-                        <span class="text-slate-200 font-bold" id="rack2Volt">54.1 V</span>
-                      </div>
-                      <div>
-                        <span class="text-slate-500 block text-[10px] font-sans">Темп.</span>
-                        <span class="text-cyan-300 font-bold" id="rack2Temp">17.0 °C</span>
-                      </div>
-                      <div>
-                        <span class="text-slate-500 block text-[10px] font-sans">Дельта</span>
-                        <span class="text-amber-300 font-bold" id="rack2Delta">Δ27 mV</span>
-                      </div>
+                  <div class="rack-metrics-grid">
+                    <div class="rack-metric-cell">
+                      <span class="rack-metric-label">Напруга</span>
+                      <span class="rack-metric-val" id="rack2Volt">54.1 V</span>
                     </div>
+                    <div class="rack-metric-cell">
+                      <span class="rack-metric-label">Темп.</span>
+                      <span class="rack-metric-val" style="color: #6ee7b7;" id="rack2Temp">17.0 °C</span>
+                    </div>
+                    <div class="rack-metric-cell">
+                      <span class="rack-metric-label">Дельта</span>
+                      <span class="rack-metric-val" style="color: #fcd34d;" id="rack2Delta">Δ27 mV</span>
+                    </div>
+                  </div>
 
-                    <div class="flex justify-between items-center text-xs text-slate-400">
-                      <span class="font-sans">Запас енергії:</span>
-                      <span class="font-bold text-slate-200" id="rack2Kwh">~11.52 кВт·г</span>
-                    </div>
+                  <div class="rack-energy-row">
+                    <span>Запас енергії:</span>
+                    <span class="rack-energy-val" id="rack2Kwh">~11.52 кВт·г</span>
                   </div>
                 </div>
               </div>
-
             </div>
 
             <div class="mt-2.5 pt-2 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
@@ -4450,6 +4581,16 @@ export class EnergyStationCard extends HTMLElement {
         let hasAnyTurbineDaily = false;
         let hasAnyTurbineMonthly = false;
 
+        let liveWt1Kw = 0;
+        let liveWt1Rpm = null;
+        let liveWt1Daily = null;
+        let liveWt1Spinning = false;
+
+        let liveWt2Kw = 0;
+        let liveWt2Rpm = null;
+        let liveWt2Daily = null;
+        let liveWt2Spinning = false;
+
         for (let i = 0; i < count; i++) {
           const t = turbinesList[i] || {
             name: `Вітряк ${i + 1}`,
@@ -4549,6 +4690,18 @@ export class EnergyStationCard extends HTMLElement {
           // Individual Turbine Energy (День & Місяць)
           const sDaily = this._getEntityState(t.daily_energy_entity);
           const sMonthly = this._getEntityState(t.monthly_energy_entity);
+
+          if (i === 0) {
+            liveWt1Kw = formatted.kw;
+            liveWt1Rpm = (sRpm && typeof sRpm.val === 'number' && sRpm.val > 0) ? Math.round(sRpm.val) : null;
+            liveWt1Daily = (sDaily && typeof sDaily.val === 'number') ? sDaily.val : null;
+            liveWt1Spinning = isSpinning;
+          } else if (i === 1) {
+            liveWt2Kw = formatted.kw;
+            liveWt2Rpm = (sRpm && typeof sRpm.val === 'number' && sRpm.val > 0) ? Math.round(sRpm.val) : null;
+            liveWt2Daily = (sDaily && typeof sDaily.val === 'number') ? sDaily.val : null;
+            liveWt2Spinning = isSpinning;
+          }
 
           if (dailyVal) {
             dailyVal.innerText = (sDaily && typeof sDaily.val === 'number' && !isNaN(sDaily.val)) ? sDaily.val.toFixed(2) : '0.00';
@@ -5545,10 +5698,14 @@ export class EnergyStationCard extends HTMLElement {
       solarSavingsUah: ((typeof dailyKwh !== 'undefined' ? dailyKwh : 0)) * (c.tariffs?.day_rate || 4.32),
       pvStrings: (typeof pv3dTelemetry !== 'undefined' ? pv3dTelemetry : []),
       totalWindKw: (typeof totalWindKw !== 'undefined' ? totalWindKw : 0),
-      wt1Kw: (typeof turbine1Kw !== 'undefined' ? turbine1Kw : 0),
-      wt1Rpm: (typeof turbine1Rpm !== 'undefined' ? turbine1Rpm : 95),
-      wt2Kw: (typeof turbine2Kw !== 'undefined' ? turbine2Kw : 0),
-      wt2Rpm: (typeof turbine2Rpm !== 'undefined' ? turbine2Rpm : 0),
+      wt1Kw: (typeof liveWt1Kw !== 'undefined' ? liveWt1Kw : 0),
+      wt1Rpm: (typeof liveWt1Rpm !== 'undefined' ? liveWt1Rpm : null),
+      wt1Daily: (typeof liveWt1Daily !== 'undefined' ? liveWt1Daily : null),
+      wt1Spinning: Boolean(typeof liveWt1Spinning !== 'undefined' ? liveWt1Spinning : false),
+      wt2Kw: (typeof liveWt2Kw !== 'undefined' ? liveWt2Kw : 0),
+      wt2Rpm: (typeof liveWt2Rpm !== 'undefined' ? liveWt2Rpm : null),
+      wt2Daily: (typeof liveWt2Daily !== 'undefined' ? liveWt2Daily : null),
+      wt2Spinning: Boolean(typeof liveWt2Spinning !== 'undefined' ? liveWt2Spinning : false),
       windMonthlyKwh: (typeof totalTurbinesMonthly !== 'undefined' ? totalTurbinesMonthly : 0.7),
       isBlackout: !(typeof isGridConnected !== 'undefined' ? isGridConnected : true) || (gVoltNum < (c.grid?.voltage_threshold || 90)),
       gridKw: (typeof absGridKw !== 'undefined' ? absGridKw : 0),
@@ -6268,24 +6425,56 @@ export class EnergyStationCard extends HTMLElement {
     setText('windTotalVal', `${totalWind.toFixed(3)} ${data.unitStr}`);
     const windStatus = root.getElementById('windStatusText');
     if (windStatus) {
-      if (totalWind > 0.05) {
-        windStatus.innerText = this._language === 'en' ? `Generation · ${data.wt1Rpm || 180} RPM` : `Генерація · ${data.wt1Rpm || 180} RPM`;
+      const anyRpm = (data.wt1Rpm && data.wt1Rpm > 0) ? data.wt1Rpm : ((data.wt2Rpm && data.wt2Rpm > 0) ? data.wt2Rpm : null);
+      if (totalWind > 0.05 || data.wt1Spinning || data.wt2Spinning) {
+        windStatus.innerText = anyRpm ? (this._language === 'en' ? `Generating · ${anyRpm} RPM` : `Генерація · ${anyRpm} RPM`) : (this._language === 'en' ? 'Generating' : 'Генерація');
+        windStatus.style.color = '#67e8f9';
       } else {
-        windStatus.innerText = this._language === 'en' ? 'Calm · 95 RPM' : 'Штиль · 95 RPM';
+        windStatus.innerText = this._language === 'en' ? 'Calm' : 'Штиль';
+        windStatus.style.color = '#94a3b8';
       }
     }
-    setText('wt1Power', `${(data.wt1Kw || 0).toFixed(3)} ${data.unitStr}`);
-    setText('wt2Power', `${(data.wt2Kw || 0).toFixed(3)} ${data.unitStr}`);
-    setText('wt1Rpm', `${data.wt1Rpm || 95} rpm`);
-    setText('wt2Rpm', (data.wt2Kw || 0) > 0.005 ? `${data.wt2Rpm || 120} rpm` : (this._language === 'en' ? 'Calm' : 'Штиль'));
 
+    // Turbine 1 Pod (1500W)
+    setText('wt1Power', `${(data.wt1Kw || 0).toFixed(3)} ${data.unitStr}`);
+    const wt1RpmEl = root.getElementById('wt1Rpm');
+    if (wt1RpmEl) {
+      if (data.wt1Rpm && data.wt1Rpm > 0) {
+        wt1RpmEl.innerText = `${data.wt1Rpm} rpm`;
+        wt1RpmEl.style.color = '#22d3ee';
+      } else if (data.wt1Spinning || (data.wt1Kw || 0) > 0.005) {
+        wt1RpmEl.innerText = this._language === 'en' ? 'Gen' : 'Генерація';
+        wt1RpmEl.style.color = '#22d3ee';
+      } else {
+        wt1RpmEl.innerText = this._language === 'en' ? 'Calm' : 'Штиль';
+        wt1RpmEl.style.color = '#94a3b8';
+      }
+    }
+
+    // Turbine 2 Pod (Херсонець)
+    setText('wt2Power', `${(data.wt2Kw || 0).toFixed(3)} ${data.unitStr}`);
+    const wt2RpmEl = root.getElementById('wt2Rpm');
+    if (wt2RpmEl) {
+      if (data.wt2Rpm && data.wt2Rpm > 0) {
+        wt2RpmEl.innerText = `${data.wt2Rpm} rpm`;
+        wt2RpmEl.style.color = '#c084fc';
+      } else if (data.wt2Spinning || (data.wt2Kw || 0) > 0.005) {
+        wt2RpmEl.innerText = this._language === 'en' ? 'Gen' : 'Генерація';
+        wt2RpmEl.style.color = '#c084fc';
+      } else {
+        wt2RpmEl.innerText = this._language === 'en' ? 'Calm' : 'Штиль';
+        wt2RpmEl.style.color = '#94a3b8';
+      }
+    }
+
+    // Rotors dynamic spinning
     const rotor1 = root.getElementById('rotorSpin1');
     const rotor2 = root.getElementById('rotorSpin2');
     if (rotor1) {
-      rotor1.className = (data.wt1Kw || 0) > 0.5 ? 'rotor-spin-fast' : ((data.wt1Kw || 0) > 0.05 ? 'rotor-spin-normal' : 'rotor-spin-slow');
+      rotor1.className = data.wt1Spinning || (data.wt1Kw || 0) > 0.005 ? 'rotor-spin-normal' : 'rotor-spin-idle';
     }
     if (rotor2) {
-      rotor2.className = (data.wt2Kw || 0) > 0.3 ? 'rotor-spin-normal' : 'rotor-spin-slow';
+      rotor2.className = data.wt2Spinning || (data.wt2Kw || 0) > 0.005 ? 'rotor-spin-normal' : 'rotor-spin-idle';
     }
     const pulseWind = root.getElementById('pulseWind3d');
     if (pulseWind) {
@@ -6529,7 +6718,7 @@ export class EnergyStationCard extends HTMLElement {
     const delta = root.getElementById(`rack${rackNum}Delta`);
     const kwh = root.getElementById(`rack${rackNum}Kwh`);
 
-    if (card) card.className = 'bg-slate-900/90 rounded-xl p-3 border border-rose-500/50 hover:border-rose-400/80 transition-all shadow-lg flex items-center gap-3.5';
+    if (card) card.className = 'rack-card rack-discharge card-discharge-glow transition-all';
     if (door) {
       door.setAttribute('stroke', '#ef4444');
       door.setAttribute('fill', 'url(#rackDoorGlowRed)');
@@ -6580,7 +6769,7 @@ export class EnergyStationCard extends HTMLElement {
     const delta = root.getElementById(`rack${rackNum}Delta`);
     const kwh = root.getElementById(`rack${rackNum}Kwh`);
 
-    if (card) card.className = 'bg-slate-900/90 rounded-xl p-3 border border-emerald-500/30 shadow-lg flex items-center gap-3.5 transition-all';
+    if (card) card.className = 'rack-card card-3d-glow transition-all';
     if (door) {
       door.setAttribute('stroke', primaryColor);
       door.setAttribute('fill', doorGlowUrl);
