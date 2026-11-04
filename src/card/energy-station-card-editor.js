@@ -647,6 +647,13 @@ export class EnergyStationCardEditor extends HTMLElement {
               </select>
             </div>
             <div class="field-row">
+              <label>Режим відображення (View Mode):</label>
+              <select id="cardViewMode">
+                <option value="3d" ${c.view_mode !== 'schematic' ? 'selected' : ''}>🧊 3D Режим (3D Realistic Station)</option>
+                <option value="schematic" ${c.view_mode === 'schematic' ? 'selected' : ''}>⚡ 2D Схема (Cyber Schematic)</option>
+              </select>
+            </div>
+            <div class="field-row">
               <label>Тема оформлення (Theme):</label>
               <select id="themeMode">
                 <option value="dark" ${c.theme_mode !== 'light' ? 'selected' : ''}>🌙 Темна (Dark)</option>
@@ -1392,6 +1399,7 @@ export class EnergyStationCardEditor extends HTMLElement {
     };
 
     bindInput('title', 'title');
+    bindInput('cardViewMode', 'view_mode');
     bindInput('themeMode', 'theme_mode');
     bindInput('cardLanguage', 'language');
     root.getElementById('cardScale')?.addEventListener('input', (e) => {

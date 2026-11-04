@@ -1,5 +1,5 @@
 console.info(
-  '%c⚡ Energy Station Panel v1.4.9 Loaded ⚡',
+  '%c⚡ Energy Station Panel v1.5.0 Loaded ⚡',
   'background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
 );
 
@@ -654,12 +654,17 @@ export class EnergyStationPanel extends HTMLElement {
           <div>
             <div class="panel-brand-title">
               <span>Energy Station</span>
-              <span class="panel-brand-badge">PRO APP v1.4.9</span>
+              <span class="panel-brand-badge">PRO APP v1.5.0</span>
             </div>
           </div>
         </div>
 
         <div class="panel-controls">
+          <!-- 3D / 2D View Toggle in top bar -->
+          <button class="panel-pill-btn" id="btnPanelViewToggle" title="Змінити режим 3D / 2D">
+            ${(this._cardNode?._viewMode || this._config?.view_mode) === 'schematic' ? '⚡ 2D Схема' : '🧊 3D Режим'}
+          </button>
+
           <!-- Zoom Controls -->
           <div style="display: flex; align-items: center; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 2px 4px; gap: 2px;">
             <button class="panel-pill-btn" id="btnZoomOut" style="border: none; background: transparent; padding: 3px 8px; font-weight: 800;">−</button>
@@ -925,6 +930,19 @@ export class EnergyStationPanel extends HTMLElement {
       this._config = newConfig;
       if (this._cardNode) this._cardNode.setConfig(this._config);
       this._saveConfig();
+    });
+
+    // 3D / 2D View Toggle in top bar
+    root.getElementById('btnPanelViewToggle')?.addEventListener('click', () => {
+      const current = this._cardNode?._viewMode || (this._config?.view_mode || '3d');
+      const target = current === '3d' ? 'schematic' : '3d';
+      if (this._cardNode && typeof this._cardNode._toggleViewMode === 'function') {
+        this._cardNode._toggleViewMode(target);
+      }
+      this._config.view_mode = target;
+      this._saveConfig();
+      const btn = root.getElementById('btnPanelViewToggle');
+      if (btn) btn.innerHTML = target === 'schematic' ? '⚡ 2D Схема' : '🧊 3D Режим';
     });
 
     // Zoom buttons in top bar
