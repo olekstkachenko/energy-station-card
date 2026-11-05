@@ -1,5 +1,5 @@
 console.info(
-  '%c⚡ Energy Station Card v1.5.1 Loaded ⚡',
+  '%c⚡ Energy Station Card v1.5.2 Loaded ⚡',
   'background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
 );
 
@@ -414,9 +414,13 @@ export class EnergyStationCard extends HTMLElement {
     const view3d = this.shadowRoot?.getElementById('realistic3dView');
     const viewSchematic = this.shadowRoot?.getElementById('schematicView');
     const toggleBtn = this.shadowRoot?.getElementById('headerViewToggle');
+    const flowCanvas = this.shadowRoot?.getElementById('energyFlowCanvas');
+    const batBadges = this.shadowRoot?.getElementById('batBranchBadgesContainer');
 
     if (view3d) view3d.style.display = is3d ? 'block' : 'none';
     if (viewSchematic) viewSchematic.style.display = is3d ? 'none' : 'block';
+    if (flowCanvas) flowCanvas.style.display = is3d ? 'none' : 'block';
+    if (batBadges) batBadges.style.display = is3d ? 'none' : 'block';
     if (toggleBtn) {
       toggleBtn.innerHTML = `<span>${is3d ? '🧊 3D' : '⚡ 2D'}</span>`;
       toggleBtn.title = is3d ? this._t('view_toggle_to_2d') : this._t('view_toggle_to_3d');
@@ -2419,12 +2423,17 @@ export class EnergyStationCard extends HTMLElement {
   color: #cbd5e1 !important;
 }
 
-@media (max-width: 640px) {
+.energy-station-container {
+  container-type: inline-size;
+}
+
+@media (max-width: 768px) {
   .es-view-3d #flowSvg3d {
     display: none !important;
   }
-  .es-view-3d .es-3d-container {
+  .es-view-3d #stationContainer {
     min-height: auto !important;
+    height: auto !important;
     padding: 10px !important;
     gap: 12px !important;
   }
@@ -2433,6 +2442,32 @@ export class EnergyStationCard extends HTMLElement {
     text-align: center !important;
     padding: 14px !important;
     gap: 12px !important;
+  }
+  .es-view-3d #inverterSpecsGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
+  }
+}
+
+@container (max-width: 680px) {
+  .es-view-3d #flowSvg3d {
+    display: none !important;
+  }
+  .es-view-3d #stationContainer {
+    min-height: auto !important;
+    height: auto !important;
+    padding: 10px !important;
+    gap: 12px !important;
+  }
+  .es-view-3d #inverterCard {
+    flex-direction: column !important;
+    text-align: center !important;
+    padding: 14px !important;
+    gap: 12px !important;
+  }
+  .es-view-3d #inverterSpecsGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
   }
 }
 
@@ -2443,7 +2478,7 @@ export class EnergyStationCard extends HTMLElement {
       <div class="energy-station-container ${this._themeMode === 'light' ? 'theme-light' : ''}">
         
         <!-- FULL CARD DYNAMIC ENERGY FLOW NETWORK -->
-        <svg id="energyFlowCanvas" class="es-energy-flow-canvas">
+        <svg id="energyFlowCanvas" class="es-energy-flow-canvas" style="${this._viewMode === '3d' ? 'display: none;' : ''}">
           <!-- 1. Grid <-> Inverter Path -->
           <path id="pathGridInvBase" class="flow-track" />
           <path id="pathGridInvFlow" class="flow-pulse flow-grid" />
@@ -2514,7 +2549,7 @@ export class EnergyStationCard extends HTMLElement {
         <div class="es-header">
           <div class="es-header-title">
             <span>${c.title || 'Energy Station'}</span>
-            <span class="es-header-badge">PRO FLOW v1.5.1</span>
+            <span class="es-header-badge">PRO FLOW v1.5.2</span>
           </div>
           <div class="es-header-controls">
             <button class="es-header-pill-btn" id="headerViewToggle" title="${this._viewMode === '3d' ? this._t('view_toggle_to_2d') : this._t('view_toggle_to_3d')}">
@@ -2774,8 +2809,8 @@ export class EnergyStationCard extends HTMLElement {
           <div class="glass-card rounded-2xl p-4 md:p-5 card-3d-glow border-sky-500/20 md:col-span-2 lg:col-span-1" id="cardGrid">
             <div class="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-slate-800/80">
               <span class="text-xs uppercase tracking-wider font-bold text-sky-400">Електромережа</span>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex-shrink-0" id="gridStatusBadge">
-                Живлення стабільне
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 flex-shrink-0" id="gridStatusBadge">
+                --
               </span>
             </div>
 
@@ -2796,12 +2831,12 @@ export class EnergyStationCard extends HTMLElement {
               </div>
 
               <div class="flex-1 min-w-0">
-                <div class="text-2xl sm:text-3xl font-extrabold text-sky-300 font-mono leading-tight" id="gridPowerVal3d">5.940 кВт</div>
-                <div class="text-xs text-sky-400 font-bold mb-1.5 truncate" id="gridFlowDir3d">→ ІМПОРТ З МЕРЕЖІ</div>
+                <div class="text-2xl sm:text-3xl font-extrabold text-sky-300 font-mono leading-tight" id="gridPowerVal3d">0.000 кВт</div>
+                <div class="text-xs text-slate-400 font-bold mb-1.5 truncate" id="gridFlowDir3d">--</div>
                 
                 <div class="text-xs text-slate-300 font-mono flex items-center justify-between bg-slate-900/80 p-1.5 rounded mb-2 border border-slate-800">
-                  <span>Напруга: <b class="text-slate-100" id="gridVolt3d">204.2 V</b></span>
-                  <span>Струм: <b class="text-slate-100" id="gridCurrent3d">29.1 A</b></span>
+                  <span>Напруга: <b class="text-slate-100" id="gridVolt3d">0.0 V</b></span>
+                  <span>Струм: <b class="text-slate-100" id="gridCurrent3d">0.0 A</b></span>
                 </div>
 
                 <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800 text-xs">
@@ -2838,9 +2873,9 @@ export class EnergyStationCard extends HTMLElement {
                 <rect x="40" y="72" width="100" height="58" rx="5" fill="#030712" />
                 
                 <!-- Display Power Readout -->
-                <text x="90" y="91" font-family="'JetBrains Mono', monospace" font-weight="800" font-size="13" fill="#38bdf8" text-anchor="middle" id="invScreenPower">5.94 kW</text>
+                <text x="90" y="91" font-family="'JetBrains Mono', monospace" font-weight="800" font-size="13" fill="#38bdf8" text-anchor="middle" id="invScreenPower">0.00 kW</text>
                 <!-- Display Status line with proper font size and letter-spacing -->
-                <text x="90" y="106" font-family="'Inter', sans-serif" font-weight="700" font-size="8" fill="#34d399" text-anchor="middle" letter-spacing="0.5" id="invScreenStatus">ON-GRID · CHARGE</text>
+                <text x="90" y="106" font-family="'Inter', sans-serif" font-weight="700" font-size="8" fill="#38bdf8" text-anchor="middle" letter-spacing="0.5" id="invScreenStatus">--</text>
                 
                 <!-- LED Indicators -->
                 <circle cx="60" cy="119" r="3" fill="#10b981" id="invScreenLed" style="filter: drop-shadow(0 0 3px #10b981);" />
@@ -2873,19 +2908,19 @@ export class EnergyStationCard extends HTMLElement {
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono w-full" id="inverterSpecsGrid">
                 <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-800 text-center">
                   <span class="text-slate-400 text-[10px] block mb-0.5 font-sans">Температура AC</span>
-                  <span class="font-bold text-amber-300 text-sm">41.2 °C</span>
+                  <span class="font-bold text-amber-300 text-sm" id="invAcTemp3d">-- °C</span>
                 </div>
                 <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-800 text-center">
                   <span class="text-slate-400 text-[10px] block mb-0.5 font-sans">Температура DC</span>
-                  <span class="font-bold text-amber-300 text-sm">34.5 °C</span>
+                  <span class="font-bold text-amber-300 text-sm" id="invDcTemp3d">-- °C</span>
                 </div>
                 <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-800 text-center">
                   <span class="text-slate-400 text-[10px] block mb-0.5 font-sans">Частота мережі</span>
-                  <span class="font-bold text-sky-300 text-sm">50.00 Hz</span>
+                  <span class="font-bold text-sky-300 text-sm" id="invFreq3d">-- Hz</span>
                 </div>
                 <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-800 text-center">
                   <span class="text-slate-400 text-[10px] block mb-0.5 font-sans">⚡ Власне</span>
-                  <span class="font-bold text-orange-400 text-sm">100 Вт</span>
+                  <span class="font-bold text-orange-400 text-sm" id="invSelf3d">-- Вт</span>
                 </div>
               </div>
 
@@ -2920,7 +2955,7 @@ export class EnergyStationCard extends HTMLElement {
               <div class="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-900 p-3 rounded-xl border border-emerald-500/30 mb-3 flex flex-wrap items-center justify-between gap-3 transition-all" id="batPredictionBanner">
                 <div>
                   <div class="text-[10px] text-slate-400 uppercase font-bold tracking-wider" id="batPredictionTitle">РОЗРАХУНОК ДО ПОВНОЇ ЗАРЯДКИ:</div>
-                  <div class="text-xl md:text-2xl font-black text-emerald-300 font-mono tracking-tight transition-all" id="batTimerVal">~ 02:45:10</div>
+                  <div class="text-xl md:text-2xl font-black text-emerald-300 font-mono tracking-tight transition-all" id="batTimerVal">--</div>
                   <div class="text-xs text-slate-400 mt-0.5" id="batSubTimer">
                     Запас енергії: <b>~16.42 кВт·год</b> (автономність будинку ~ 16.5 год)
                   </div>
@@ -2928,11 +2963,11 @@ export class EnergyStationCard extends HTMLElement {
                 <div class="flex items-center gap-3 text-xs font-mono text-slate-300 border-t sm:border-t-0 sm:border-l border-slate-800 pt-1.5 sm:pt-0 sm:pl-3">
                   <div>
                     <span class="text-[10px] text-slate-500 block">Шина</span>
-                    <span class="font-bold text-slate-200" id="batBusVolt3d">54.64 V</span>
+                    <span class="font-bold text-slate-200" id="batBusVolt3d">-- V</span>
                   </div>
                   <div>
                     <span class="text-[10px] text-slate-500 block">Струм</span>
-                    <span class="font-bold text-emerald-300 transition-colors" id="batBusCurrent3d">-7.24 A</span>
+                    <span class="font-bold text-slate-400 transition-colors" id="batBusCurrent3d">-- A</span>
                   </div>
                   <div>
                     <span class="text-[10px] text-slate-500 block">Темп</span>
@@ -3184,8 +3219,8 @@ export class EnergyStationCard extends HTMLElement {
                   </div>
                 </div>
                 <div class="text-right font-mono flex-shrink-0">
-                  <div class="text-sm font-bold text-sky-300" id="boilerVal3d">0.950 кВт</div>
-                  <div class="text-[10px] text-emerald-400 font-sans" id="boilerStatusBadge3d">Нагрів активний</div>
+                  <div class="text-sm font-bold text-sky-300" id="boilerVal3d">0.000 кВт</div>
+                  <div class="text-[10px] text-slate-400 font-sans" id="boilerStatusBadge3d" style="white-space: nowrap !important;">--</div>
                 </div>
               </div>
 
@@ -3442,7 +3477,7 @@ export class EnergyStationCard extends HTMLElement {
         </div>
 
         <!-- Floating Badges for Battery Branches (Rendered directly over energyFlowCanvas conduits) -->
-        <div class="es-bat-branch-badges" id="batBranchBadgesContainer">
+        <div class="es-bat-branch-badges" id="batBranchBadgesContainer" style="${this._viewMode === '3d' ? 'display: none;' : ''}">
           <div class="es-bat-branch-badge es-mono" id="batBranchBadge_1"></div>
           <div class="es-bat-branch-badge es-mono" id="batBranchBadge_2"></div>
           <div class="es-bat-branch-badge es-mono" id="batBranchBadge_3"></div>
@@ -4005,6 +4040,11 @@ export class EnergyStationCard extends HTMLElement {
   _bindInteractions() {
     const root = this.shadowRoot;
     const c = this._config || DEFAULT_CONFIG;
+
+    root.getElementById('headerViewToggle')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._toggleViewMode();
+    });
 
     root.getElementById('headerEditCard')?.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -5071,10 +5111,12 @@ export class EnergyStationCard extends HTMLElement {
     const sellingEnabled = c.grid?.selling_enabled === true;
     const thresholdKw = (c.grid?.min_power_threshold !== undefined ? c.grid.min_power_threshold : 50) / 1000;
 
-    // Detect if Grid is Connected (Mains voltage or status)
+    // Detect if Grid is Connected (Mains voltage, status, frequency, or inverter mode)
     const sGridStatus = this._getEntityState(c.grid?.status_entity);
     const sGridVolt = this._getEntityState(c.grid?.voltage_entity || c.inverter?.voltage_entity);
     const voltThreshold = c.grid?.voltage_threshold !== undefined ? c.grid.voltage_threshold : 90;
+    const sGridFreq = this._getEntityState(c.inverter?.frequency_entity || c.grid?.frequency_entity);
+    const sInvStatus = this._getEntityState(c.inverter?.status_entity);
 
     let isGridConnected = true;
     if (sGridStatus) {
@@ -5086,6 +5128,12 @@ export class EnergyStationCard extends HTMLElement {
       if (sGridVolt.val < voltThreshold) {
         isGridConnected = false;
       }
+    } else if (sGridFreq && typeof sGridFreq.val === 'number' && !isNaN(sGridFreq.val) && sGridFreq.val < 10) {
+      isGridConnected = false;
+    }
+
+    if (sInvStatus && sInvStatus.raw && /(eps|island|off-grid|standby|fault|no grid)/i.test(String(sInvStatus.raw))) {
+      isGridConnected = false;
     }
 
     const isNightOrNoGen = (totalGenKw < 0.15);
@@ -5682,8 +5730,16 @@ export class EnergyStationCard extends HTMLElement {
     this._updateControlSliders();
 
     // Update live 3D realistic view elements safely
-    const gVoltNum = (typeof sGridVolt !== 'undefined' && sGridVolt?.val) || (typeof sMainsVolt !== 'undefined' && sMainsVolt?.val) || (typeof sVolt !== 'undefined' && sVolt?.val) || 220;
-    const gCurrNum = (typeof sCurrent !== 'undefined' && sCurrent?.val) || (typeof sMainsCurr !== 'undefined' && sMainsCurr?.val) || 0;
+    const gVoltNum = (sGridVolt && typeof sGridVolt.val === 'number' && !isNaN(sGridVolt.val))
+      ? sGridVolt.val
+      : ((typeof sMainsVolt !== 'undefined' && sMainsVolt && typeof sMainsVolt.val === 'number' && !isNaN(sMainsVolt.val))
+          ? sMainsVolt.val
+          : (isGridConnected ? 220 : 0));
+    const gCurrNum = (sCurrent && typeof sCurrent.val === 'number' && !isNaN(sCurrent.val))
+      ? sCurrent.val
+      : ((typeof sMainsCurr !== 'undefined' && sMainsCurr && typeof sMainsCurr.val === 'number' && !isNaN(sMainsCurr.val))
+          ? sMainsCurr.val
+          : 0);
     const acT = (typeof sAcTemp !== 'undefined' && sAcTemp?.val) || (typeof acTempNum !== 'undefined' ? acTempNum : 41.2);
     const dcT = (typeof sDcTemp !== 'undefined' && sDcTemp?.val) || (typeof dcTempNum !== 'undefined' ? dcTempNum : 34.5);
     const frq = (typeof sFreq !== 'undefined' && sFreq?.val) || 50.0;
@@ -5707,7 +5763,7 @@ export class EnergyStationCard extends HTMLElement {
       wt2Daily: (typeof liveWt2Daily !== 'undefined' ? liveWt2Daily : null),
       wt2Spinning: Boolean(typeof liveWt2Spinning !== 'undefined' ? liveWt2Spinning : false),
       windMonthlyKwh: (typeof totalTurbinesMonthly !== 'undefined' ? totalTurbinesMonthly : 0.7),
-      isBlackout: !(typeof isGridConnected !== 'undefined' ? isGridConnected : true) || (gVoltNum < (c.grid?.voltage_threshold || 90)),
+      isBlackout: !isGridConnected || (gVoltNum < (c.grid?.voltage_threshold || 90)),
       gridKw: (typeof absGridKw !== 'undefined' ? absGridKw : 0),
       isImport: Boolean(typeof isImport !== 'undefined' ? isImport : true),
       isExport: Boolean(typeof isExport !== 'undefined' ? isExport : false),
@@ -5753,6 +5809,7 @@ export class EnergyStationCard extends HTMLElement {
   }
 
   _updateFlowPaths() {
+    if (this._viewMode === '3d') return;
     try {
       const container = this.shadowRoot?.querySelector('.energy-station-container');
       if (!container) return;
@@ -6169,6 +6226,7 @@ export class EnergyStationCard extends HTMLElement {
   }
 
   _updateFlowAnimations(gridKw, isExport, isImport, solarKw, essentialKw, batKw, isCharging, isDischarging, carKw, batModulesData = [], nonEssKw = 0, subloadsKw = 0, auxKw = 0) {
+    if (this._viewMode === '3d') return;
     const c = this._config || DEFAULT_CONFIG;
     const animEnabled = c.animations?.enabled !== false;
     const baseSpeed = c.animations?.speed || 1.2;
@@ -6519,8 +6577,8 @@ export class EnergyStationCard extends HTMLElement {
         }
       }
     }
-    setText('gridVolt3d', `${(data.gridVolt || 220).toFixed(1)} V`);
-    setText('gridCurrent3d', `${(data.gridCurrent || 0).toFixed(1)} A`);
+    setText('gridVolt3d', `${isBlackout ? '0.0' : (data.gridVolt !== undefined ? data.gridVolt : 220).toFixed(1)} V`);
+    setText('gridCurrent3d', `${isBlackout ? '0.0' : (data.gridCurrent || 0).toFixed(1)} A`);
 
     // 4. Inverter Card & LCD Display
     const invScreenLed = root.getElementById('invScreenLed');

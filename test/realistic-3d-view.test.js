@@ -182,12 +182,46 @@ test('Energy Station Card - 3D Realistic View & Blackout Semantics', async (t) =
     assert.strictEqual(dom.invScreenStatus.fill, '#fb7185');
     assert.strictEqual(dom.invScreenLed.fill, '#ef4444');
 
+    // Grid shows offline / blackout
+    assert.match(dom.gridStatusBadge.innerText, /Мережа знеструмлена/);
+    assert.strictEqual(dom.gridPowerVal3d.innerText, '0.000 кВт');
+    assert.strictEqual(dom.gridVolt3d.innerText, '0.0 V');
+    assert.strictEqual(dom.gridCurrent3d.innerText, '0.0 A');
+
     // Battery enters Red Discharge & Autonomy Timer
     assert.match(dom.cardBattery.className, /card-discharge-glow/);
     assert.strictEqual(dom.batMasterPower.innerText, '1.150 кВт ↑ (РОЗРЯД)');
     assert.strictEqual(dom.batPredictionTitle.innerText, 'ОЧІКУВАНА АВТОНОМІЯ (ДО РОЗРЯДУ):');
     assert.match(dom.batTimerVal.innerText, /год/);
     assert.strictEqual(dom.boilerStatusBadge3d.innerText, 'Вимкнено для економії');
+  });
+
+  await t.test('3D View hides 2D energyFlowCanvas and battery badges', () => {
+    const card = new EnergyStationCard();
+    card._config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    card._viewMode = '3d';
+
+    const dom = {
+      realistic3dView: createMockNode(),
+      schematicView: createMockNode(),
+      headerViewToggle: createMockNode(),
+      energyFlowCanvas: createMockNode(),
+      batBranchBadgesContainer: createMockNode()
+    };
+    card.shadowRoot.getElementById = (id) => dom[id] || null;
+
+    card._applyViewMode();
+    assert.strictEqual(dom.realistic3dView.style.display, 'block');
+    assert.strictEqual(dom.schematicView.style.display, 'none');
+    assert.strictEqual(dom.energyFlowCanvas.style.display, 'none');
+    assert.strictEqual(dom.batBranchBadgesContainer.style.display, 'none');
+
+    // Toggle to schematic
+    card._toggleViewMode('schematic');
+    assert.strictEqual(dom.realistic3dView.style.display, 'none');
+    assert.strictEqual(dom.schematicView.style.display, 'block');
+    assert.strictEqual(dom.energyFlowCanvas.style.display, 'block');
+    assert.strictEqual(dom.batBranchBadgesContainer.style.display, 'block');
   });
 
 });
