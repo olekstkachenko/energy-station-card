@@ -208,7 +208,7 @@ test('Energy Station Card - Theme & Language Customization', async (t) => {
 
     // Test scenario: Battery charged at night with 12.5 kWh, total grid import 12.90 kWh
     card._calculateTariffs(12.90, 0, 1.2, 12.50);
-    assert.match(card._nodes.gridCostSplitVal.innerText, /🌙 (12\.5|12\.9)/);
+    assert.match(card._nodes.gridCostSplitVal.innerText, /🌙 12\.5/);
 
     // Test dedicated day/night entities
     card._config.tariffs.import_night_entity = 'sensor.grid_import_night';

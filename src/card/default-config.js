@@ -4,7 +4,6 @@
 export const DEFAULT_CONFIG = {
   title: 'Energy Station',
   card_style: 'full', // 'full' | 'compact'
-  view_mode: '3d', // '3d' (3D Реалістичний макет обладнання) | 'schematic' (2D Кібер-схема)
   theme_mode: 'dark', // 'dark' | 'light'
   language: 'uk', // 'uk' | 'en'
   card_scale: 1.0, // Масштаб картки: 0.7 - 2.0
