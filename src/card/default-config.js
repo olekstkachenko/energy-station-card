@@ -3,6 +3,7 @@
  */
 export const DEFAULT_CONFIG = {
   title: 'Energy Station',
+  view_mode: '3d', // '3d' | '2d'
   card_style: 'full', // 'full' | 'compact'
   theme_mode: 'dark', // 'dark' | 'light'
   language: 'uk', // 'uk' | 'en'
