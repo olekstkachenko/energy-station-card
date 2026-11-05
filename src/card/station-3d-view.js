@@ -695,8 +695,18 @@ export function render3DStation(config, t) {
   `;
 }
 
+function setElementClass(el, cls) {
+  if (!el) return;
+  if (typeof el.setAttribute === 'function') {
+    el.setAttribute('class', cls);
+  }
+  try {
+    el.className = cls;
+  } catch (e) {}
+}
+
 export function update3DStation(shadowRoot, data, t) {
-  if (!shadowRoot) return;
+  if (!shadowRoot || !data) return;
 
   const getEl = (id) => shadowRoot.getElementById(id);
 
@@ -743,7 +753,7 @@ export function update3DStation(shadowRoot, data, t) {
 
   const rotorEl = getEl('windRotor3D');
   if (rotorEl) {
-    rotorEl.className = data.windPowerKw > 0.005 ? 'rotor-spinning' : 'rotor-idle';
+    setElementClass(rotorEl, data.windPowerKw > 0.005 ? 'rotor-spinning' : 'rotor-idle');
   }
 
   const turb1P = getEl('turb1Power3D');
@@ -786,7 +796,7 @@ export function update3DStation(shadowRoot, data, t) {
     }
     if (gridDotEl) {
       gridDotEl.style.background = '#ef4444';
-      gridDotEl.className = 'es-3d-dot beacon-light';
+      setElementClass(gridDotEl, 'es-3d-dot beacon-light');
     }
     if (gridBeaconEl) gridBeaconEl.style.display = 'block';
     if (flowGridEl) flowGridEl.style.display = 'none';
@@ -797,7 +807,7 @@ export function update3DStation(shadowRoot, data, t) {
     }
     if (gridDotEl) {
       gridDotEl.style.background = '#3b82f6';
-      gridDotEl.className = 'es-3d-dot';
+      setElementClass(gridDotEl, 'es-3d-dot');
     }
     if (gridBeaconEl) gridBeaconEl.style.display = 'none';
 
@@ -806,11 +816,11 @@ export function update3DStation(shadowRoot, data, t) {
         flowGridEl.style.display = 'block';
         if (data.gridPowerKw > 0) {
           // Import from grid (Blue)
-          flowGridEl.className = 'conduit-flow glow-blue';
+          setElementClass(flowGridEl, 'conduit-flow glow-blue');
           flowGridEl.setAttribute('stroke', '#3b82f6');
         } else {
           // Export / Selling to grid (Green)
-          flowGridEl.className = 'conduit-flow conduit-flow-rev glow-green';
+          setElementClass(flowGridEl, 'conduit-flow conduit-flow-rev glow-green');
           flowGridEl.setAttribute('stroke', '#10b981');
         }
       } else {
@@ -872,12 +882,12 @@ export function update3DStation(shadowRoot, data, t) {
     // ЯСКРАВО-ЧЕРВОНА АНІМАЦІЯ РОЗРЯДУ
     if (flowBatEl) {
       flowBatEl.style.display = 'block';
-      flowBatEl.className = 'conduit-flow conduit-flow-rev glow-red';
+      setElementClass(flowBatEl, 'conduit-flow conduit-flow-rev glow-red');
       flowBatEl.setAttribute('stroke', '#ef4444');
     }
     if (batSocCircleEl) {
       batSocCircleEl.setAttribute('stroke', '#ef4444');
-      batSocCircleEl.className = 'glow-red';
+      setElementClass(batSocCircleEl, 'glow-red');
     }
     if (batModeLabelEl) {
       batModeLabelEl.textContent = t('discharging') || 'РОЗРЯД';
@@ -885,7 +895,7 @@ export function update3DStation(shadowRoot, data, t) {
     }
     if (batDotEl) {
       batDotEl.style.background = '#ef4444';
-      batDotEl.className = 'es-3d-dot beacon-light';
+      setElementClass(batDotEl, 'es-3d-dot beacon-light');
     }
     if (batBadgeEl) {
       batBadgeEl.style.cssText = 'background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.4);';
@@ -905,12 +915,12 @@ export function update3DStation(shadowRoot, data, t) {
     // ЗЕЛЕНА АНІМАЦІЯ ЗАРЯДУ
     if (flowBatEl) {
       flowBatEl.style.display = 'block';
-      flowBatEl.className = 'conduit-flow glow-green';
+      setElementClass(flowBatEl, 'conduit-flow glow-green');
       flowBatEl.setAttribute('stroke', '#10b981');
     }
     if (batSocCircleEl) {
       batSocCircleEl.setAttribute('stroke', '#10b981');
-      batSocCircleEl.className = 'glow-green';
+      setElementClass(batSocCircleEl, 'glow-green');
     }
     if (batModeLabelEl) {
       batModeLabelEl.textContent = t('charging') || 'ЗАРЯД';
@@ -918,7 +928,7 @@ export function update3DStation(shadowRoot, data, t) {
     }
     if (batDotEl) {
       batDotEl.style.background = '#10b981';
-      batDotEl.className = 'es-3d-dot';
+      setElementClass(batDotEl, 'es-3d-dot');
     }
     if (batBadgeEl) {
       batBadgeEl.style.cssText = 'background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.3);';

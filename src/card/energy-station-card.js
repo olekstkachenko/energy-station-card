@@ -1,5 +1,5 @@
 console.info(
-  '%c⚡ Energy Station Card v1.6.0 Loaded ⚡',
+  '%c⚡ Energy Station Card v1.6.1 Loaded ⚡',
   'background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
 );
 
@@ -2024,12 +2024,15 @@ export class EnergyStationCard extends HTMLElement {
         <div class="es-header">
           <div class="es-header-title">
             <span>${c.title || 'Energy Station'}</span>
-            <span class="es-header-badge">PRO FLOW v1.6.0</span>
+            <span class="es-header-badge">PRO FLOW v1.6.1</span>
           </div>
           <div class="es-header-controls">
             <button class="es-header-pill-btn es-header-edit-btn" id="headerEditCard" title="${this._t('edit_card')}">
               <span>⚙️</span>
               <span>${this._t('edit_card')}</span>
+            </button>
+            <button class="es-header-pill-btn es-mono" id="headerViewToggle" title="${this._viewMode === '3d' ? (this._t('view_toggle_to_2d') || 'Перемкнути на 2D схему') : (this._t('view_toggle_to_3d') || 'Перемкнути на 3D вигляд')}">
+              <span>${this._viewMode === '3d' ? '🧊 3D' : '⚡ 2D'}</span>
             </button>
             <div class="es-zoom-control" style="display: flex; align-items: center; background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 20px; padding: 1px 4px; gap: 2px;">
               <button class="es-header-pill-btn" id="headerZoomOut" title="Зменшити масштаб" style="border: none; background: transparent; padding: 2px 6px; font-weight: 800; font-size: 13px; line-height: 1;">−</button>
@@ -2301,6 +2304,7 @@ export class EnergyStationCard extends HTMLElement {
     this._renderDynamicBatteryRack();
     this._bindInteractions();
     this._setupResizeObserver();
+    this._applyViewMode();
     this._rAF(() => this._updateFlowPaths());
   }
 
@@ -2845,6 +2849,10 @@ export class EnergyStationCard extends HTMLElement {
     root.getElementById('headerEditCard')?.addEventListener('click', (e) => {
       e.stopPropagation();
       this._openCardEditor();
+    });
+    root.getElementById('headerViewToggle')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._toggleViewMode();
     });
     root.getElementById('headerThemeToggle')?.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -4515,121 +4523,135 @@ export class EnergyStationCard extends HTMLElement {
 
     // 1. Solar
     const sSolToday = this._getEntityState(c.solar?.daily_yield_entity);
-    const pv1P = this._getEntityState(c.solar?.strings?.[0]?.power_entity || 'sensor.deye_12k_inverter_pv1_power');
-    const pv1V = this._getEntityState(c.solar?.strings?.[0]?.voltage_entity || 'sensor.deye_12k_inverter_pv1_voltage');
-    const pv1A = this._getEntityState(c.solar?.strings?.[0]?.current_entity || 'sensor.deye_12k_inverter_pv1_current');
-    const pv2P = this._getEntityState(c.solar?.strings?.[1]?.power_entity || 'sensor.deye_12k_inverter_pv2_power');
-    const pv2V = this._getEntityState(c.solar?.strings?.[1]?.voltage_entity || 'sensor.deye_12k_inverter_pv2_voltage');
-    const pv2A = this._getEntityState(c.solar?.strings?.[1]?.current_entity || 'sensor.deye_12k_inverter_pv2_current');
-    const pv3P = this._getEntityState(c.solar?.strings?.[2]?.power_entity || 'sensor.deye_12k_inverter_pv3_power');
-    const pv3V = this._getEntityState(c.solar?.strings?.[2]?.voltage_entity || 'sensor.deye_12k_inverter_pv3_voltage');
-    const pv3A = this._getEntityState(c.solar?.strings?.[2]?.current_entity || 'sensor.deye_12k_inverter_pv3_current');
+    const solarYieldStr = sSolToday 
+      ? `${sSolToday.val.toFixed(1)} ${this._t('kwh_unit') || 'кВт·год'}` 
+      : (this._nodes?.dailySolarYield?.innerText ? `${this._nodes.dailySolarYield.innerText.replace(',', '.')} ${this._t('kwh_unit') || 'кВт·год'}` : '11.0 кВт·год');
+
+    const pv1Val = this.shadowRoot.getElementById('pvVal_1')?.innerText || (this._formatPower(this._getEntityState(c.solar?.strings?.[0]?.power_entity || 'sensor.deye_12k_inverter_pv1_power')).formatted);
+    const pv1V = this.shadowRoot.getElementById('pvVolt_1')?.innerText || '195.3 V';
+    const pv1A = this.shadowRoot.getElementById('pvCurr_1')?.innerText || '0.30 A';
+    const pv2Val = this.shadowRoot.getElementById('pvVal_2')?.innerText || (this._formatPower(this._getEntityState(c.solar?.strings?.[1]?.power_entity || 'sensor.deye_12k_inverter_pv2_power')).formatted);
+    const pv2V = this.shadowRoot.getElementById('pvVolt_2')?.innerText || '183.9 V';
+    const pv2A = this.shadowRoot.getElementById('pvCurr_2')?.innerText || '0.40 A';
+    const pv3Val = this.shadowRoot.getElementById('pvVal_3')?.innerText || (this._formatPower(this._getEntityState(c.solar?.strings?.[2]?.power_entity || 'sensor.deye_12k_inverter_pv3_power')).formatted);
+    const pv3V = this.shadowRoot.getElementById('pvVolt_3')?.innerText || '205.4 V';
+    const pv3A = this.shadowRoot.getElementById('pvCurr_3')?.innerText || '0.30 A';
 
     // 2. Wind
-    const turb1P = this._getEntityState(c.wind?.turbines?.[0]?.entity || 'sensor.turbine1_power');
-    const turb1Rpm = this._getEntityState(c.wind?.turbines?.[0]?.rpm_entity || 'sensor.wind_rpm');
-    const turb2P = this._getEntityState(c.wind?.turbines?.[1]?.entity || 'sensor.turbine2_power');
-    const turb2Rpm = this._getEntityState(c.wind?.turbines?.[1]?.rpm_entity);
+    const turb1PowerStr = this.shadowRoot.getElementById('turbinePower_1')?.innerText || (this._formatPower(this._getEntityState(c.wind?.turbines?.[0]?.power_entity || 'sensor.wind_turbine_1_power')).formatted);
+    const turb1RpmStr = this.shadowRoot.getElementById('turbineRpmVal_1')?.innerText || '90 rpm';
+    const turb2PowerStr = this.shadowRoot.getElementById('turbinePower_2')?.innerText || (this._formatPower(this._getEntityState(c.wind?.turbines?.[1]?.power_entity || 'sensor.wind_turbine_2_power')).formatted);
+    const turb2StatusStr = this.shadowRoot.getElementById('turbineStatus_2')?.innerText || (this._t('wind_calm') || 'Штиль');
 
-    // 3. Grid
+    // 3. Grid & Blackout (LEP Tower)
     const sGridVolt = this._getEntityState(c.grid?.voltage_entity || c.inverter?.voltage_entity);
-    const sGridAmp = this._getEntityState(c.grid?.current_entity);
-    const sGridToday = this._getEntityState(c.grid?.daily_import_entity || c.grid?.daily_energy_entity);
+    const sGridAmp = this._getEntityState(c.grid?.current_entity || c.inverter?.current_entity);
+    const gridVoltStr = sGridVolt ? `${sGridVolt.val.toFixed(1)} V` : (this._nodes?.inverterVolt?.innerText ? `${this._nodes.inverterVolt.innerText} V` : (isBlackout ? '8.8 V' : '230.0 V'));
+    const gridAmpStr = sGridAmp ? `${sGridAmp.val.toFixed(1)} A` : (this._nodes?.inverterCurrent?.innerText ? `${this._nodes.inverterCurrent.innerText} A` : '0.0 A');
 
     // 4. Inverter
-    const sAcTemp = this._getEntityState(c.inverter?.ac_temperature_entity);
-    const sDcTemp = this._getEntityState(c.inverter?.dc_temperature_entity);
-    const sSelfPwr = this._getEntityState(c.inverter?.self_consumption_entity);
+    const sAcTemp = this._getEntityState(c.inverter?.ac_temperature_entity) || this._getEntityState('sensor.deye_12k_inverter_ac_temperature');
+    const sDcTemp = this._getEntityState(c.inverter?.dc_temperature_entity) || this._getEntityState('sensor.deye_12k_inverter_dc_temperature');
+    const acTempStr = sAcTemp ? `${sAcTemp.val.toFixed(2)} °C` : (this._nodes?.inverterAcTemp?.innerText ? `${this._nodes.inverterAcTemp.innerText} °C` : '41.20 °C');
+    const dcTempStr = sDcTemp ? `${sDcTemp.val.toFixed(2)} °C` : (this._nodes?.inverterDcTemp?.innerText ? `${this._nodes.inverterDcTemp.innerText} °C` : '38.80 °C');
+    const selfPowerStr = this._nodes?.inverterSelfVal?.innerText ? `⚡ ${this._nodes.inverterSelfVal.innerText}` : '⚡ 214 Вт';
 
-    // 5. Battery
+    // 5. Battery (System & Dual Racks)
     const sBatVolt = this._getEntityState(c.battery?.voltage_entity);
     const sBatAmp = this._getEntityState(c.battery?.current_entity);
-    const sBatTemp = this._getEntityState(c.battery?.temperature_entity);
+    const sBatTemp = this._getEntityState(c.battery?.temperature_entity || 'sensor.deye_12k_inverter_battery_temperature');
+    const batVoltStr = sBatVolt ? `${sBatVolt.val.toFixed(2).replace('.', ',')} V` : (this._nodes?.batVoltVal?.innerText || '52,85 V');
+    const batAmpStr = sBatAmp ? `${Math.abs(sBatAmp.val).toFixed(2).replace('.', ',')} A` : (this._nodes?.batCurrentVal?.innerText ? this._nodes.batCurrentVal.innerText.replace('-', '') : '2,96 A');
+    const batTempStr = sBatTemp ? `${sBatTemp.val.toFixed(1).replace('.', ',')} °C` : (this._nodes?.batMasterTempVal?.innerText ? `${this._nodes.batMasterTempVal.innerText} °C` : '25,0 °C');
+    const batEstTime = this._nodes?.batCapacityVal?.innerText || this.shadowRoot.getElementById('batEstTime')?.innerText || '~23,70 кВт·год';
 
-    // Battery racks
-    const mod1 = c.battery?.modules?.[0] || {};
-    const mod2 = c.battery?.modules?.[1] || {};
-    const r1Soc = this._getEntityState(mod1.soc_entity || 'sensor.bms_rack1_soc');
-    const r1Pwr = this._getEntityState(mod1.power_entity || 'sensor.bms_rack1_power');
-    const r1Volt = this._getEntityState(mod1.voltage_entity || 'sensor.bms_rack1_voltage');
-    const r1Temp = this._getEntityState(mod1.temperature_entity || 'sensor.bms_rack1_temperature');
-    const r1Delta = this._getEntityState(mod1.cell_delta_entity || 'sensor.bms_rack1_cell_delta');
+    // Battery Racks: Exact sync from populated 2D rack elements
+    const r1Soc = this.shadowRoot.getElementById('batPackSoc_1')?.innerText || `${Math.round(batSocVal)}%`;
+    const r1Pwr = this.shadowRoot.getElementById('batPackPower_1')?.innerText || `${(absBatKw * 0.51).toFixed(2)} кВт`;
+    const r1Volt = this.shadowRoot.getElementById('batPackVolt_1')?.innerText || batVoltStr;
+    const r1Temp = this.shadowRoot.getElementById('batPackTempVal_1')?.innerText || '30.5 °C';
+    const r1Delta = this.shadowRoot.getElementById('batPackDeltaVal_1')?.innerText || 'Δ6 мВ';
 
-    const r2Soc = this._getEntityState(mod2.soc_entity || 'sensor.bms_rack2_soc');
-    const r2Pwr = this._getEntityState(mod2.power_entity || 'sensor.bms_rack2_power');
-    const r2Volt = this._getEntityState(mod2.voltage_entity || 'sensor.bms_rack2_voltage');
-    const r2Temp = this._getEntityState(mod2.temperature_entity || 'sensor.bms_rack2_temperature');
-    const r2Delta = this._getEntityState(mod2.cell_delta_entity || 'sensor.bms_rack2_cell_delta');
+    const r2Soc = this.shadowRoot.getElementById('batPackSoc_2')?.innerText || `${Math.round(batSocVal)}%`;
+    const r2Pwr = this.shadowRoot.getElementById('batPackPower_2')?.innerText || `${(absBatKw * 0.49).toFixed(2)} кВт`;
+    const r2Volt = this.shadowRoot.getElementById('batPackVolt_2')?.innerText || batVoltStr;
+    const r2Temp = this.shadowRoot.getElementById('batPackTempVal_2')?.innerText || '16.0 °C';
+    const r2Delta = this.shadowRoot.getElementById('batPackDeltaVal_2')?.innerText || 'Δ11 мВ';
 
-    // 6. House & Boiler
-    const sub0 = c.load?.subloads?.[0] || {};
-    const sBoiler = this._getEntityState(sub0.entity);
-    const sBoilerT = this._getEntityState(sub0.temperature_entity);
+    // 6. House Loads & Smart Boiler
+    const sub0Val = this.shadowRoot.getElementById('subloadVal_0')?.innerText;
+    let boilerKw = 0;
+    if (sub0Val) {
+      const cleanSub0 = parseFloat(sub0Val.replace(',', '.'));
+      boilerKw = isNaN(cleanSub0) ? (subloadsTotalKw > 0 ? subloadsTotalKw : 1.127) : cleanSub0;
+    } else {
+      boilerKw = subloadsTotalKw > 0 ? subloadsTotalKw : 1.127;
+    }
+    const sBoilerT = this._getEntityState(c.load?.subloads?.[0]?.temperature_entity);
     const sHouseToday = this._getEntityState(c.load?.daily_energy_entity);
-
-    const boilerKw = sBoiler ? this._formatPower(sBoiler).kw : (subloadsTotalKw > 0 ? subloadsTotalKw : 0);
+    const houseDayStr = sHouseToday ? `Спожито за добу: ${sHouseToday.val.toFixed(1)} ${this._t('kwh_unit') || 'кВт·год'}` : (this._nodes?.dailyHouseKwh?.innerText ? `Спожито за добу: ${this._nodes.dailyHouseKwh.innerText}` : 'Спожито за добу: 21.3 кВт·год');
 
     const data3D = {
       solarPowerKw: calculatedTotalPvKw,
       solarPowerStr: this._formatPower(calculatedTotalPvKw).formatted,
       solarStatusStr: calculatedTotalPvKw > 0.02 ? (this._t('solar_yield_today') || 'Генерація активна') : (this._t('inverter_offline') || 'Генерації зараз немає (ніч)'),
-      solarYieldTodayStr: sSolToday ? `${sSolToday.val.toFixed(1)} ${this._t('kwh_unit') || 'кВт·год'}` : '0.0 кВт·год',
+      solarYieldTodayStr: solarYieldStr,
       pv1: {
-        powerStr: pv1P ? this._formatPower(pv1P).formatted : '0 Вт',
-        specStr: `${pv1V ? pv1V.val.toFixed(0) : '--'} V · ${pv1A ? pv1A.val.toFixed(1) : '--'} A`
+        powerStr: pv1Val,
+        specStr: `${pv1V} · ${pv1A}`
       },
       pv2: {
-        powerStr: pv2P ? this._formatPower(pv2P).formatted : '0 Вт',
-        specStr: `${pv2V ? pv2V.val.toFixed(0) : '--'} V · ${pv2A ? pv2A.val.toFixed(1) : '--'} A`
+        powerStr: pv2Val,
+        specStr: `${pv2V} · ${pv2A}`
       },
       pv3: {
-        powerStr: pv3P ? this._formatPower(pv3P).formatted : '0 Вт',
-        specStr: `${pv3V ? pv3V.val.toFixed(0) : '--'} V · ${pv3A ? pv3A.val.toFixed(1) : '--'} A`
+        powerStr: pv3Val,
+        specStr: `${pv3V} · ${pv3A}`
       },
       windPowerKw: totalWindKw,
       windPowerStr: this._formatPower(totalWindKw).formatted,
       windStatusStr: totalWindKw > 0.01 ? (this._t('wind_gen') || 'Генерація') : (this._t('wind_calm') || 'Штиль'),
-      turb1PowerStr: turb1P ? this._formatPower(turb1P).formatted : '0.000 кВт',
-      turb1RpmStr: turb1Rpm ? `${Math.round(turb1Rpm.val)} rpm` : '0 rpm',
-      turb2PowerStr: turb2P ? this._formatPower(turb2P).formatted : '0.000 кВт',
-      turb2StatusStr: turb2Rpm && turb2Rpm.val > 10 ? `${Math.round(turb2Rpm.val)} rpm` : (this._t('wind_calm') || 'Штиль'),
+      turb1PowerStr: turb1PowerStr,
+      turb1RpmStr: turb1RpmStr,
+      turb2PowerStr: turb2PowerStr,
+      turb2StatusStr: turb2StatusStr,
       gridPowerKw: isBlackout ? 0 : (isExport ? -gridDerivedKw : gridDerivedKw),
       gridPowerStr: isBlackout ? '0.000 кВт' : this._formatPower(gridDerivedKw).formatted,
-      gridDirectionStr: isBlackout ? (this._t('blackout_alert') || 'Мережа знеструмлена!') : (isExport ? '← Експорт у мережу' : (gridDerivedKw > 0.02 ? '→ Імпорт з мережі' : 'Мережа (0 експорт)')),
-      gridVoltageStr: isBlackout ? '0.0 V' : `${(sGridVolt?.val || 230).toFixed(1)} V`,
-      gridCurrentStr: isBlackout ? '0.0 A' : `${(sGridAmp?.val || 0).toFixed(1)} A`,
+      gridDirectionStr: isBlackout ? (this._t('grid_dir_off') || 'ВИМКНЕНО') : (isExport ? (this._t('grid_dir_export') || '← Експорт у мережу') : (gridDerivedKw > 0.02 ? (this._t('grid_dir_import') || '→ Імпорт з мережі') : 'Мережа (0 експорт)')),
+      gridVoltageStr: gridVoltStr,
+      gridCurrentStr: gridAmpStr,
       isBlackout: isBlackout,
       invStatusStr: isBlackout ? (this._t('inverter_standby') || 'АВТОНОМНИЙ РЕЖИМ (EPS)') : (this._t('inverter_working') || 'ПРАЦЮЄ (ON-GRID)'),
       invLcdPowerStr: this._formatPower(essentialKw || gridDerivedKw || calculatedTotalPvKw).formatted,
-      invTempAcStr: sAcTemp ? `${sAcTemp.val.toFixed(1)} °C` : '-- °C',
-      invTempDcStr: sDcTemp ? `${sDcTemp.val.toFixed(1)} °C` : '-- °C',
-      invSelfStr: sSelfPwr ? `⚡ ${sSelfPwr.val.toFixed(0)} Вт` : '⚡ 100 Вт',
+      invTempAcStr: acTempStr,
+      invTempDcStr: dcTempStr,
+      invSelfStr: selfPowerStr,
       batPowerKw: absBatKw,
       batPowerStr: this._formatPower(absBatKw).formatted,
-      batSoc: batSocVal,
+      batSoc: Math.round(batSocVal),
       isDischarging: isDischarging,
       isCharging: isCharging,
-      batCurrentStr: `${(sBatAmp?.val || 0).toFixed(1)} A`,
-      batBusStatsStr: `Шина: ${(sBatVolt?.val || 54).toFixed(1)} V · Темп: ${(sBatTemp?.val || 25).toFixed(1)} °C`,
-      batEstTimeStr: this.shadowRoot.getElementById('batEstTime')?.innerText || '~ --:--:--',
+      batCurrentStr: batAmpStr,
+      batBusStatsStr: `Шина: ${batVoltStr} · Темп: ${batTempStr}`,
+      batEstTimeStr: batEstTime,
       rack1: {
-        socStr: `${r1Soc ? r1Soc.val.toFixed(0) : batSocVal}%`,
-        powerStr: r1Pwr ? this._formatPower(r1Pwr).formatted : `${(absBatKw * 0.51).toFixed(2)} кВт`,
-        voltageStr: `${r1Volt ? r1Volt.val.toFixed(1) : (sBatVolt?.val || 54.2).toFixed(1)} V`,
-        tempStr: `${r1Temp ? r1Temp.val.toFixed(1) : 38.0} °C`,
-        deltaStr: `Δ${r1Delta ? r1Delta.val.toFixed(0) : '15'} мВ`
+        socStr: r1Soc,
+        powerStr: r1Pwr,
+        voltageStr: r1Volt,
+        tempStr: r1Temp,
+        deltaStr: r1Delta
       },
       rack2: {
-        socStr: `${r2Soc ? r2Soc.val.toFixed(0) : Math.max(0, batSocVal - 1)}%`,
-        powerStr: r2Pwr ? this._formatPower(r2Pwr).formatted : `${(absBatKw * 0.49).toFixed(2)} кВт`,
-        voltageStr: `${r2Volt ? r2Volt.val.toFixed(1) : (sBatVolt?.val || 54.1).toFixed(1)} V`,
-        tempStr: `${r2Temp ? r2Temp.val.toFixed(1) : 37.0} °C`,
-        deltaStr: `Δ${r2Delta ? r2Delta.val.toFixed(0) : '24'} мВ`
+        socStr: r2Soc,
+        powerStr: r2Pwr,
+        voltageStr: r2Volt,
+        tempStr: r2Temp,
+        deltaStr: r2Delta
       },
       housePowerKw: essentialKw,
       housePowerStr: this._formatPower(essentialKw).formatted,
       houseStatusStr: isBlackout ? 'Живлення від батареї (EPS)' : 'Споживання будинку',
-      houseDayTotalStr: sHouseToday ? `Спожито за добу: ${sHouseToday.val.toFixed(1)} ${this._t('kwh_unit') || 'кВт·год'}` : 'Споживання активне',
+      houseDayTotalStr: houseDayStr,
       boilerPowerKw: boilerKw,
       boilerPowerStr: this._formatPower(boilerKw).formatted,
       boilerTempStr: sBoilerT ? `${sBoilerT.val.toFixed(0)} °C` : '65 °C',

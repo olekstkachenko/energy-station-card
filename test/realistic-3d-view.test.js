@@ -191,4 +191,119 @@ describe('Energy Station Card - 3D Realistic Station View & Red Discharge Animat
     const invStatus = elements.get('invStatus3D');
     assert.strictEqual(invStatus.textContent, 'АВТОНОМНИЙ РЕЖИМ (EPS)');
   });
+
+  test('synchronizes full station telemetry with user scenario without crashing on SVG className in Firefox', () => {
+    const elements = new Map();
+    const createMockEl = (id) => {
+      const el = {
+        id,
+        textContent: '',
+        style: {},
+        className: '',
+        classList: {
+          add: (cls) => { el.className = (el.className + ' ' + cls).trim(); },
+          remove: (cls) => { el.className = el.className.replace(cls, '').trim(); },
+          contains: (cls) => el.className.includes(cls)
+        },
+        setAttribute: (attr, val) => { el[attr] = val; }
+      };
+      elements.set(id, el);
+      return el;
+    };
+
+    [
+      'solarPower3D', 'solarStatus3D', 'solarYieldToday3D',
+      'pv1Power3D', 'pv1V3D', 'pv2Power3D', 'pv2V3D', 'pv3Power3D', 'pv3V3D',
+      'conduitSolar3D', 'windPower3D', 'windStatus3D', 'windRotor3D',
+      'turb1Power3D', 'turb1Rpm3D', 'turb2Power3D', 'turb2Status3D', 'conduitWind3D',
+      'gridPower3D', 'gridDirection3D', 'gridVoltage3D', 'gridCurrent3D',
+      'gridBadge3D', 'gridDot3D', 'gridBeacon3D', 'flowGrid3D',
+      'invStatus3D', 'invDot3D', 'invLcdPower3D', 'invTempAc3D', 'invTempDc3D', 'invSelfPower3D',
+      'batPower3D', 'batDirection3D', 'batSocText3D', 'batSocCircle3D', 'batModeLabel3D',
+      'batCardWrapper3D', 'batDot3D', 'batBadge3D', 'flowBat3D', 'batBusStats3D', 'batEstTime3D',
+      'batBar1_3D', 'batBar2_3D', 'batBar3_3D', 'batBar4_3D',
+      'rack1Soc3D', 'rack1Power3D', 'rack1V3D', 'rack1T3D', 'rack1Delta3D',
+      'rack2Soc3D', 'rack2Power3D', 'rack2V3D', 'rack2T3D', 'rack2Delta3D',
+      'housePower3D', 'houseStatus3D', 'houseDayTotal3D',
+      'boilerPower3D', 'boilerTemp3D', 'boilerStatus3D', 'flowBoiler3D', 'houseOtherPower3D'
+    ].forEach(createMockEl);
+
+    // Specifically test that windRotor3D as SVG element (with setter that throws if className is assigned directly) does not crash
+    Object.defineProperty(elements.get('windRotor3D'), 'className', {
+      get() { return this._cls || ''; },
+      set(val) { throw new TypeError('setting getter-only property "className"'); }
+    });
+
+    const mockRoot = {
+      getElementById: (id) => elements.get(id) || null
+    };
+
+    const liveData = {
+      solarPowerKw: 0.215,
+      solarPowerStr: '0.215 кВт',
+      solarStatusStr: 'Генерація активна',
+      solarYieldTodayStr: '11.0 кВт·год',
+      pv1: { powerStr: '0.058 кВт', specStr: '195.3 V · 0.30 A' },
+      pv2: { powerStr: '0.081 кВт', specStr: '183.9 V · 0.40 A' },
+      pv3: { powerStr: '0.076 кВт', specStr: '205.4 V · 0.30 A' },
+      windPowerKw: 0.004,
+      windPowerStr: '0.004 кВт',
+      windStatusStr: 'Штиль',
+      turb1PowerStr: '0.000 кВт',
+      turb1RpmStr: '90 rpm',
+      turb2PowerStr: '-0.001 кВт',
+      turb2StatusStr: 'Штиль',
+      gridPowerKw: 0,
+      gridPowerStr: '0.000 кВт',
+      gridDirectionStr: 'ВИМКНЕНО',
+      gridVoltageStr: '8.8 V',
+      gridCurrentStr: '0.0 A',
+      isBlackout: true,
+      invStatusStr: 'АВТОНОМНИЙ РЕЖИМ (EPS)',
+      invLcdPowerStr: '1.56 kW',
+      invTempAcStr: '41.20 °C',
+      invTempDcStr: '38.80 °C',
+      invSelfStr: '⚡ 214 Вт',
+      batPowerKw: 1.564,
+      batPowerStr: '1.564 кВт',
+      batSoc: 82,
+      isDischarging: true,
+      isCharging: false,
+      batCurrentStr: '2.96 A',
+      batBusStatsStr: 'Шина: 52.85 V · Темп: 25.0 °C',
+      batEstTimeStr: '~23.70 кВт·год',
+      rack1: { socStr: '84%', powerStr: '0.62 кВт', voltageStr: '52.9 V', tempStr: '30.5 °C', deltaStr: 'Δ6 мВ' },
+      rack2: { socStr: '85%', powerStr: '0.63 кВт', voltageStr: '52.9 V', tempStr: '16.0 °C', deltaStr: 'Δ11 мВ' },
+      housePowerKw: 1.564,
+      housePowerStr: '1.564 кВт',
+      houseStatusStr: 'Живлення від батареї (EPS)',
+      houseDayTotalStr: 'Спожито за добу: 21.3 кВт·год',
+      boilerPowerKw: 1.127,
+      boilerPowerStr: '1.127 кВт',
+      boilerTempStr: '65 °C',
+      boilerStatusStr: 'Нагрів активний',
+      otherPowerStr: '0.437 кВт'
+    };
+
+    const t = (k) => ({ discharging: 'РОЗРЯД', charging: 'ЗАРЯД', blackout_alert: 'БЛЕКАУТ' }[k] || k);
+    update3DStation(mockRoot, liveData, t);
+
+    // Verify all parts updated without error
+    assert.strictEqual(elements.get('solarPower3D').textContent, '0.215 кВт');
+    assert.strictEqual(elements.get('pv1Power3D').textContent, '0.058 кВт');
+    assert.strictEqual(elements.get('pv2Power3D').textContent, '0.081 кВт');
+    assert.strictEqual(elements.get('pv3Power3D').textContent, '0.076 кВт');
+    assert.strictEqual(elements.get('gridVoltage3D').textContent, '8.8 V');
+    assert.strictEqual(elements.get('invTempAc3D').textContent, '41.20 °C');
+    assert.strictEqual(elements.get('invTempDc3D').textContent, '38.80 °C');
+    assert.strictEqual(elements.get('invSelfPower3D').textContent, '⚡ 214 Вт');
+    assert.strictEqual(elements.get('batPower3D').textContent, '1.564 кВт');
+    assert.strictEqual(elements.get('batSocText3D').textContent, '82%');
+    assert.strictEqual(elements.get('rack1Soc3D').textContent, '84%');
+    assert.strictEqual(elements.get('rack1Power3D').textContent, '0.62 кВт');
+    assert.strictEqual(elements.get('rack2Soc3D').textContent, '85%');
+    assert.strictEqual(elements.get('rack2Power3D').textContent, '0.63 кВт');
+    assert.strictEqual(elements.get('housePower3D').textContent, '1.564 кВт');
+    assert.strictEqual(elements.get('boilerPower3D').textContent, '1.127 кВт');
+  });
 });
