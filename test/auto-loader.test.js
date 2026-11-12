@@ -26,12 +26,14 @@ describe('Auto-Loader & HA Setup Script', () => {
     assert.ok(panelLoader.includes('cdn.jsdelivr.net/gh/'));
   });
 
-  test('setup-auto-update.sh updates both www and HACS community directory, strips .gz, and uses LF endings', () => {
+  test('setup-auto-update.sh copies real files (no symlinks), strips .gz, and uses LF endings', () => {
     const script = fs.readFileSync(
       path.resolve('scripts/setup-auto-update.sh'),
       'utf8'
     );
     assert.ok(!script.includes('\r\n'), 'Shell script must use LF line endings for Alpine core-ssh');
+    assert.ok(!script.includes('ln -s'), 'Must NOT use ln -s because Home Assistant aiohttp rejects symlinks with 404');
+    assert.ok(script.includes('cp -f "$WWW_DIR/$f" "$HACS_DIR/$f"'));
     assert.ok(script.includes('/config/www/community/energy-station-card'));
     assert.ok(script.includes('rm -f "$HACS_DIR"/*.gz'));
     assert.ok(script.includes('energy-station-card.local.js'));
@@ -39,3 +41,4 @@ describe('Auto-Loader & HA Setup Script', () => {
     assert.ok(script.includes('?v=auto'));
   });
 });
+

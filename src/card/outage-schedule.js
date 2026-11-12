@@ -879,3 +879,4 @@ export function renderOutageWidgetHtml(summary, opts = {}) {
     </div>
   `;
 }
+

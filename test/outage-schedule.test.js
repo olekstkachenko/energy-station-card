@@ -164,3 +164,4 @@ describe('Outage Schedule Module - Kyiv Oblast Group 6.1', () => {
     assert.strictEqual(miniStatusEl.textContent, '🟢 До відкл. 4 год');
   });
 });
+

@@ -5617,7 +5617,7 @@ function zd(e, t = {}) {
   });
 }
 console.info(
-  "%c⚡ Energy Station Panel v1.6.2 Loaded ⚡",
+  "%c⚡ Energy Station Panel v1.6.3 Loaded ⚡",
   "background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;"
 );
 class Wd extends HTMLElement {
@@ -6169,7 +6169,7 @@ class Wd extends HTMLElement {
           <div>
             <div class="panel-brand-title">
               <span>Energy Station</span>
-              <span class="panel-brand-badge">PRO APP v1.6.0</span>
+              <span class="panel-brand-badge">PRO APP v1.6.3</span>
             </div>
           </div>
         </div>
@@ -6512,7 +6512,7 @@ class Wd extends HTMLElement {
   }
 }
 console.info(
-  "%c⚡ Energy Station Card v1.6.2 Loaded ⚡",
+  "%c⚡ Energy Station Card v1.6.3 Loaded ⚡",
   "background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;"
 );
 const Gr = {
@@ -8438,7 +8438,7 @@ class Gd extends HTMLElement {
         <div class="es-header">
           <div class="es-header-title">
             <span>${t.title || "Energy Station"}</span>
-            <span class="es-header-badge">PRO FLOW v1.6.2</span>
+            <span class="es-header-badge">PRO FLOW v1.6.3</span>
           </div>
           <div class="es-header-controls">
             <button class="es-header-pill-btn es-header-edit-btn" id="headerEditCard" title="${this._t("edit_card")}">
