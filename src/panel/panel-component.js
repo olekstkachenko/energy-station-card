@@ -1,5 +1,5 @@
 console.info(
-  '%c⚡ Energy Station Panel v1.6.3 Loaded ⚡',
+  '%c⚡ Energy Station Panel v1.6.4 Loaded ⚡',
   'background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
 );
 
@@ -37,13 +37,26 @@ export class EnergyStationPanel extends HTMLElement {
     }
   }
 
+  _upgradeProperty(prop) {
+    if (Object.prototype.hasOwnProperty.call(this, prop)) {
+      const value = this[prop];
+      delete this[prop];
+      this[prop] = value;
+    }
+  }
+
   connectedCallback() {
     this._loadConfig();
     this._render();
     this._bindEvents();
+    this._upgradeProperty('panel');
+    this._upgradeProperty('narrow');
+    this._upgradeProperty('route');
+    this._upgradeProperty('hass');
     if (this._hass) {
       if (this._cardNode) this._cardNode.hass = this._hass;
       if (this._editorNode) this._editorNode.hass = this._hass;
+      this._updateHaStatusBadge();
     }
     setTimeout(() => {
       if (this._cardNode && typeof this._cardNode._updateFlowPaths === 'function') {
@@ -79,12 +92,21 @@ export class EnergyStationPanel extends HTMLElement {
     this._scale = this._config.card_scale || 1.0;
   }
 
-  _saveConfig() {
+  _saveConfig(syncToServer = true) {
     try {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('energy_station_app_config', JSON.stringify(this._config));
       }
     } catch (e) {}
+    if (syncToServer && this._hass && typeof this._hass.callWS === 'function') {
+      try {
+        this._hass.callWS({
+          type: 'frontend/set_user_data',
+          key: 'energy_station_app_config',
+          value: this._config
+        }).catch(() => {});
+      } catch (e) {}
+    }
     if (this._cardNode) {
       this._cardNode.setConfig(this._config);
     }
@@ -97,21 +119,47 @@ export class EnergyStationPanel extends HTMLElement {
     if (this._editorNode) {
       this._editorNode.setConfig(this._config);
     }
-    this._saveConfig();
+    this._saveConfig(true);
   }
 
   async _autoDiscoverLovelaceConfig() {
     if (!this._hass) return;
     try {
-      // If user has already saved a configured state in localStorage, do not overwrite unless requested
-      const stored = localStorage.getItem('energy_station_app_config');
+      // 1. If localStorage already has a configured state, keep it and back it up to HA server storage
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('energy_station_app_config') : null;
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed.solar?.strings?.[0]?.voltage_entity && parsed.inverter?.voltage_entity) {
+        if (parsed && parsed.solar?.strings?.[0]?.voltage_entity && parsed.inverter?.voltage_entity) {
+          this._saveConfig(true);
           return;
         }
       }
 
+      // 2. Restore from HA server-side user_data if localStorage was cleared
+      if (typeof this._hass.callWS === 'function') {
+        try {
+          const resp = await this._hass.callWS({
+            type: 'frontend/get_user_data',
+            key: 'energy_station_app_config'
+          });
+          if (resp?.value && typeof resp.value === 'object') {
+            this._config = {
+              ...JSON.parse(JSON.stringify(DEFAULT_CONFIG)),
+              ...resp.value,
+              appearance: {
+                ...DEFAULT_CONFIG.appearance,
+                ...(resp.value.appearance || {})
+              }
+            };
+            this._saveConfig(false);
+            this._render();
+            this._bindEvents();
+            return;
+          }
+        } catch (e) {}
+      }
+
+      // 3. Fallback: auto-import from Lovelace dashboards
       await this._importFromLovelace(false);
     } catch (e) {
       console.warn('Lovelace auto-import skipped:', e);
@@ -126,19 +174,27 @@ export class EnergyStationPanel extends HTMLElement {
 
     try {
       const candidates = [];
+      const scanCard = (item) => {
+        if (!item || typeof item !== 'object') return;
+        if (item.type && (item.type === 'custom:energy-station-card' || item.type.includes('energy-station-card'))) {
+          candidates.push(item);
+        }
+        if (Array.isArray(item.cards)) {
+          for (const sub of item.cards) scanCard(sub);
+        }
+        if (item.card && typeof item.card === 'object') {
+          scanCard(item.card);
+        }
+      };
       const findInViews = (views) => {
         for (const view of (views || [])) {
-          if (view.cards) {
-            for (const c of view.cards) {
-              if (c.type && (c.type === 'custom:energy-station-card' || c.type.includes('energy-station-card'))) {
-                candidates.push(c);
-              }
-              if (c.cards && Array.isArray(c.cards)) {
-                for (const sub of c.cards) {
-                  if (sub.type && (sub.type === 'custom:energy-station-card' || sub.type.includes('energy-station-card'))) {
-                    candidates.push(sub);
-                  }
-                }
+          if (Array.isArray(view.cards)) {
+            for (const c of view.cards) scanCard(c);
+          }
+          if (Array.isArray(view.sections)) {
+            for (const sec of view.sections) {
+              if (Array.isArray(sec.cards)) {
+                for (const c of sec.cards) scanCard(c);
               }
             }
           }
@@ -654,7 +710,7 @@ export class EnergyStationPanel extends HTMLElement {
           <div>
             <div class="panel-brand-title">
               <span>Energy Station</span>
-              <span class="panel-brand-badge">PRO APP v1.6.3</span>
+              <span class="panel-brand-badge">PRO APP v1.6.4</span>
             </div>
           </div>
         </div>

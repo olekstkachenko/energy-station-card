@@ -76,5 +76,28 @@ test('Energy Station Standalone Panel - Initialization & Typography', async (t) 
     assert.strictEqual(receivedHass, mockHass);
   });
 
+  await t.test('connectedCallback upgrades pre-existing own hass property set before async element upgrade', () => {
+    const panel = new EnergyStationPanel();
+    let receivedHass = null;
+    const mockCard = {
+      set hass(val) { receivedHass = val; },
+      setConfig: () => {},
+      _updateFlowPaths: () => {}
+    };
+    panel.shadowRoot.getElementById = (id) => (id === 'stationCard' ? mockCard : null);
+    const mockHass = { states: { 'sensor.a': { state: '1' } } };
+    // Simulate ha-panel-custom setting .hass onto an un-upgraded custom element before module import completes
+    Object.defineProperty(panel, 'hass', {
+      value: mockHass,
+      writable: true,
+      configurable: true,
+      enumerable: true
+    });
+    panel.connectedCallback();
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(panel, 'hass'), false);
+    assert.strictEqual(panel._hass, mockHass);
+    assert.strictEqual(receivedHass, mockHass);
+  });
+
 });
 

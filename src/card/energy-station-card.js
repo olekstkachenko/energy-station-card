@@ -1,5 +1,5 @@
 console.info(
-  '%c⚡ Energy Station Card v1.6.3 Loaded ⚡',
+  '%c⚡ Energy Station Card v1.6.4 Loaded ⚡',
   'background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
 );
 
@@ -204,9 +204,18 @@ export class EnergyStationCard extends HTMLElement {
     this._lastOutageSignature = null;
   }
 
+  _upgradeProperty(prop) {
+    if (Object.prototype.hasOwnProperty.call(this, prop)) {
+      const value = this[prop];
+      delete this[prop];
+      this[prop] = value;
+    }
+  }
+
   connectedCallback() {
     this._setupResizeObserver();
     this._startOutageTimers();
+    this._upgradeProperty('hass');
     if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('energy_station_auto_edit') === '1') {
       try {
         sessionStorage.removeItem('energy_station_auto_edit');
@@ -2080,7 +2089,7 @@ export class EnergyStationCard extends HTMLElement {
         <div class="es-header">
           <div class="es-header-title">
             <span>${c.title || 'Energy Station'}</span>
-            <span class="es-header-badge">PRO FLOW v1.6.3</span>
+            <span class="es-header-badge">PRO FLOW v1.6.4</span>
           </div>
           <div class="es-header-controls">
             <button class="es-header-pill-btn es-header-edit-btn" id="headerEditCard" title="${this._t('edit_card')}">
