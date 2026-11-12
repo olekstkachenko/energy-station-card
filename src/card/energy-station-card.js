@@ -1,5 +1,5 @@
 console.info(
-  '%c⚡ Energy Station Card v1.6.4 Loaded ⚡',
+  '%c⚡ Energy Station Card v1.6.5 Loaded ⚡',
   'background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
 );
 
@@ -2089,7 +2089,7 @@ export class EnergyStationCard extends HTMLElement {
         <div class="es-header">
           <div class="es-header-title">
             <span>${c.title || 'Energy Station'}</span>
-            <span class="es-header-badge">PRO FLOW v1.6.4</span>
+            <span class="es-header-badge">PRO FLOW v1.6.5</span>
           </div>
           <div class="es-header-controls">
             <button class="es-header-pill-btn es-header-edit-btn" id="headerEditCard" title="${this._t('edit_card')}">
@@ -3032,12 +3032,34 @@ export class EnergyStationCard extends HTMLElement {
     const sNextOn = outCfg.next_power_entity ? this._getEntityState(outCfg.next_power_entity) : null;
 
     let isGridBlackout = isBlackoutOverride;
+    let actualGridVoltage = null;
+
+    // Prefer dedicated incoming grid/breaker phase voltage sensor if present
+    const breakerEnt = outCfg.grid_voltage_entity !== undefined
+      ? outCfg.grid_voltage_entity
+      : 'sensor.breaker_phase_a_voltage';
+    const threshold = outCfg.grid_voltage_threshold ?? c.grid?.voltage_threshold ?? 90;
+
+    if (breakerEnt && this._hass) {
+      const sBreaker = this._getEntityState(breakerEnt);
+      if (sBreaker && sBreaker.raw !== 'unavailable' && sBreaker.raw !== 'unknown') {
+        const parsed = parseFloat(String(sBreaker.raw).replace(',', '.'));
+        if (!isNaN(parsed)) {
+          actualGridVoltage = parsed;
+          isGridBlackout = parsed < threshold;
+        }
+      }
+    }
+
     if (isGridBlackout === null && this._hass) {
       const vEnt = c.grid?.voltage_entity || c.inverter?.voltage_entity;
       const sV = vEnt ? this._getEntityState(vEnt) : null;
-      const threshold = c.grid?.voltage_threshold ?? 90;
-      if (sV) {
-        isGridBlackout = sV.val < threshold;
+      if (sV && sV.raw !== 'unavailable' && sV.raw !== 'unknown') {
+        const parsed = parseFloat(String(sV.raw).replace(',', '.'));
+        if (!isNaN(parsed)) {
+          actualGridVoltage = parsed;
+          isGridBlackout = parsed < threshold;
+        }
       }
     }
 
@@ -3045,7 +3067,8 @@ export class EnergyStationCard extends HTMLElement {
       statusRaw: sStatus?.raw || null,
       nextOutageRaw: sNextOff?.raw || null,
       nextPowerRaw: sNextOn?.raw || null,
-      isGridBlackout
+      isGridBlackout,
+      actualGridVoltage
     };
   }
 
@@ -4719,11 +4742,13 @@ export class EnergyStationCard extends HTMLElement {
     // Sync live state for control sliders
     this._updateControlSliders();
 
-    // Update outage schedule widgets if status/blackout state changed
+    // Update outage schedule widgets if status/blackout/breaker voltage state changed
     const isBlackoutNow = !isGridConnected;
     const outCfg = this._config?.outages || {};
     const statusRaw = outCfg.status_entity ? (this._getEntityState(outCfg.status_entity)?.raw || '') : '';
-    const outageSig = `${isBlackoutNow}|${statusRaw}|${outCfg.region || ''}|${outCfg.group || ''}|${outCfg.show !== false}`;
+    const breakerEnt = outCfg.grid_voltage_entity !== undefined ? outCfg.grid_voltage_entity : 'sensor.breaker_phase_a_voltage';
+    const breakerV = breakerEnt ? (this._getEntityState(breakerEnt)?.raw || '') : '';
+    const outageSig = `${isBlackoutNow}|${breakerV}|${statusRaw}|${outCfg.region || ''}|${outCfg.group || ''}|${outCfg.show !== false}`;
     if (outageSig !== this._lastOutageSignature) {
       this._lastOutageSignature = outageSig;
       this._renderOutageWidgets(isBlackoutNow);

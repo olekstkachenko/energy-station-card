@@ -307,6 +307,7 @@ export function computeOutageSummary(json, outageCfg = {}, now = new Date(), haI
     tomorrowOffHours: tomorrowOffMinutes !== null ? +(tomorrowOffMinutes / 60).toFixed(1) : null,
     lastUpdatedStr: json?.fact?.update || formatIsoUpdated(json?.lastUpdated) || '',
     isGridBlackout: haInfo?.isGridBlackout ?? null,
+    actualGridVoltage: typeof haInfo?.actualGridVoltage === 'number' ? haInfo.actualGridVoltage : null,
     haNextOutageRaw: haInfo?.nextOutageRaw || null,
     haNextPowerRaw: haInfo?.nextPowerRaw || null
   };
@@ -780,16 +781,21 @@ export function renderOutageWidgetHtml(summary, opts = {}) {
   }
 
   // Physical grid verification badge
+  const voltSuffix = summary.actualGridVoltage !== null ? ` (${Math.round(summary.actualGridVoltage)} V)` : '';
   let verifyHtml = '';
   if (summary.isGridBlackout === true && summary.currentStatus === 'on') {
     verifyHtml = `<div class="es-outage-grid-verify warn es-mono">
-      <span>⚠️ ${isEn ? 'Actual Grid: DOWN (Unscheduled)' : 'Факт: мережа знеструмлена поза графіком'}</span>
+      <span>⚠️ ${isEn ? 'Actual Grid: DOWN (Unscheduled)' : 'Факт: мережа знеструмлена поза графіком'}${voltSuffix}</span>
     </div>`;
   } else if (summary.isGridBlackout === false && summary.currentStatus === 'off') {
     verifyHtml = `<div class="es-outage-grid-verify bonus es-mono">
-      <span>⚡ ${isEn ? 'Actual Grid: Connected' : 'Факт: світло поки є (мережа підключена)'}</span>
+      <span>⚡ ${isEn ? 'Actual Grid: Connected' : 'Факт: світло є (мережа підключена)'}${voltSuffix}</span>
     </div>`;
   }
+
+  const liveVoltBadge = summary.actualGridVoltage !== null
+    ? `<span class="es-mono" style="font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 5px; ${summary.isGridBlackout ? 'background: rgba(239,68,68,0.16); color: #fca5a5;' : 'background: rgba(16,185,129,0.16); color: #6ee7b7;'}" title="${isEn ? 'Grid input voltage' : 'Вхідна напруга мережі'}">⚡ ${Math.round(summary.actualGridVoltage)} V</span>`
+    : '';
 
   const slotsHtml = (slots || []).map((st, idx) => {
     const isPast = isToday && idx < summary.currentSlotIndex;
@@ -852,6 +858,7 @@ export function renderOutageWidgetHtml(summary, opts = {}) {
         <div class="es-outage-status-badge" style="color: ${statusColor};">
           <span class="es-outage-dot ${statusClass}"></span>
           <span>${statusText}</span>
+          ${liveVoltBadge}
         </div>
         <div class="es-outage-countdown es-mono">${countdownText}</div>
       </div>

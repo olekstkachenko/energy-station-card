@@ -1195,6 +1195,10 @@ export class EnergyStationCardEditor extends HTMLElement {
               </select>
             </div>
             <div class="field-row">
+              <label>Сенсор вхідної напруги мережі (перевірка світла):</label>
+              <input type="text" id="outagesGridVoltageEntity" value="${c.outages?.grid_voltage_entity || 'sensor.breaker_phase_a_voltage'}" placeholder="sensor.breaker_phase_a_voltage">
+            </div>
+            <div class="field-row">
               <label>Сенсор стану HA (опціонально):</label>
               <input type="text" id="outagesStatusEntity" value="${c.outages?.status_entity || ''}" placeholder="sensor.electricity">
             </div>
@@ -1792,6 +1796,7 @@ export class EnergyStationCardEditor extends HTMLElement {
     bindInput('outagesRegion', 'outages.region');
     bindInput('outagesGroup', 'outages.group');
     bindInput('outagesSource', 'outages.source');
+    bindInput('outagesGridVoltageEntity', 'outages.grid_voltage_entity');
     bindInput('outagesStatusEntity', 'outages.status_entity');
 
     bindCheckbox('loadAutoCalculate', 'load.auto_calculate');

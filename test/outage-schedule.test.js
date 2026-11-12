@@ -130,10 +130,23 @@ describe('Outage Schedule Module - Kyiv Oblast Group 6.1', () => {
   test('renderOutageWidgetHtml shows unscheduled grid-down warning when blackout occurs during ON schedule', () => {
     const summary = computeOutageSummary(null, { region: 'kyiv-region', group: '6.1' }, new Date('2026-11-12T11:37:00Z'), {
       statusRaw: 'connected',
-      isGridBlackout: true
+      isGridBlackout: true,
+      actualGridVoltage: 0
     });
     const html = renderOutageWidgetHtml({ ...summary, currentStatus: 'on' }, { lang: 'uk' });
     assert.ok(html.includes('мережа знеструмлена поза графіком'));
+    assert.ok(html.includes('0 V'));
+
+    // When breaker phase voltage sensor reports grid voltage present (e.g. 228 V), warning must NOT show
+    const summaryPresent = computeOutageSummary(null, { region: 'kyiv-region', group: '6.1' }, new Date('2026-11-12T11:37:00Z'), {
+      statusRaw: 'connected',
+      isGridBlackout: false,
+      actualGridVoltage: 228
+    });
+    const htmlPresent = renderOutageWidgetHtml({ ...summaryPresent, currentStatus: 'on' }, { lang: 'uk' });
+    assert.ok(!htmlPresent.includes('знеструмлена поза графіком'));
+    assert.ok(htmlPresent.includes('⚡ 228 V'));
+    assert.strictEqual(DEFAULT_CONFIG.outages.grid_voltage_entity, 'sensor.breaker_phase_a_voltage');
   });
 
   test('3D view renders outage dock and mini badge and updates without error', () => {

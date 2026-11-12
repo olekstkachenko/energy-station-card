@@ -247,7 +247,9 @@ export const DEFAULT_CONFIG = {
     source: 'auto', // 'auto' | 'json' | 'ha_entity'
     status_entity: '', // Опціональний сенсор HA (Svitlo Yeah / Svitlo Live)
     next_outage_entity: '', // Опціональний сенсор наступного відключення HA
-    next_power_entity: '' // Опціональний сенсор наступного увімкнення HA
+    next_power_entity: '', // Опціональний сенсор наступного увімкнення HA
+    grid_voltage_entity: 'sensor.breaker_phase_a_voltage', // Зовнішній сенсор вхідної напруги (якщо є напруга — мережа є)
+    grid_voltage_threshold: 90 // Поріг напруги (В), вище якого мережа вважається наявною
   }
 };
 
