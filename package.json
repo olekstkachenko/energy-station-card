@@ -1,6 +1,6 @@
 {
   "name": "energy-station-ha",
-  "version": "1.6.5",
+  "version": "1.6.6",
   "description": "Energy Station Dashboard & Custom Card for Home Assistant (Deye / SunSynk / Hybrid Inverter)",
   "type": "module",
   "scripts": {
