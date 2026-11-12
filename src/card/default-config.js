@@ -237,6 +237,17 @@ export const DEFAULT_CONFIG = {
     show_solar_savings: true, // показувати суму заощаджень від сонця
     show_night_savings: true, // показувати заощадження від нічного тарифу АКБ
     show_net_benefit: true   // показувати чистий баланс вигоди/витрат за добу
+  },
+
+  // 7. Power Outage Schedule (Графік відключень світла)
+  outages: {
+    show: true,
+    region: 'kyiv-region', // 'kyiv-region' (Київська обл.) | 'kyiv' | 'dnipro' | 'odesa'
+    group: '6.1', // Група / Черга (напр. 6.1)
+    source: 'auto', // 'auto' | 'json' | 'ha_entity'
+    status_entity: '', // Опціональний сенсор HA (Svitlo Yeah / Svitlo Live)
+    next_outage_entity: '', // Опціональний сенсор наступного відключення HA
+    next_power_entity: '' // Опціональний сенсор наступного увімкнення HA
   }
 };
 

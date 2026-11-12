@@ -258,6 +258,7 @@ export function get3DStyles() {
 export function render3DStation(config, t) {
   return `
     <div class="es-3d-station-container" id="station3DContainer">
+      <div class="es-3d-stage" style="position: relative;">
       <!-- SVG CONDUIT LAYER (Exact Port-to-Port Connections) -->
       <svg class="es-3d-conduit-svg" id="station3DConduits" viewBox="0 0 1200 860" preserveAspectRatio="none">
         <defs>
@@ -467,6 +468,11 @@ export function render3DStation(config, t) {
               <div class="es-3d-metric-label">Струм</div>
               <div class="es-3d-metric-val" style="color: #93c5fd;" id="gridCurrent3D">0.0 A</div>
             </div>
+          </div>
+
+          <div class="es-3d-outage-mini" id="gridOutageMini3D" style="${config?.outages?.show === false ? 'display: none;' : ''}">
+            <span id="gridOutageMiniGroup3D">🕯️ Група ${(config?.outages?.group || '6.1').replace(',', '.')}</span>
+            <span id="gridOutageMiniStatus3D">...</span>
           </div>
         </div>
 
@@ -690,6 +696,10 @@ export function render3DStation(config, t) {
         </div>
 
       </div>
+      </div><!-- /.es-3d-stage -->
+
+      <!-- OUTAGE SCHEDULE DOCK (Київська обл., Група 6.1) -->
+      <div id="outageDock3D"></div>
 
     </div>
   `;
@@ -825,6 +835,27 @@ export function update3DStation(shadowRoot, data, t) {
         }
       } else {
         flowGridEl.style.display = 'none';
+      }
+    }
+  }
+
+  const outageMiniEl = getEl('gridOutageMini3D');
+  const outageMiniGroupEl = getEl('gridOutageMiniGroup3D');
+  const outageMiniStatusEl = getEl('gridOutageMiniStatus3D');
+  if (outageMiniEl) {
+    if (data.outageShow === false) {
+      outageMiniEl.style.display = 'none';
+    } else {
+      outageMiniEl.style.display = 'flex';
+      if (data.outageMini) {
+        if (outageMiniGroupEl) outageMiniGroupEl.textContent = data.outageMini.groupText;
+        if (outageMiniStatusEl) outageMiniStatusEl.textContent = data.outageMini.statusText;
+        if (outageMiniEl.classList) {
+          if (data.outageMini.state === 'off') outageMiniEl.classList.add?.('is-off');
+          else outageMiniEl.classList.remove?.('is-off');
+          if (data.outageMini.state === 'on') outageMiniEl.classList.add?.('is-on');
+          else outageMiniEl.classList.remove?.('is-on');
+        }
       }
     }
   }

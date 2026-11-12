@@ -1162,6 +1162,44 @@ export class EnergyStationCardEditor extends HTMLElement {
             </div>
           </div>
         </div>
+
+        <div class="field-group">
+          <div class="field-group-title">🕯️ Графік відключень світла (ДТЕК / Yasno / HA)</div>
+          <div class="fields-grid">
+            <div class="field-row full-width checkbox-row">
+              <input type="checkbox" id="outagesShow" ${c.outages?.show !== false ? 'checked' : ''} style="accent-color: #ef4444;">
+              <div>
+                <span>Показувати графік відключень світла на картці (2D і 3D)</span>
+                <div style="font-size: 10px; color: #94a3b8; margin-top: 1px;">Відображає 24-годинну шкалу відключень, таймер зворотного відліку та вікна на сьогодні/завтра.</div>
+              </div>
+            </div>
+            <div class="field-row">
+              <label>Регіон:</label>
+              <select id="outagesRegion">
+                <option value="kyiv-region" ${(c.outages?.region || 'kyiv-region') === 'kyiv-region' ? 'selected' : ''}>Київська область (ДТЕК КРЕМ)</option>
+                <option value="kyiv" ${c.outages?.region === 'kyiv' ? 'selected' : ''}>м. Київ (ДТЕК / Yasno)</option>
+                <option value="dnipro" ${c.outages?.region === 'dnipro' ? 'selected' : ''}>Дніпропетровська область</option>
+                <option value="odesa" ${c.outages?.region === 'odesa' ? 'selected' : ''}>Одеська область</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <label>Група / Черга (напр. 6.1):</label>
+              <input type="text" id="outagesGroup" value="${c.outages?.group || '6.1'}" placeholder="6.1">
+            </div>
+            <div class="field-row">
+              <label>Джерело даних:</label>
+              <select id="outagesSource">
+                <option value="auto" ${(c.outages?.source || 'auto') === 'auto' ? 'selected' : ''}>Авто (Онлайн графік + перевірка інвертора)</option>
+                <option value="json" ${c.outages?.source === 'json' ? 'selected' : ''}>Тільки онлайн графік</option>
+                <option value="ha_entity" ${c.outages?.source === 'ha_entity' ? 'selected' : ''}>Сенсор Home Assistant (Svitlo Yeah / Live)</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <label>Сенсор стану HA (опціонально):</label>
+              <input type="text" id="outagesStatusEntity" value="${c.outages?.status_entity || ''}" placeholder="sensor.electricity">
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- TAB CONTENT: LOADS -->
@@ -1749,6 +1787,12 @@ export class EnergyStationCardEditor extends HTMLElement {
     bindInput('gridExportDaily', 'grid.export_daily_entity');
     bindInput('gridNonEssential', 'grid.non_essential_power_entity');
     bindInput('gridCarPower', 'grid.car_power_entity');
+
+    bindCheckbox('outagesShow', 'outages.show');
+    bindInput('outagesRegion', 'outages.region');
+    bindInput('outagesGroup', 'outages.group');
+    bindInput('outagesSource', 'outages.source');
+    bindInput('outagesStatusEntity', 'outages.status_entity');
 
     bindCheckbox('loadAutoCalculate', 'load.auto_calculate');
     bindCheckbox('loadSeparateExport', 'load.separate_export');

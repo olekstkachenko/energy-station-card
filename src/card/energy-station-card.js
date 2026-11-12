@@ -1,11 +1,18 @@
 console.info(
-  '%c⚡ Energy Station Card v1.6.1 Loaded ⚡',
+  '%c⚡ Energy Station Card v1.6.2 Loaded ⚡',
   'background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
 );
 
 import { DEFAULT_CONFIG } from './default-config.js';
 import { ICONS, getSvgIcon } from './svg-helpers.js';
 import { render3DStation, update3DStation, get3DStyles } from './station-3d-view.js';
+import {
+  computeOutageSummary,
+  fetchOutageSchedule,
+  formatDuration,
+  getOutageWidgetStyles,
+  renderOutageWidgetHtml
+} from './outage-schedule.js';
 import './energy-station-card-editor.js';
 
 export const I18N = {
@@ -185,10 +192,21 @@ export class EnergyStationCard extends HTMLElement {
     // Cached DOM nodes for high performance live updates
     this._nodes = {};
     this._resizeObserver = null;
+
+    // Power outage schedule state
+    this._outageJson = null;
+    this._outageDay = 'today';
+    this._outageLoading = false;
+    this._outageError = null;
+    this._outageFetchedRegion = null;
+    this._outageRefreshTimer = null;
+    this._outageTickTimer = null;
+    this._lastOutageSignature = null;
   }
 
   connectedCallback() {
     this._setupResizeObserver();
+    this._startOutageTimers();
     if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('energy_station_auto_edit') === '1') {
       try {
         sessionStorage.removeItem('energy_station_auto_edit');
@@ -201,6 +219,38 @@ export class EnergyStationCard extends HTMLElement {
     if (this._resizeObserver) {
       this._resizeObserver.disconnect();
       this._resizeObserver = null;
+    }
+    this._stopOutageTimers();
+  }
+
+  _startOutageTimers() {
+    this._stopOutageTimers();
+    const c = this._config || DEFAULT_CONFIG;
+    if (c.outages?.show === false || c.outages?.source === 'ha_entity') return;
+
+    this._refreshOutageSchedule(false);
+
+    if (typeof setInterval === 'function') {
+      this._outageRefreshTimer = setInterval(() => {
+        this._refreshOutageSchedule(true);
+      }, 10 * 60 * 1000);
+      this._outageRefreshTimer?.unref?.();
+
+      this._outageTickTimer = setInterval(() => {
+        this._renderOutageWidgets();
+      }, 30 * 1000);
+      this._outageTickTimer?.unref?.();
+    }
+  }
+
+  _stopOutageTimers() {
+    if (this._outageRefreshTimer) {
+      clearInterval(this._outageRefreshTimer);
+      this._outageRefreshTimer = null;
+    }
+    if (this._outageTickTimer) {
+      clearInterval(this._outageTickTimer);
+      this._outageTickTimer = null;
     }
   }
 
@@ -1135,6 +1185,11 @@ export class EnergyStationCard extends HTMLElement {
           .es-bottom-spacer {
             display: none !important;
           }
+
+          .es-bottom-outage-dock {
+            width: 100%;
+            order: 2;
+          }
         }
 
         .es-inverter-wings-row {
@@ -1948,6 +2003,7 @@ export class EnergyStationCard extends HTMLElement {
 
         .hidden { display: none !important; }
         ${get3DStyles()}
+        ${getOutageWidgetStyles()}
       </style>
 
       <div class="energy-station-container ${this._themeMode === 'light' ? 'theme-light' : ''}">
@@ -2024,7 +2080,7 @@ export class EnergyStationCard extends HTMLElement {
         <div class="es-header">
           <div class="es-header-title">
             <span>${c.title || 'Energy Station'}</span>
-            <span class="es-header-badge">PRO FLOW v1.6.1</span>
+            <span class="es-header-badge">PRO FLOW v1.6.2</span>
           </div>
           <div class="es-header-controls">
             <button class="es-header-pill-btn es-header-edit-btn" id="headerEditCard" title="${this._t('edit_card')}">
@@ -2268,9 +2324,9 @@ export class EnergyStationCard extends HTMLElement {
           <!-- Battery Spacer (Conduits drawn on energyFlowCanvas) -->
           <div class="es-bus-container" id="batteryBusContainer" style="height: 44px; width: 100%;"></div>
 
-          <!-- Bottom Grid Row: Spacer (left), Batteries (center), Quick Controls Dock (right) -->
+          <!-- Bottom Grid Row: Outage Schedule (left), Batteries (center), Quick Controls Dock (right) -->
           <div class="es-bottom-row">
-            <div class="es-bottom-spacer"></div>
+            <div class="es-bottom-outage-dock" id="bottomOutageDock"></div>
             <div class="es-battery-rack" id="batteryRackContainer"></div>
             <div class="es-bottom-controls-dock" id="bottomControlsDock"></div>
           </div>
@@ -2302,10 +2358,17 @@ export class EnergyStationCard extends HTMLElement {
     this._renderDynamicWindTurbines();
     this._renderDynamicSubloads();
     this._renderDynamicBatteryRack();
+    this._renderOutageWidgets();
     this._bindInteractions();
     this._setupResizeObserver();
     this._applyViewMode();
     this._rAF(() => this._updateFlowPaths());
+
+    // Fetch outage data if connected and region changed or not yet fetched
+    const targetRegion = c.outages?.region || 'kyiv-region';
+    if (this.isConnected && c.outages?.show !== false && c.outages?.source !== 'ha_entity' && this._outageFetchedRegion !== targetRegion) {
+      this._refreshOutageSchedule(false);
+    }
   }
 
   _cacheDomNodes() {
@@ -2390,7 +2453,9 @@ export class EnergyStationCard extends HTMLElement {
       pvPanelsContainer: root.getElementById('pvPanelsContainer'),
       subloadsContainer: root.getElementById('subloadsContainer'),
       batteryRackContainer: root.getElementById('batteryRackContainer'),
-      bottomControlsDock: root.getElementById('bottomControlsDock')
+      bottomControlsDock: root.getElementById('bottomControlsDock'),
+      bottomOutageDock: root.getElementById('bottomOutageDock'),
+      outageDock3D: root.getElementById('outageDock3D')
     };
   }
 
@@ -2925,6 +2990,152 @@ export class EnergyStationCard extends HTMLElement {
         this._fireMoreInfo(ent);
       });
     }
+
+    const handleOutageClick = (e) => {
+      const dayBtn = e.target?.closest?.('[data-outage-day]');
+      if (dayBtn) {
+        e.stopPropagation();
+        this._outageDay = dayBtn.getAttribute('data-outage-day') === 'tomorrow' ? 'tomorrow' : 'today';
+        this._renderOutageWidgets();
+        return;
+      }
+      const actBtn = e.target?.closest?.('[data-action]');
+      if (actBtn) {
+        e.stopPropagation();
+        const action = actBtn.getAttribute('data-action');
+        if (action === 'refresh-outage') {
+          this._refreshOutageSchedule(true);
+        } else if (action === 'edit-outage') {
+          this._openCardEditor();
+        }
+      }
+    };
+
+    root.getElementById('bottomOutageDock')?.addEventListener('click', handleOutageClick);
+    root.getElementById('outageDock3D')?.addEventListener('click', handleOutageClick);
+  }
+
+  _getOutageHaInfo(isBlackoutOverride = null) {
+    const c = this._config || DEFAULT_CONFIG;
+    const outCfg = c.outages || {};
+    const sStatus = outCfg.status_entity ? this._getEntityState(outCfg.status_entity) : null;
+    const sNextOff = outCfg.next_outage_entity ? this._getEntityState(outCfg.next_outage_entity) : null;
+    const sNextOn = outCfg.next_power_entity ? this._getEntityState(outCfg.next_power_entity) : null;
+
+    let isGridBlackout = isBlackoutOverride;
+    if (isGridBlackout === null && this._hass) {
+      const vEnt = c.grid?.voltage_entity || c.inverter?.voltage_entity;
+      const sV = vEnt ? this._getEntityState(vEnt) : null;
+      const threshold = c.grid?.voltage_threshold ?? 90;
+      if (sV) {
+        isGridBlackout = sV.val < threshold;
+      }
+    }
+
+    return {
+      statusRaw: sStatus?.raw || null,
+      nextOutageRaw: sNextOff?.raw || null,
+      nextPowerRaw: sNextOn?.raw || null,
+      isGridBlackout
+    };
+  }
+
+  async _refreshOutageSchedule(force = false) {
+    const c = this._config || DEFAULT_CONFIG;
+    const outCfg = c.outages || {};
+    if (outCfg.show === false || outCfg.source === 'ha_entity') return;
+
+    const region = outCfg.region || 'kyiv-region';
+    this._outageFetchedRegion = region;
+    this._outageLoading = true;
+    this._outageError = null;
+    this._renderOutageWidgets();
+
+    try {
+      const json = await fetchOutageSchedule(region, undefined, force);
+      this._outageJson = json;
+      this._outageError = null;
+    } catch (err) {
+      this._outageError = err?.message || 'Fetch error';
+    } finally {
+      this._outageLoading = false;
+      this._renderOutageWidgets();
+    }
+  }
+
+  _getCurrentOutageSummary(isBlackoutOverride = null) {
+    const c = this._config || DEFAULT_CONFIG;
+    const outCfg = c.outages || DEFAULT_CONFIG.outages;
+    const haInfo = this._getOutageHaInfo(isBlackoutOverride);
+    return computeOutageSummary(this._outageJson, outCfg, new Date(), haInfo);
+  }
+
+  _renderOutageWidgets(isBlackoutOverride = null) {
+    if (!this.shadowRoot) return;
+    const c = this._config || DEFAULT_CONFIG;
+    const dock2D = this._nodes?.bottomOutageDock || this.shadowRoot.getElementById('bottomOutageDock');
+    const dock3D = this._nodes?.outageDock3D || this.shadowRoot.getElementById('outageDock3D');
+
+    if (c.outages?.show === false) {
+      if (dock2D) dock2D.innerHTML = '';
+      if (dock3D) dock3D.innerHTML = '';
+      return;
+    }
+
+    const summary = this._getCurrentOutageSummary(isBlackoutOverride);
+    const optsBase = {
+      lang: this._language,
+      selectedDay: this._outageDay,
+      loading: this._outageLoading,
+      error: this._outageError
+    };
+
+    if (dock2D) {
+      dock2D.innerHTML = renderOutageWidgetHtml(summary, { ...optsBase, is3D: false });
+    }
+    if (dock3D) {
+      dock3D.innerHTML = renderOutageWidgetHtml(summary, { ...optsBase, is3D: true });
+    }
+
+    // Keep 3D Grid card compact outage badge synced immediately
+    const miniEl = this.shadowRoot.getElementById('gridOutageMini3D');
+    const miniGroupEl = this.shadowRoot.getElementById('gridOutageMiniGroup3D');
+    const miniStatusEl = this.shadowRoot.getElementById('gridOutageMiniStatus3D');
+    if (miniEl) {
+      miniEl.style.display = 'flex';
+      const mini = this._buildOutageMiniPayload(summary);
+      if (miniGroupEl) miniGroupEl.textContent = mini.groupText;
+      if (miniStatusEl) miniStatusEl.textContent = mini.statusText;
+      if (miniEl.classList) {
+        if (mini.state === 'off') miniEl.classList.add?.('is-off');
+        else miniEl.classList.remove?.('is-off');
+        if (mini.state === 'on') miniEl.classList.add?.('is-on');
+        else miniEl.classList.remove?.('is-on');
+      }
+    }
+  }
+
+  _buildOutageMiniPayload(summary) {
+    const isEn = this._language === 'en';
+    let statusText = isEn ? 'Loading...' : 'Завантаження...';
+    if (summary.hasData || summary.currentStatus !== 'unknown') {
+      const dot = summary.currentStatus === 'off' ? '🔴' : (summary.currentStatus === 'maybe' ? '🟡' : '🟢');
+      if (summary.nextEvent) {
+        const dur = formatDuration(summary.nextEvent.minutesLeft, this._language);
+        statusText = summary.currentStatus === 'off'
+          ? `${dot} ${isEn ? 'Back' : 'Увімк.'} ${summary.nextEvent.atTime} (${dur})`
+          : `${dot} ${isEn ? 'Off in' : 'До відкл.'} ${dur}`;
+      } else {
+        statusText = summary.currentStatus === 'off'
+          ? `${dot} ${isEn ? 'Outage' : 'Відключення'}`
+          : `${dot} ${isEn ? 'Power ON' : 'Світло є'}`;
+      }
+    }
+    return {
+      groupText: `🕯️ ${isEn ? 'Grp' : 'Група'} ${summary.groupLabel}`,
+      statusText,
+      state: summary.currentStatus
+    };
   }
 
   _fetchNightEndFromHa(todayStr, nightEndHour) {
@@ -4499,6 +4710,16 @@ export class EnergyStationCard extends HTMLElement {
     // Sync live state for control sliders
     this._updateControlSliders();
 
+    // Update outage schedule widgets if status/blackout state changed
+    const isBlackoutNow = !isGridConnected;
+    const outCfg = this._config?.outages || {};
+    const statusRaw = outCfg.status_entity ? (this._getEntityState(outCfg.status_entity)?.raw || '') : '';
+    const outageSig = `${isBlackoutNow}|${statusRaw}|${outCfg.region || ''}|${outCfg.group || ''}|${outCfg.show !== false}`;
+    if (outageSig !== this._lastOutageSignature) {
+      this._lastOutageSignature = outageSig;
+      this._renderOutageWidgets(isBlackoutNow);
+    }
+
     // Sync live state for 3D Hardware Station
     this._update3DStationView(
       totalSolarKw,
@@ -4656,7 +4877,11 @@ export class EnergyStationCard extends HTMLElement {
       boilerPowerStr: this._formatPower(boilerKw).formatted,
       boilerTempStr: sBoilerT ? `${sBoilerT.val.toFixed(0)} °C` : '65 °C',
       boilerStatusStr: boilerKw > 0.05 ? 'Нагрів активний' : 'Очікування',
-      otherPowerStr: this._formatPower(Math.max(0, essentialKw - boilerKw)).formatted
+      otherPowerStr: this._formatPower(Math.max(0, essentialKw - boilerKw)).formatted,
+      outageShow: c.outages?.show !== false,
+      outageMini: c.outages?.show !== false
+        ? this._buildOutageMiniPayload(this._getCurrentOutageSummary(isBlackout))
+        : null
     };
 
     update3DStation(this.shadowRoot, data3D, this._t.bind(this));

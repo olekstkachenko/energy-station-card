@@ -1,5 +1,5 @@
 console.info(
-  '%c⚡ Energy Station Panel v1.6.1 Loaded ⚡',
+  '%c⚡ Energy Station Panel v1.6.2 Loaded ⚡',
   'background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
 );
 
