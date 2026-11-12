@@ -235,6 +235,8 @@ export function computeOutageSummary(json, outageCfg = {}, now = new Date(), haI
   let isFactToday = false;
   let isFactTomorrow = false;
 
+  const showTomorrow = nowInfo.hour >= 22;
+
   if (json?.fact?.data && typeof json.fact.data === 'object') {
     for (const [tsKey, groupsObj] of Object.entries(json.fact.data)) {
       if (!groupsObj || typeof groupsObj !== 'object') continue;
@@ -242,19 +244,17 @@ export function computeOutageSummary(json, outageCfg = {}, now = new Date(), haI
       if (dayDate === nowInfo.dateStr && groupsObj[groupKey]) {
         todayHourMap = groupsObj[groupKey];
         isFactToday = true;
-      } else if (dayDate === nowInfo.tomorrowDateStr && groupsObj[groupKey]) {
+      } else if (showTomorrow && dayDate === nowInfo.tomorrowDateStr && groupsObj[groupKey]) {
         tomorrowHourMap = groupsObj[groupKey];
         isFactTomorrow = true;
       }
     }
   }
 
-  // Preset weekly schedule fallback when today/tomorrow fact is not yet published
+  // Preset weekly schedule fallback for today only when fact is not yet published.
+  // Tomorrow schedule is intentionally hidden before 22:00 Kyiv time and requires updated fact data.
   if (!todayHourMap && json?.preset?.data?.[groupKey]?.[nowInfo.weekdayIso]) {
     todayHourMap = json.preset.data[groupKey][nowInfo.weekdayIso];
-  }
-  if (!tomorrowHourMap && json?.preset?.data?.[groupKey]?.[nowInfo.tomorrowWeekdayIso]) {
-    tomorrowHourMap = json.preset.data[groupKey][nowInfo.tomorrowWeekdayIso];
   }
 
   const hasData = Boolean(todayHourMap);

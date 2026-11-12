@@ -118,13 +118,27 @@ describe('Outage Schedule Module - Kyiv Oblast Group 6.1', () => {
     assert.ok(html.includes('18:00–24:00'));
     assert.ok(html.includes('4 год 23 хв'));
 
-    // At 19:00 Kyiv time (17:00 UTC) -> outage lasting across midnight until tomorrow 01:00
-    const nowOff = new Date('2026-11-12T17:00:00Z');
-    const summaryOff = computeOutageSummary(mockJson, { region: 'kyiv-region', group: '6.1' }, nowOff, { isGridBlackout: true });
+    // At 19:00 Kyiv time (17:00 UTC) -> before 22:00, tomorrow must NOT be shown even if present in JSON
+    const nowBefore22 = new Date('2026-11-12T17:00:00Z');
+    const summaryBefore22 = computeOutageSummary(mockJson, { region: 'kyiv-region', group: '6.1' }, nowBefore22, { isGridBlackout: true });
+    assert.strictEqual(summaryBefore22.currentStatus, 'off');
+    assert.strictEqual(summaryBefore22.tomorrowSlots, null);
+    assert.strictEqual(summaryBefore22.isFactTomorrow, false);
+    assert.strictEqual(summaryBefore22.nextEvent, null);
+    const htmlBefore22 = renderOutageWidgetHtml(summaryBefore22, { lang: 'uk', selectedDay: 'tomorrow' });
+    assert.ok(!htmlBefore22.includes('data-outage-day="tomorrow"'));
+
+    // At 22:30 Kyiv time (20:30 UTC) -> after 22:00, tomorrow's updated fact schedule IS shown and cross-midnight next ON works
+    const nowAfter22 = new Date('2026-11-12T20:30:00Z');
+    const summaryOff = computeOutageSummary(mockJson, { region: 'kyiv-region', group: '6.1' }, nowAfter22, { isGridBlackout: true });
     assert.strictEqual(summaryOff.currentStatus, 'off');
+    assert.strictEqual(summaryOff.isFactTomorrow, true);
+    assert.ok(Array.isArray(summaryOff.tomorrowSlots));
     assert.strictEqual(summaryOff.nextEvent.type, 'on');
     assert.strictEqual(summaryOff.nextEvent.isTomorrow, true);
     assert.strictEqual(summaryOff.nextEvent.atTime, '01:00');
+    const htmlAfter22 = renderOutageWidgetHtml(summaryOff, { lang: 'uk', selectedDay: 'today' });
+    assert.ok(htmlAfter22.includes('data-outage-day="tomorrow"'));
   });
 
   test('renderOutageWidgetHtml shows unscheduled grid-down warning when blackout occurs during ON schedule', () => {
