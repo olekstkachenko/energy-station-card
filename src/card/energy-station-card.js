@@ -1,5 +1,5 @@
 console.info(
-  '%c⚡ Energy Station Card v1.6.9 Loaded ⚡',
+  '%c⚡ Energy Station Card v1.7.0 Loaded ⚡',
   'background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
 );
 
@@ -2095,7 +2095,7 @@ export class EnergyStationCard extends HTMLElement {
         <div class="es-header">
           <div class="es-header-title">
             <span>${c.title || 'Energy Station'}</span>
-            <span class="es-header-badge">PRO FLOW v1.6.9</span>
+            <span class="es-header-badge">PRO FLOW v1.7.0</span>
           </div>
           <div class="es-header-controls">
             <button class="es-header-pill-btn es-header-edit-btn" id="headerEditCard" title="${this._t('edit_card')}">
@@ -2128,11 +2128,11 @@ export class EnergyStationCard extends HTMLElement {
           <div class="es-sun-header clickable-node" id="solarHeaderNode">
             <div style="width: 28px; height: 28px; color: #fbbf24; margin-bottom: 2px;">${ICONS.sun}</div>
             <div class="es-mono" style="font-size: 17px; font-weight: 800; color: #fbbf24;">
-              <span id="dailySolarYield">48,6</span> kWh <span style="color: #64748b;">/</span> <span id="targetSolarYield">${c.solar?.target_daily_yield || 55.0}</span> kWh
+              <span id="dailySolarYield">0.0</span> kWh <span style="color: #64748b;">/</span> <span id="targetSolarYield">${c.solar?.target_daily_yield || 55.0}</span> kWh
             </div>
             <!-- Progress Bar -->
             <div style="width: 220px; height: 5px; background: #1e293b; border-radius: 9999px; margin-top: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.06);">
-              <div id="solarProgressBar" style="height: 100%; width: 88%; background: linear-gradient(90deg, #f59e0b, #fde047); border-radius: 9999px; transition: width 0.7s;"></div>
+              <div id="solarProgressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #f59e0b, #fde047); border-radius: 9999px; transition: width 0.7s;"></div>
             </div>
             <div class="es-mono" id="solarSavingsDaily" style="font-size: 11px; font-weight: 700; color: #34d399; margin-top: 4px; display: none;"></div>
 
@@ -2245,7 +2245,7 @@ export class EnergyStationCard extends HTMLElement {
                   <div class="es-mono es-inverter-freq"><span id="inverterFreq">50,01</span> Hz</div>
                 </div>
                 <div class="es-inverter-title">${this._t('inverter_title')}</div>
-                <div class="es-mono es-inverter-power" id="inverterPowerVal">8,000 ${this._language === 'en' ? 'kW' : 'кВт'}</div>
+                <div class="es-mono es-inverter-power" id="inverterPowerVal">0.000 ${this._language === 'en' ? 'kW' : 'кВт'}</div>
                 <div class="es-inverter-status-badge" id="inverterStatusBadge">${this._t('inverter_working')}</div>
                 <div class="es-inverter-self-consumption es-mono" id="inverterSelfConsumptionBox" style="display: ${c.inverter?.show_self_consumption !== false ? 'flex' : 'none'}; align-items: center; justify-content: center; gap: 4px; margin-top: 5px; padding: 2px 7px; border-radius: 6px; background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.35); font-size: 10px; color: #fdba74;">
                   <span style="color: #94a3b8;">${this._t('inverter_self')}</span>
@@ -2261,12 +2261,12 @@ export class EnergyStationCard extends HTMLElement {
                     ${ICONS[c.aux?.type] || ICONS.microinverter}
                   </div>
                   <div style="font-size: 11px; font-weight: 700; color: #cbd5e1; text-transform: uppercase;" id="auxTitle">${(c.aux?.type === 'microinverter' && (!c.aux?.title || c.aux?.title === 'Вітрогенератор')) ? this._t('aux_microinverter') : (c.aux?.title || this._t('aux_microinverter'))}</div>
-                  <div class="es-mono" id="auxPowerVal" style="font-size: 16px; font-weight: 800; color: #c084fc; margin: 2px 0;">2,000 ${this._language === 'en' ? 'kW' : 'кВт'}</div>
+                  <div class="es-mono" id="auxPowerVal" style="font-size: 16px; font-weight: 800; color: #c084fc; margin: 2px 0;">0.000 ${this._language === 'en' ? 'kW' : 'кВт'}</div>
                   <div class="es-mono" style="font-size: 10px; color: rgba(216, 180, 254, 0.85);" id="auxSubtitle">${c.aux?.subtitle || this._t('aux_source_gen')}</div>
                 </div>
 
-                <div><span id="inverterVolt">231,45</span> V</div>
-                <div><span id="inverterCurrent">8,60</span> A</div>
+                <div><span id="inverterVolt">0.0</span> V</div>
+                <div><span id="inverterCurrent">0.00</span> A</div>
               </div>
             </div>
 
@@ -2277,14 +2277,14 @@ export class EnergyStationCard extends HTMLElement {
           <!-- RIGHT: ESSENTIAL HOUSE LOADS & SUBLOADS -->
           <div class="es-wing-right">
             <div class="es-mono" style="font-size: 13px; color: #cbd5e1; align-self: center; margin-bottom: 2px;">
-              ${this._t('house_badge')} <span id="dailyHouseKwh" style="color: #22d3ee; font-weight: 700;">12,40 kWh</span>
+              ${this._t('house_badge')} <span id="dailyHouseKwh" style="color: #22d3ee; font-weight: 700;">0.00 kWh</span>
             </div>
 
             <!-- Essential Loads Node (Гарантоване) -->
             <div class="es-schematic-node glow-load clickable-node" id="essentialNode" style="border-color: rgba(6, 182, 212, 0.4);">
               <div class="es-node-icon" style="color: #22d3ee; width: 24px; height: 24px; max-width: 24px; max-height: 24px; overflow: hidden; display: flex; align-items: center; justify-content: center;">${ICONS.house}</div>
               <div class="es-node-title">${this._t('house_title')}</div>
-              <div class="es-mono es-node-power" id="essentialPowerVal" style="color: #22d3ee;">8,000 ${this._language === 'en' ? 'kW' : 'кВт'}</div>
+              <div class="es-mono es-node-power" id="essentialPowerVal" style="color: #22d3ee;">0.000 ${this._language === 'en' ? 'kW' : 'кВт'}</div>
             </div>
 
             <!-- Subloads Bus Bar -->
@@ -2638,7 +2638,7 @@ export class EnergyStationCard extends HTMLElement {
       div.innerHTML = `
         <div style="width: 22px; height: 22px; color: #22d3ee; margin-bottom: 2px;">${ICONS[sub.icon] || ICONS.other}</div>
         <span style="font-size: 11px; color: #cbd5e1; font-weight: 600; white-space: nowrap;">${sub.name}</span>
-        <span class="es-mono" id="subloadVal_${idx}" style="font-size: 13px; font-weight: 800; color: #22d3ee; margin-top: 2px;">2,000 кВт</span>
+        <span class="es-mono" id="subloadVal_${idx}" style="font-size: 13px; font-weight: 800; color: #22d3ee; margin-top: 2px;">0.000 ${this._language === 'en' ? 'kW' : 'кВт'}</span>
       `;
       div.addEventListener('click', () => {
         this._fireMoreInfo(sub.entity);
@@ -3439,6 +3439,7 @@ export class EnergyStationCard extends HTMLElement {
     let calculatedTotalPvKw = 0;
     let totalSolarCurr = 0;
     let hasConfiguredPvEntities = false;
+    const isHaConnected = Boolean(this._hass && this._hass.states && Object.keys(this._hass.states).length > 5);
 
     // Check if any real entities are present in Home Assistant
     for (let i = 1; i <= pvCount; i++) {
@@ -3451,6 +3452,9 @@ export class EnergyStationCard extends HTMLElement {
         break;
       }
     }
+
+    // Never use fake demo numbers if Home Assistant is live or real entities exist
+    const suppressDemo = isHaConnected || hasConfiguredPvEntities;
 
     // Calculate each PV panel / string
     for (let i = 1; i <= pvCount; i++) {
@@ -3479,13 +3483,13 @@ export class EnergyStationCard extends HTMLElement {
       } else if (sVolt) {
         kwNum = 0;
       } else {
-        kwNum = hasConfiguredPvEntities ? 0 : 4.0;
+        kwNum = suppressDemo ? 0 : 4.0;
       }
 
       if (sVolt) {
         voltNum = sVolt.val;
       } else {
-        voltNum = hasConfiguredPvEntities ? 0 : (380 + (i * 4.5));
+        voltNum = suppressDemo ? 0 : (380 + (i * 4.5));
       }
 
       if (sCurr) {
@@ -3493,7 +3497,7 @@ export class EnergyStationCard extends HTMLElement {
       } else if (sPwr && voltNum > 0) {
         currNum = (kwNum * 1000) / voltNum;
       } else {
-        currNum = hasConfiguredPvEntities ? 0 : (3.12 + (i * 0.28));
+        currNum = suppressDemo ? 0 : (3.12 + (i * 0.28));
       }
 
       calculatedTotalPvKw += kwNum;
@@ -3512,7 +3516,7 @@ export class EnergyStationCard extends HTMLElement {
       const panelMetrics = this.shadowRoot.getElementById(`pvMetrics_${i}`);
       if (panelMetrics) {
         const showMetrics = c.solar?.show_metrics !== false;
-        const hasData = Boolean(sVolt || sCurr || !hasConfiguredPvEntities || strConfig?.voltage_entity || strConfig?.current_entity || voltNum > 0 || currNum > 0);
+        const hasData = Boolean(sVolt || sCurr || !suppressDemo || strConfig?.voltage_entity || strConfig?.current_entity || voltNum > 0 || currNum > 0);
         panelMetrics.style.display = (showMetrics && hasData) ? 'flex' : 'none';
       }
 
@@ -3521,7 +3525,7 @@ export class EnergyStationCard extends HTMLElement {
         ? parseFloat(strConfig.capacity_kw)
         : (strConfig?.installed_power !== undefined
             ? parseFloat(strConfig.installed_power)
-            : (hasConfiguredPvEntities ? 0 : 4.0));
+            : (suppressDemo ? 0 : 4.0));
 
       const strPct = (strCap > 0 && kwNum > 0)
         ? Math.min(100, Math.round((kwNum / strCap) * 100))
@@ -3563,7 +3567,7 @@ export class EnergyStationCard extends HTMLElement {
         const cap = s?.capacity_kw !== undefined ? parseFloat(s.capacity_kw) : (s?.installed_power !== undefined ? parseFloat(s.installed_power) : 0);
         if (!isNaN(cap) && cap > 0) sumStrCap += cap;
       }
-      totalInstalledKw = sumStrCap > 0 ? sumStrCap : (hasConfiguredPvEntities ? 0 : 12.0);
+      totalInstalledKw = sumStrCap > 0 ? sumStrCap : (suppressDemo ? 0 : 12.0);
     }
 
     const totalPct = totalInstalledKw > 0 ? ((totalSolarKw / totalInstalledKw) * 100) : 0;
@@ -3618,7 +3622,7 @@ export class EnergyStationCard extends HTMLElement {
     }
 
     const sPvDaily = this._getEntityState(c.solar?.daily_yield_entity);
-    const dailyKwh = sPvDaily ? sPvDaily.val : (hasConfiguredPvEntities ? 0 : 48.6);
+    const dailyKwh = sPvDaily ? sPvDaily.val : (suppressDemo ? 0 : 48.6);
     this._nodes.dailySolarYield.innerText = dailyKwh.toFixed(1);
     
     const targetKwh = c.solar?.target_daily_yield || 55.0;

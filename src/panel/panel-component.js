@@ -1,5 +1,5 @@
 console.info(
-  '%c⚡ Energy Station Panel v1.6.9 Loaded ⚡',
+  '%c⚡ Energy Station Panel v1.7.0 Loaded ⚡',
   'background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
 );
 
@@ -17,7 +17,9 @@ export class EnergyStationPanel extends HTMLElement {
     this._scale = 1.0;
     this._cardNode = null;
     this._editorNode = null;
-    this._hasAttemptedAutoImport = false;
+    this._hasFoundConfig = false;
+    this._discoveryRetryCount = 0;
+    this._discoveryRetryTimer = null;
   }
 
   set hass(hass) {
@@ -30,10 +32,16 @@ export class EnergyStationPanel extends HTMLElement {
     }
     this._updateHaStatusBadge();
     
-    // Auto-discover existing lovelace card config once on first connect
-    if (!this._hasAttemptedAutoImport) {
-      this._hasAttemptedAutoImport = true;
+    // Auto-discover existing lovelace card config until found
+    if (!this._hasFoundConfig) {
       this._autoDiscoverLovelaceConfig();
+    }
+  }
+
+  disconnectedCallback() {
+    if (this._discoveryRetryTimer) {
+      clearTimeout(this._discoveryRetryTimer);
+      this._discoveryRetryTimer = null;
     }
   }
 
@@ -65,11 +73,39 @@ export class EnergyStationPanel extends HTMLElement {
     }, 120);
   }
 
+  _isDefaultConfig(cfg) {
+    if (!cfg || typeof cfg !== 'object') return true;
+    if (cfg._customized === true) return false;
+    if (Object.keys(cfg).length <= 1) return true;
+
+    // Check fingerprints of unconfigured demo DEFAULT_CONFIG
+    let defaultScore = 0;
+    if (cfg.aux?.type === 'microinverter' && cfg.aux?.show === true) defaultScore++;
+    if (cfg.solar?.target_daily_yield === 55.0) defaultScore++;
+    if (Array.isArray(cfg.wind?.turbines) &&
+        cfg.wind.turbines[0]?.name === 'Вітряк 1' &&
+        cfg.wind.turbines[1]?.name === 'Вітряк 2') defaultScore++;
+    if (Array.isArray(cfg.load?.subloads) &&
+        cfg.load.subloads.length === 3 &&
+        cfg.load.subloads.some(s => s.id === 'heat_pump') &&
+        cfg.load.subloads.some(s => s.id === 'other')) defaultScore++;
+    if (Array.isArray(cfg.solar?.strings) &&
+        cfg.solar.strings.length === 3 &&
+        cfg.solar.strings[0]?.voltage_entity === 'sensor.deye_12k_inverter_pv1_voltage' &&
+        cfg.inverter?.voltage_entity === 'sensor.deye_12k_inverter_grid_voltage') defaultScore++;
+
+    return defaultScore >= 2;
+  }
+
   _loadConfig() {
     try {
-      const stored = localStorage.getItem('energy_station_app_config');
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('energy_station_app_config') : null;
       if (stored) {
-        this._config = JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        if (parsed && !this._isDefaultConfig(parsed)) {
+          this._config = parsed;
+          this._hasFoundConfig = true;
+        }
       }
     } catch (e) {}
 
@@ -99,13 +135,16 @@ export class EnergyStationPanel extends HTMLElement {
       }
     } catch (e) {}
     if (syncToServer && this._hass && typeof this._hass.callWS === 'function') {
-      try {
-        this._hass.callWS({
-          type: 'frontend/set_user_data',
-          key: 'energy_station_app_config',
-          value: this._config
-        }).catch(() => {});
-      } catch (e) {}
+      // Do not pollute HA server user_data with uncustomized DEFAULT_CONFIG
+      if (!this._isDefaultConfig(this._config)) {
+        try {
+          this._hass.callWS({
+            type: 'frontend/set_user_data',
+            key: 'energy_station_app_config',
+            value: this._config
+          }).catch(() => {});
+        } catch (e) {}
+      }
     }
     if (this._cardNode) {
       this._cardNode.setConfig(this._config);
@@ -124,15 +163,24 @@ export class EnergyStationPanel extends HTMLElement {
 
   async _autoDiscoverLovelaceConfig() {
     if (!this._hass) return;
+    if (this._hasFoundConfig) return;
+
     try {
-      // 1. If localStorage already has a configured state, keep it and back it up to HA server storage
+      // 1. If localStorage already has a genuine customized state, keep it and sync to HA server storage
       const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('energy_station_app_config') : null;
       if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed && parsed.solar?.strings?.[0]?.voltage_entity && parsed.inverter?.voltage_entity) {
-          this._saveConfig(true);
-          return;
-        }
+        try {
+          const parsed = JSON.parse(stored);
+          if (parsed && !this._isDefaultConfig(parsed)) {
+            parsed._customized = true;
+            this._config = parsed;
+            this._hasFoundConfig = true;
+            this._saveConfig(true);
+            this._render();
+            this._bindEvents();
+            return;
+          }
+        } catch (e) {}
       }
 
       // 2. Restore from HA server-side user_data if localStorage was cleared
@@ -142,16 +190,19 @@ export class EnergyStationPanel extends HTMLElement {
             type: 'frontend/get_user_data',
             key: 'energy_station_app_config'
           });
-          if (resp?.value && typeof resp.value === 'object') {
+          if (resp?.value && typeof resp.value === 'object' && !this._isDefaultConfig(resp.value)) {
+            const serverConfig = resp.value;
+            serverConfig._customized = true;
             this._config = {
               ...JSON.parse(JSON.stringify(DEFAULT_CONFIG)),
-              ...resp.value,
+              ...serverConfig,
               appearance: {
                 ...DEFAULT_CONFIG.appearance,
-                ...(resp.value.appearance || {})
+                ...(serverConfig.appearance || {})
               }
             };
-            this._saveConfig(false);
+            this._hasFoundConfig = true;
+            this._saveConfig(true);
             this._render();
             this._bindEvents();
             return;
@@ -160,16 +211,39 @@ export class EnergyStationPanel extends HTMLElement {
       }
 
       // 3. Fallback: auto-import from Lovelace dashboards
-      await this._importFromLovelace(false);
+      const imported = await this._importFromLovelace(false);
+      if (imported) {
+        this._hasFoundConfig = true;
+        return;
+      }
     } catch (e) {
-      console.warn('Lovelace auto-import skipped:', e);
+      console.warn('Lovelace auto-import attempt failed:', e);
     }
+
+    // 4. Retry if not yet found (e.g. hass.panels or websocket still in flight)
+    if (!this._hasFoundConfig) {
+      this._scheduleAutoImportRetry();
+    }
+  }
+
+  _scheduleAutoImportRetry() {
+    if (this._hasFoundConfig) return;
+    this._discoveryRetryCount = (this._discoveryRetryCount || 0) + 1;
+    if (this._discoveryRetryCount > 8) return;
+
+    clearTimeout(this._discoveryRetryTimer);
+    const delay = Math.min(250 * this._discoveryRetryCount, 2000);
+    this._discoveryRetryTimer = setTimeout(() => {
+      if (!this._hasFoundConfig && this._hass) {
+        this._autoDiscoverLovelaceConfig();
+      }
+    }, delay);
   }
 
   async _importFromLovelace(notifyUser = true) {
     if (!this._hass) {
       if (notifyUser) alert('Немає підключення до Home Assistant');
-      return;
+      return false;
     }
 
     try {
@@ -207,24 +281,57 @@ export class EnergyStationPanel extends HTMLElement {
         findInViews(defLovelace?.views);
       } catch (e) {}
 
-      // 2. Try other dashboards (e.g. New Panel, Sansunk, solar, etc.)
-      if (candidates.length === 0 && this._hass.panels) {
-        const panels = Object.values(this._hass.panels).filter(p => p.component_name === 'lovelace');
-        for (const p of panels) {
-          if (p.url_path && p.url_path !== 'energy-station') {
-            try {
-              const dash = await this._hass.callWS({ type: 'lovelace/config', url_path: p.url_path });
-              findInViews(dash?.views);
-              if (candidates.length > 0) break;
-            } catch (err) {}
+      // 2. Try custom dashboards via lovelace/dashboards/list
+      if (candidates.length === 0 || !candidates.some(c => !this._isDefaultConfig(c))) {
+        try {
+          const dashList = await this._hass.callWS({ type: 'lovelace/dashboards/list' });
+          if (Array.isArray(dashList)) {
+            for (const d of dashList) {
+              if (d.url_path && d.url_path !== 'energy-station') {
+                try {
+                  const dash = await this._hass.callWS({ type: 'lovelace/config', url_path: d.url_path });
+                  findInViews(dash?.views);
+                  if (candidates.some(c => !this._isDefaultConfig(c))) break;
+                } catch (err) {}
+              }
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 3. Try dashboards registered in this._hass.panels
+      if (candidates.length === 0 || !candidates.some(c => !this._isDefaultConfig(c))) {
+        if (this._hass.panels) {
+          const panels = Object.values(this._hass.panels).filter(p => p.component_name === 'lovelace');
+          for (const p of panels) {
+            if (p.url_path && p.url_path !== 'energy-station') {
+              try {
+                const dash = await this._hass.callWS({ type: 'lovelace/config', url_path: p.url_path });
+                findInViews(dash?.views);
+                if (candidates.some(c => !this._isDefaultConfig(c))) break;
+              } catch (err) {}
+            }
           }
         }
       }
 
+      // 4. Check DOM of parent document if in iframe or custom panel
+      if (typeof window !== 'undefined' && window.parent?.document) {
+        try {
+          const domCards = window.parent.document.querySelectorAll('energy-station-card');
+          for (const domCard of domCards) {
+            if (domCard !== this._cardNode && domCard._config) {
+              candidates.push(domCard._config);
+            }
+          }
+        } catch (e) {}
+      }
+
       if (candidates.length > 0) {
-        const best = candidates[0];
+        const best = candidates.find(c => !this._isDefaultConfig(c)) || candidates[0];
         const clone = JSON.parse(JSON.stringify(best));
         delete clone.type;
+        clone._customized = true;
 
         clone.appearance = {
           ...DEFAULT_CONFIG.appearance,
@@ -233,36 +340,24 @@ export class EnergyStationPanel extends HTMLElement {
         };
 
         this._config = clone;
-        this._saveConfig();
+        this._hasFoundConfig = true;
+        this._saveConfig(true);
         this._render();
         this._bindEvents();
         if (notifyUser) {
           alert('✓ Успішно перенесено всі ваші налаштування (інвертор, PV, АКБ, бойлер) з дашборду Lovelace!');
         }
-        return;
-      }
-
-      // Check DOM of parent document if in iframe or custom panel
-      if (typeof window !== 'undefined' && window.parent?.document) {
-        const domCards = window.parent.document.querySelectorAll('energy-station-card');
-        for (const domCard of domCards) {
-          if (domCard !== this._cardNode && domCard._config) {
-            this._config = JSON.parse(JSON.stringify(domCard._config));
-            this._saveConfig();
-            this._render();
-            this._bindEvents();
-            if (notifyUser) alert('✓ Успішно скопійовано конфігурацію з відкритої картки на дашборді!');
-            return;
-          }
-        }
+        return true;
       }
 
       if (notifyUser) {
         alert('Не знайдено збереженої картки на дашборді. Ви можете вставити конфігурацію вручну через кнопку "Вставити YAML / JSON".');
       }
+      return false;
     } catch (err) {
       console.error('Import from Lovelace error:', err);
       if (notifyUser) alert('Помилка імпорту: ' + err.message);
+      return false;
     }
   }
 
@@ -710,7 +805,7 @@ export class EnergyStationPanel extends HTMLElement {
           <div>
             <div class="panel-brand-title">
               <span>Energy Station</span>
-              <span class="panel-brand-badge">PRO APP v1.6.9</span>
+              <span class="panel-brand-badge">PRO APP v1.7.0</span>
             </div>
           </div>
         </div>
@@ -978,9 +1073,11 @@ export class EnergyStationPanel extends HTMLElement {
         ...(this._config?.appearance || {}),
         ...(newConfig.appearance || {})
       };
+      newConfig._customized = true;
+      this._hasFoundConfig = true;
       this._config = newConfig;
       if (this._cardNode) this._cardNode.setConfig(this._config);
-      this._saveConfig();
+      this._saveConfig(true);
     });
 
     // Zoom buttons in top bar
@@ -1061,8 +1158,10 @@ export class EnergyStationPanel extends HTMLElement {
               ...(this._config?.appearance || {}),
               ...(parsed.appearance || {})
             };
+            parsed._customized = true;
+            this._hasFoundConfig = true;
             this._config = parsed;
-            this._saveConfig();
+            this._saveConfig(true);
             this._render();
             this._bindEvents();
             yamlModal?.classList.remove('active');
