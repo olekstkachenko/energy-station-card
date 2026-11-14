@@ -1,5 +1,5 @@
 console.info(
-  '%c⚡ Energy Station Panel v1.6.8 Loaded ⚡',
+  '%c⚡ Energy Station Panel v1.6.9 Loaded ⚡',
   'background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
 );
 
@@ -710,7 +710,7 @@ export class EnergyStationPanel extends HTMLElement {
           <div>
             <div class="panel-brand-title">
               <span>Energy Station</span>
-              <span class="panel-brand-badge">PRO APP v1.6.8</span>
+              <span class="panel-brand-badge">PRO APP v1.6.9</span>
             </div>
           </div>
         </div>

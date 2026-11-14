@@ -1,5 +1,5 @@
 console.info(
-  '%c⚡ Energy Station Card v1.6.8 Loaded ⚡',
+  '%c⚡ Energy Station Card v1.6.9 Loaded ⚡',
   'background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
 );
 
@@ -2095,7 +2095,7 @@ export class EnergyStationCard extends HTMLElement {
         <div class="es-header">
           <div class="es-header-title">
             <span>${c.title || 'Energy Station'}</span>
-            <span class="es-header-badge">PRO FLOW v1.6.8</span>
+            <span class="es-header-badge">PRO FLOW v1.6.9</span>
           </div>
           <div class="es-header-controls">
             <button class="es-header-pill-btn es-header-edit-btn" id="headerEditCard" title="${this._t('edit_card')}">
@@ -4035,6 +4035,44 @@ export class EnergyStationCard extends HTMLElement {
 
     const rawPrimaryKw = sPrimary ? (sPrimary.unit === 'W' ? sPrimary.val / 1000 : sPrimary.val) : 0;
     const totalGenKw = totalSolarKw + totalWindKw + (auxKw > 0 ? auxKw : 0) + batOutKw;
+    const thresholdKw = (c.grid?.min_power_threshold !== undefined ? c.grid.min_power_threshold : 50) / 1000;
+    const voltThreshold = c.grid?.voltage_threshold !== undefined ? c.grid.voltage_threshold : 90;
+
+    // Detect if Grid is Connected (Mains voltage or status)
+    const sGridStatus = this._getEntityState(c.grid?.status_entity);
+    const sGridVolt = this._getEntityState(c.grid?.voltage_entity || c.inverter?.voltage_entity);
+
+    let isGridConnected = true;
+    if (sGridStatus) {
+      const st = String(sGridStatus.raw || sGridStatus.val).toLowerCase();
+      if (st === 'off' || st === 'false' || st === '0' || st === 'disconnected' || st === 'offline' || st === 'unavailable' || st === 'unknown') {
+        isGridConnected = false;
+      }
+    } else if (sGridVolt && typeof sGridVolt.val === 'number' && !isNaN(sGridVolt.val)) {
+      if (sGridVolt.val < voltThreshold) {
+        isGridConnected = false;
+      }
+    }
+
+    // Resolve Mains AC Voltage and Current Telemetry (supports Deye, Solarman, Sunsynk, etc.)
+    const sMainsVolt = this._getEntityState(c.grid?.voltage_entity) ||
+                       this._getEntityState(c.inverter?.voltage_entity) ||
+                       this._getEntityState('sensor.inverter_12_kvt_grid_voltage') ||
+                       this._getEntityState('sensor.esp32_deye_inverter_grid_voltage') ||
+                       this._getEntityState('sensor.deye_12k_inverter_grid_voltage');
+
+    const sMainsCurr = this._getEntityState(c.inverter?.current_entity) ||
+                       this._getEntityState(c.grid?.current_entity) ||
+                       this._getEntityState('sensor.inverter_12_kvt_grid_current') ||
+                       this._getEntityState('sensor.inverter_12_kvt_current_l1') ||
+                       this._getEntityState('sensor.esp32_deye_inverter_grid_current') ||
+                       this._getEntityState('sensor.deye_12k_inverter_grid_current') ||
+                       this._getEntityState('sensor.grid_current');
+
+    const mainsV = (sMainsVolt && typeof sMainsVolt.val === 'number' && !isNaN(sMainsVolt.val)) ? sMainsVolt.val : 0;
+    const mainsI = (sMainsCurr && typeof sMainsCurr.val === 'number' && !isNaN(sMainsCurr.val)) ? Math.abs(sMainsCurr.val) : 0;
+    const hasPhysicalMainsCurrent = (mainsV >= voltThreshold) && (mainsI >= 0.5);
+    const derivedMainsKw = hasPhysicalMainsCurrent ? (mainsV * mainsI) / 1000.0 : 0;
 
     // Check if user EXPLICITLY configured an external CT / Smart Meter entity
     if (c.grid?.external_power_entity) {
@@ -4115,14 +4153,17 @@ export class EnergyStationCard extends HTMLElement {
         }
 
         // Validate candidate external CT:
-        // In Deye inverters without an external CT installed, register 0x0234 is perpetually 0.
-        // If candidate reports near 0 (< 30 W) while primary grid port or battery charger is drawing power without local generation,
-        // the CT clamp is physically unconnected! Never adopt it over the primary grid sensor.
+        // In Deye inverters without an external CT installed, register 0x0234 is perpetually 0 (or floating 1-2 W noise).
+        // Candidate external CT must NOT be auto-adopted if:
+        // 1) Reading is negligible / noise (< thresholdKw, usually < 50 W).
+        // 2) Or if physical mains port has active current (>= 0.5A) while candidate CT is < 50 W (clamp physically absent).
         if (detectedExtCand) {
           const candKw = Math.abs(detectedExtCand.unit === 'kW' ? detectedExtCand.val : detectedExtCand.val / 1000);
           const isUnconnectedCt = (candKw < 0.03) && ((batInKw > 0.1 && totalGenKw < 0.1) || (rawPrimaryKw > 0.1 && totalGenKw < 0.1));
           const isSubBranchCt = (batInKw > 0.5 && totalGenKw < 0.15 && candKw < (batInKw - 0.2));
-          if (!isUnconnectedCt && !isSubBranchCt && candKw > 0) {
+          const isNoiseCt = (candKw < 0.02);
+          const isMainsContradicted = hasPhysicalMainsCurrent && (candKw < 0.05);
+          if (!isUnconnectedCt && !isSubBranchCt && !isNoiseCt && !isMainsContradicted) {
             sGridPower = detectedExtCand;
             isExternalCt = true;
           }
@@ -4137,44 +4178,6 @@ export class EnergyStationCard extends HTMLElement {
 
     const rawGridKw = sGridPower ? (sGridPower.unit === 'W' ? sGridPower.val / 1000 : sGridPower.val) : 0;
     const powerSign = c.grid?.power_sign || (c.grid?.invert_power ? 'inverted' : 'deye');
-    const thresholdKw = (c.grid?.min_power_threshold !== undefined ? c.grid.min_power_threshold : 50) / 1000;
-
-    // Detect if Grid is Connected (Mains voltage or status)
-    const sGridStatus = this._getEntityState(c.grid?.status_entity);
-    const sGridVolt = this._getEntityState(c.grid?.voltage_entity || c.inverter?.voltage_entity);
-    const voltThreshold = c.grid?.voltage_threshold !== undefined ? c.grid.voltage_threshold : 90;
-
-    let isGridConnected = true;
-    if (sGridStatus) {
-      const st = String(sGridStatus.raw || sGridStatus.val).toLowerCase();
-      if (st === 'off' || st === 'false' || st === '0' || st === 'disconnected' || st === 'offline' || st === 'unavailable' || st === 'unknown') {
-        isGridConnected = false;
-      }
-    } else if (sGridVolt && typeof sGridVolt.val === 'number' && !isNaN(sGridVolt.val)) {
-      if (sGridVolt.val < voltThreshold) {
-        isGridConnected = false;
-      }
-    }
-
-    // Resolve Mains AC Voltage and Current Telemetry (supports Deye, Solarman, Sunsynk, etc.)
-    const sMainsVolt = this._getEntityState(c.grid?.voltage_entity) ||
-                       this._getEntityState(c.inverter?.voltage_entity) ||
-                       this._getEntityState('sensor.inverter_12_kvt_grid_voltage') ||
-                       this._getEntityState('sensor.esp32_deye_inverter_grid_voltage') ||
-                       this._getEntityState('sensor.deye_12k_inverter_grid_voltage');
-
-    const sMainsCurr = this._getEntityState(c.inverter?.current_entity) ||
-                       this._getEntityState(c.grid?.current_entity) ||
-                       this._getEntityState('sensor.inverter_12_kvt_grid_current') ||
-                       this._getEntityState('sensor.inverter_12_kvt_current_l1') ||
-                       this._getEntityState('sensor.esp32_deye_inverter_grid_current') ||
-                       this._getEntityState('sensor.deye_12k_inverter_grid_current') ||
-                       this._getEntityState('sensor.grid_current');
-
-    const mainsV = (sMainsVolt && typeof sMainsVolt.val === 'number' && !isNaN(sMainsVolt.val)) ? sMainsVolt.val : 0;
-    const mainsI = (sMainsCurr && typeof sMainsCurr.val === 'number' && !isNaN(sMainsCurr.val)) ? Math.abs(sMainsCurr.val) : 0;
-    const hasPhysicalMainsCurrent = (mainsV >= voltThreshold) && (mainsI >= 0.5);
-    const derivedMainsKw = hasPhysicalMainsCurrent ? (mainsV * mainsI) / 1000.0 : 0;
 
     // Detect selling permissions and active export activity
     const sGridExpDaily = this._getEntityState(c.grid?.export_daily_entity);
@@ -4252,7 +4255,7 @@ export class EnergyStationCard extends HTMLElement {
         // Station has active generation and can physically export to the grid.
         if (isExternalCt) {
           absGridKw = Math.abs(rawGridKw);
-          if (absGridKw >= thresholdKw) {
+          if (absGridKw >= Math.min(thresholdKw, 0.02)) {
             if (powerSign === 'deye') {
               if (rawGridKw < 0) isExport = true;
               else isImport = true;
@@ -4290,29 +4293,31 @@ export class EnergyStationCard extends HTMLElement {
               isExport = true;
             }
           } else {
-            // Primary sensor is within deadband (< thresholdKw) or 0.
             absGridKw = Math.abs(rawGridKw);
-            // Failsafe: check physical mains current (V * I)
-            if (hasPhysicalMainsCurrent) {
-              const isStationGeneratingSurplus = totalGenKw > (Math.max(subloadsTotalKw, rawSensorKw) + 0.1);
-              if ((hasDailyExport || hasSellPowerSet || isStationGeneratingSurplus) && sellingEnabled) {
-                absGridKw = derivedMainsKw;
-                isExport = true;
-              } else {
-                absGridKw = derivedMainsKw;
-                isImport = true;
-              }
-            }
           }
+        }
 
-          // Auto-reconcile Grid Import when internal grid port only accounts for inverter charger draw:
-          const shouldAutoCalculateGrid = c.grid?.auto_calculate !== false;
-          if (shouldAutoCalculateGrid && isImport && !isExternalCt) {
-            const houseLoadKw = Math.max(rawSensorKw, subloadsTotalKw);
-            const totalInternalLoadKw = batInKw + houseLoadKw + nonEssKw + carKw;
-            if (houseLoadKw > 0.05 && totalInternalLoadKw > (totalGenKw + absGridKw + 0.1)) {
-              absGridKw = absGridKw + houseLoadKw;
-            }
+        // Universal physical mains current fallback (applies if sensor is idle, missing, or contradicted):
+        if (hasPhysicalMainsCurrent && (!isExport && !isImport || absGridKw < 0.05 || (isExport && derivedMainsKw > (absGridKw + 0.2)))) {
+          const isStationGeneratingSurplus = totalGenKw > (Math.max(subloadsTotalKw, rawSensorKw) + 0.1);
+          if ((hasDailyExport || hasSellPowerSet || isStationGeneratingSurplus) && sellingEnabled) {
+            absGridKw = derivedMainsKw;
+            isExport = true;
+            isImport = false;
+          } else if (!isExport) {
+            absGridKw = derivedMainsKw;
+            isImport = true;
+            isExport = false;
+          }
+        }
+
+        // Auto-reconcile Grid Import when internal grid port only accounts for inverter charger draw:
+        const shouldAutoCalculateGrid = c.grid?.auto_calculate !== false;
+        if (shouldAutoCalculateGrid && isImport && !isExternalCt) {
+          const houseLoadKw = Math.max(rawSensorKw, subloadsTotalKw);
+          const totalInternalLoadKw = batInKw + houseLoadKw + nonEssKw + carKw;
+          if (houseLoadKw > 0.05 && totalInternalLoadKw > (totalGenKw + absGridKw + 0.1)) {
+            absGridKw = absGridKw + houseLoadKw;
           }
         }
       }
@@ -4327,8 +4332,9 @@ export class EnergyStationCard extends HTMLElement {
           const effectiveHouseKw = (c.load?.separate_export !== false && rawSensorKw >= absGridKw)
             ? Math.max(subloadsTotalKw, rawSensorKw - absGridKw)
             : Math.max(subloadsTotalKw, rawSensorKw);
-          const maxPossibleExport = Math.max(0, totalGenKw - batInKw - effectiveHouseKw - nonEssKw - carKw);
-          if (absGridKw > (maxPossibleExport + 0.3)) {
+          const availableInflowKw = totalGenKw + batOutKw;
+          const maxPossibleExport = Math.max(0, availableInflowKw - batInKw - effectiveHouseKw - nonEssKw - carKw);
+          if (absGridKw > (maxPossibleExport + 0.5)) {
             absGridKw = Math.max(thresholdKw, maxPossibleExport);
             if (absGridKw < thresholdKw) {
               isExport = false;

@@ -665,6 +665,31 @@ test('Energy Station Card - Theme & Language Customization', async (t) => {
     card._updateValues();
     assert.strictEqual(domMap.gridPowerVal.innerText, '1.161 кВт');
     assert.strictEqual(domMap.gridDirectionLabel.innerText, '← Експорт');
+
+    // 5. User scenario with unconnected external CT clamp register floating at 1 W noise (sensor.deye_12k_inverter_external_power = 1 W):
+    // Inverter telemetry: 258.20 V, 2.91 A (0.751 kW export).
+    // The card must ignore the 1 W noise, derive 0.751 kW export, separate export from house load (1.921 - 0.751 = 1.170 kW),
+    // and match inverter self-consumption (182 W)!
+    card._hass.states = {
+      'sensor.deye_12k_inverter_pv1_power': { state: '845', attributes: { unit_of_measurement: 'W' } },
+      'sensor.deye_12k_inverter_pv2_power': { state: '521', attributes: { unit_of_measurement: 'W' } },
+      'sensor.deye_12k_inverter_pv3_power': { state: '630', attributes: { unit_of_measurement: 'W' } },
+      'sensor.deye_12k_inverter_battery_power': { state: '107', attributes: { unit_of_measurement: 'W' } },
+      'sensor.deye_12k_inverter_grid_voltage': { state: '258.20', attributes: { unit_of_measurement: 'V' } },
+      'sensor.deye_12k_inverter_grid_current': { state: '2.91', attributes: { unit_of_measurement: 'A' } },
+      'sensor.deye_12k_inverter_external_power': { state: '1', attributes: { unit_of_measurement: 'W' } },
+      'sensor.deye_12k_inverter_load_power': { state: '1921', attributes: { unit_of_measurement: 'W' } },
+      'sensor.boiler_power': { state: '1125', attributes: { unit_of_measurement: 'W' } },
+      'sensor.deye_12k_inverter_export_daily': { state: '1.30', attributes: { unit_of_measurement: 'kWh' } },
+      'number.deye_12k_inverter_sell_power': { state: '4000' }
+    };
+    card._updateValues();
+
+    assert.strictEqual(domMap.gridPowerVal.innerText, '0.751 кВт');
+    assert.strictEqual(domMap.gridDirectionLabel.innerText, '← Експорт');
+    assert.strictEqual(domMap.gridPowerVal.style.color, '#34d399');
+    assert.strictEqual(domMap.essentialPowerVal.innerText, '1.170 кВт');
+    assert.strictEqual(domMap.inverterSelfConsumptionVal.innerText, '182 Вт');
   });
 
   await t.test('dedicated edit button opens card editor via hui-card-options or redirects to ?edit=1', () => {
