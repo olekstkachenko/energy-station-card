@@ -1,5 +1,5 @@
 console.info(
-  '%c⚡ Energy Station Card v1.6.7 Loaded ⚡',
+  '%c⚡ Energy Station Card v1.6.8 Loaded ⚡',
   'background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;'
 );
 
@@ -685,6 +685,11 @@ export class EnergyStationCard extends HTMLElement {
           filter: drop-shadow(0 0 6px #0284c7) drop-shadow(0 0 2px #38bdf8);
         }
 
+        .flow-pulse.flow-grid.exporting {
+          stroke: #34d399;
+          filter: drop-shadow(0 0 6px #059669) drop-shadow(0 0 2px #34d399);
+        }
+
         .flow-pulse.flow-solar {
           stroke: #fbbf24;
           filter: drop-shadow(0 0 6px #d97706) drop-shadow(0 0 2px #fde047);
@@ -765,6 +770,7 @@ export class EnergyStationCard extends HTMLElement {
         .glow-solar { filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.45)); }
         .glow-battery { filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.45)); }
         .glow-grid { filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.45)); }
+        .glow-grid-export { filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.55)); }
         .glow-aux { filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.45)); }
         .glow-wind { filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.55)); }
 
@@ -2089,7 +2095,7 @@ export class EnergyStationCard extends HTMLElement {
         <div class="es-header">
           <div class="es-header-title">
             <span>${c.title || 'Energy Station'}</span>
-            <span class="es-header-badge">PRO FLOW v1.6.7</span>
+            <span class="es-header-badge">PRO FLOW v1.6.8</span>
           </div>
           <div class="es-header-controls">
             <button class="es-header-pill-btn es-header-edit-btn" id="headerEditCard" title="${this._t('edit_card')}">
@@ -4131,7 +4137,6 @@ export class EnergyStationCard extends HTMLElement {
 
     const rawGridKw = sGridPower ? (sGridPower.unit === 'W' ? sGridPower.val / 1000 : sGridPower.val) : 0;
     const powerSign = c.grid?.power_sign || (c.grid?.invert_power ? 'inverted' : 'deye');
-    const sellingEnabled = c.grid?.selling_enabled === true;
     const thresholdKw = (c.grid?.min_power_threshold !== undefined ? c.grid.min_power_threshold : 50) / 1000;
 
     // Detect if Grid is Connected (Mains voltage or status)
@@ -4150,6 +4155,33 @@ export class EnergyStationCard extends HTMLElement {
         isGridConnected = false;
       }
     }
+
+    // Resolve Mains AC Voltage and Current Telemetry (supports Deye, Solarman, Sunsynk, etc.)
+    const sMainsVolt = this._getEntityState(c.grid?.voltage_entity) ||
+                       this._getEntityState(c.inverter?.voltage_entity) ||
+                       this._getEntityState('sensor.inverter_12_kvt_grid_voltage') ||
+                       this._getEntityState('sensor.esp32_deye_inverter_grid_voltage') ||
+                       this._getEntityState('sensor.deye_12k_inverter_grid_voltage');
+
+    const sMainsCurr = this._getEntityState(c.inverter?.current_entity) ||
+                       this._getEntityState(c.grid?.current_entity) ||
+                       this._getEntityState('sensor.inverter_12_kvt_grid_current') ||
+                       this._getEntityState('sensor.inverter_12_kvt_current_l1') ||
+                       this._getEntityState('sensor.esp32_deye_inverter_grid_current') ||
+                       this._getEntityState('sensor.deye_12k_inverter_grid_current') ||
+                       this._getEntityState('sensor.grid_current');
+
+    const mainsV = (sMainsVolt && typeof sMainsVolt.val === 'number' && !isNaN(sMainsVolt.val)) ? sMainsVolt.val : 0;
+    const mainsI = (sMainsCurr && typeof sMainsCurr.val === 'number' && !isNaN(sMainsCurr.val)) ? Math.abs(sMainsCurr.val) : 0;
+    const hasPhysicalMainsCurrent = (mainsV >= voltThreshold) && (mainsI >= 0.5);
+    const derivedMainsKw = hasPhysicalMainsCurrent ? (mainsV * mainsI) / 1000.0 : 0;
+
+    // Detect selling permissions and active export activity
+    const sGridExpDaily = this._getEntityState(c.grid?.export_daily_entity);
+    const hasDailyExport = sGridExpDaily && typeof sGridExpDaily.val === 'number' && sGridExpDaily.val > 0.01;
+    const sSellCtrl = this._getEntityState(c.controls?.sell_power_entity);
+    const hasSellPowerSet = sSellCtrl && typeof sSellCtrl.val === 'number' && sSellCtrl.val > 0;
+    const sellingEnabled = (c.grid?.selling_enabled !== false) || hasDailyExport || hasSellPowerSet;
 
     const isNightOrNoGen = (totalGenKw < 0.15);
     const isUnderGenerated = (totalGenKw < (batInKw + 0.05));
@@ -4173,102 +4205,14 @@ export class EnergyStationCard extends HTMLElement {
           isImport = true;
           isExport = false;
         } else {
-          absGridKw = 0;
           isImport = false;
           isExport = false;
         }
-      } else if (isExternalCt) {
-        // Direct external CT reading at the meter boundary (e.g. 0.03 kW on Deye LCD)
-        absGridKw = Math.abs(rawGridKw);
-        if (absGridKw >= thresholdKw) {
-          if (powerSign === 'deye') {
-            if (rawGridKw < 0) isExport = true;
-            else isImport = true;
-          } else {
-            if (rawGridKw > 0) isExport = true;
-            else isImport = true;
-          }
-        }
-      } else {
-        // Inverter internal grid port (e.g. sensor.deye_12k_inverter_total_grid_power).
-        // When whole-home loads are connected to the home AC panel, power flowing from the inverter
-        // to the home panel appears as negative power at this port.
-        // It is NOT grid export unless the power leaving the port exceeds the house consumption!
-        if (powerSign === 'deye') {
-          if (rawGridKw > 0) {
-            absGridKw = rawGridKw;
-            if (absGridKw >= thresholdKw) isImport = true;
-          } else if (rawGridKw < 0) {
-            const leavingKw = Math.abs(rawGridKw);
-            const netExportKw = Math.max(0, leavingKw - rawSensorKw);
-            if (netExportKw >= thresholdKw) {
-              absGridKw = netExportKw;
-              isExport = true;
-            } else {
-              absGridKw = 0;
-              isExport = false;
-            }
-          }
-        } else {
-          if (rawGridKw < 0) {
-            absGridKw = Math.abs(rawGridKw);
-            if (absGridKw >= thresholdKw) isImport = true;
-          } else if (rawGridKw > 0) {
-            const netExportKw = Math.max(0, rawGridKw - rawSensorKw);
-            if (netExportKw >= thresholdKw) {
-              absGridKw = netExportKw;
-              isExport = true;
-            } else {
-              absGridKw = 0;
-              isExport = false;
-            }
-          }
-        }
-      }
 
-      // Auto-reconcile Grid Import when internal grid port only accounts for inverter charger draw:
-      // In Deye/Sunsynk, when charging from grid, grid_power measures only the inverter charger bridge.
-      // If the house is drawing power and internal generation is 0 (or less than charging + load),
-      // the grid port does not include the house load.
-      // If auto_calculate is enabled (default), add the unmeasured house load to grid import.
-      const shouldAutoCalculateGrid = c.grid?.auto_calculate !== false;
-      if (shouldAutoCalculateGrid && isImport && !isExternalCt) {
-        const houseLoadKw = Math.max(rawSensorKw, subloadsTotalKw);
-        const totalInternalLoadKw = batInKw + houseLoadKw + nonEssKw + carKw;
-        if (houseLoadKw > 0.05 && totalInternalLoadKw > (totalGenKw + absGridKw + 0.1)) {
-          absGridKw = absGridKw + houseLoadKw;
-        }
-      }
-
-      // Physical Telemetry & Balance Failsafe:
-      // If grid is physically connected and station cannot be exporting (e.g. night/evening, no generation,
-      // or battery charging draw exceeds generation), street power is guaranteed to be importing.
-      // If primary grid power sensor is missing, 0, or reporting less than the battery charge:
-      // Derive active grid import from Inverter Mains telemetry (V * I * cos(phi)) or energy balance.
-      if (cannotBeExporting) {
-        const sMainsVolt = this._getEntityState(c.grid?.voltage_entity) ||
-                           this._getEntityState(c.inverter?.voltage_entity) ||
-                           this._getEntityState('sensor.inverter_12_kvt_grid_voltage') ||
-                           this._getEntityState('sensor.esp32_deye_inverter_grid_voltage') ||
-                           this._getEntityState('sensor.deye_12k_inverter_grid_voltage');
-
-        const sMainsCurr = this._getEntityState(c.inverter?.current_entity) ||
-                           this._getEntityState(c.grid?.current_entity) ||
-                           this._getEntityState('sensor.inverter_12_kvt_grid_current') ||
-                           this._getEntityState('sensor.inverter_12_kvt_current_l1') ||
-                           this._getEntityState('sensor.esp32_deye_inverter_grid_current') ||
-                           this._getEntityState('sensor.deye_12k_inverter_grid_current') ||
-                           this._getEntityState('sensor.grid_current');
-
-        const mainsV = (sMainsVolt && typeof sMainsVolt.val === 'number' && !isNaN(sMainsVolt.val)) ? sMainsVolt.val : 0;
-        const mainsI = (sMainsCurr && typeof sMainsCurr.val === 'number' && !isNaN(sMainsCurr.val)) ? sMainsCurr.val : 0;
-
-        const hasPhysicalMainsCurrent = (mainsV >= voltThreshold) && (mainsI >= 0.5);
         const isChargingWithoutGen = (batInKw > 0.1) && (totalGenKw < 0.1);
 
         if (hasPhysicalMainsCurrent) {
           // Mains AC power: P = V * I (matches physical utility meter reading directly)
-          const derivedMainsKw = (mainsV * mainsI) / 1000.0;
           if (absGridKw < 0.05 || absGridKw < (batInKw - 0.05) || derivedMainsKw > (absGridKw + 0.3)) {
             absGridKw = derivedMainsKw;
             isImport = true;
@@ -4282,8 +4226,18 @@ export class EnergyStationCard extends HTMLElement {
           isExport = false;
         }
 
+        // Auto-reconcile Grid Import when internal grid port only accounts for inverter charger draw:
+        const shouldAutoCalculateGrid = c.grid?.auto_calculate !== false;
+        if (shouldAutoCalculateGrid && !isExternalCt) {
+          const houseLoadKw = Math.max(rawSensorKw, subloadsTotalKw);
+          const totalInternalLoadKw = batInKw + houseLoadKw + nonEssKw + carKw;
+          if (houseLoadKw > 0.05 && totalInternalLoadKw > (totalGenKw + absGridKw + 0.1)) {
+            absGridKw = absGridKw + houseLoadKw;
+            isImport = true;
+          }
+        }
+
         // Physical Conservation of Energy Lower Bound:
-        // When grid is connected, Grid Import physically cannot be less than internal demand minus generation!
         const standbyWatts = (c.inverter?.standby_power !== undefined) ? c.inverter.standby_power : 100;
         const nominalLossKw = standbyWatts / 1000;
         const houseLoadKw = Math.max(rawSensorKw, subloadsTotalKw);
@@ -4294,18 +4248,93 @@ export class EnergyStationCard extends HTMLElement {
           isImport = true;
           isExport = false;
         }
+      } else {
+        // Station has active generation and can physically export to the grid.
+        if (isExternalCt) {
+          absGridKw = Math.abs(rawGridKw);
+          if (absGridKw >= thresholdKw) {
+            if (powerSign === 'deye') {
+              if (rawGridKw < 0) isExport = true;
+              else isImport = true;
+            } else {
+              if (rawGridKw > 0) isExport = true;
+              else isImport = true;
+            }
+          }
+        } else {
+          const isNegativeDeye = (powerSign === 'deye' && rawGridKw < -thresholdKw);
+          const isPositiveInverted = (powerSign === 'inverted' && rawGridKw > thresholdKw);
+          const isExportSign = isNegativeDeye || isPositiveInverted;
+
+          const isPositiveDeye = (powerSign === 'deye' && rawGridKw > thresholdKw);
+          const isNegativeInverted = (powerSign === 'inverted' && rawGridKw < -thresholdKw);
+          const isImportSign = isPositiveDeye || isNegativeInverted;
+
+          if (isImportSign) {
+            absGridKw = Math.abs(rawGridKw);
+            isImport = true;
+            isExport = false;
+          } else if (isExportSign) {
+            const candidateExportKw = Math.abs(rawGridKw);
+            // Check for internal inverter port artifact (where house is fed via grid port with zero export):
+            // Artifact occurs ONLY when: no external CT, candidate export almost exactly equals house load sensor,
+            // AND total generation is insufficient to supply both battery charging, house load, AND export!
+            const isHouseLoadMirrorArtifact = (Math.abs(candidateExportKw - rawSensorKw) < 0.08) &&
+              (totalGenKw < (batInKw + rawSensorKw + candidateExportKw - 0.2));
+
+            if (isHouseLoadMirrorArtifact) {
+              absGridKw = 0;
+              isExport = false;
+            } else {
+              absGridKw = candidateExportKw;
+              isExport = true;
+            }
+          } else {
+            // Primary sensor is within deadband (< thresholdKw) or 0.
+            absGridKw = Math.abs(rawGridKw);
+            // Failsafe: check physical mains current (V * I)
+            if (hasPhysicalMainsCurrent) {
+              const isStationGeneratingSurplus = totalGenKw > (Math.max(subloadsTotalKw, rawSensorKw) + 0.1);
+              if ((hasDailyExport || hasSellPowerSet || isStationGeneratingSurplus) && sellingEnabled) {
+                absGridKw = derivedMainsKw;
+                isExport = true;
+              } else {
+                absGridKw = derivedMainsKw;
+                isImport = true;
+              }
+            }
+          }
+
+          // Auto-reconcile Grid Import when internal grid port only accounts for inverter charger draw:
+          const shouldAutoCalculateGrid = c.grid?.auto_calculate !== false;
+          if (shouldAutoCalculateGrid && isImport && !isExternalCt) {
+            const houseLoadKw = Math.max(rawSensorKw, subloadsTotalKw);
+            const totalInternalLoadKw = batInKw + houseLoadKw + nonEssKw + carKw;
+            if (houseLoadKw > 0.05 && totalInternalLoadKw > (totalGenKw + absGridKw + 0.1)) {
+              absGridKw = absGridKw + houseLoadKw;
+            }
+          }
+        }
       }
 
-      // Physical Conservation of Energy bound:
-      // Grid export cannot physically exceed surplus generation minus all internal loads
-      const maxPossibleExport = Math.max(0, totalSolarKw + totalWindKw + (auxKw > 0 ? auxKw : 0) + batOutKw - batInKw - rawSensorKw - nonEssKw - carKw);
-      if (cannotBeExporting || !sellingEnabled) {
-        isExport = false;
-      } else if (isExport && absGridKw > (maxPossibleExport + 0.1)) {
-        absGridKw = maxPossibleExport;
-        if (absGridKw < thresholdKw) {
+      // Physical Conservation of Energy bound for export:
+      if (isExport) {
+        if (!sellingEnabled) {
           isExport = false;
           absGridKw = 0;
+        } else {
+          // If separate_export is active, rawSensorKw includes export power: true house load is max(subloads, rawSensorKw - absGridKw).
+          const effectiveHouseKw = (c.load?.separate_export !== false && rawSensorKw >= absGridKw)
+            ? Math.max(subloadsTotalKw, rawSensorKw - absGridKw)
+            : Math.max(subloadsTotalKw, rawSensorKw);
+          const maxPossibleExport = Math.max(0, totalGenKw - batInKw - effectiveHouseKw - nonEssKw - carKw);
+          if (absGridKw > (maxPossibleExport + 0.3)) {
+            absGridKw = Math.max(thresholdKw, maxPossibleExport);
+            if (absGridKw < thresholdKw) {
+              isExport = false;
+              absGridKw = 0;
+            }
+          }
         }
       }
     }
@@ -4346,9 +4375,15 @@ export class EnergyStationCard extends HTMLElement {
     if (gridNode) {
       if (!isGridConnected) {
         gridNode.classList.remove('glow-grid');
+        gridNode.classList.remove('glow-grid-export');
         gridNode.style.borderColor = 'rgba(239, 68, 68, 0.45)';
+      } else if (isExport) {
+        gridNode.classList.add('glow-grid');
+        gridNode.classList.add('glow-grid-export');
+        gridNode.style.borderColor = 'rgba(52, 211, 153, 0.5)';
       } else {
         gridNode.classList.add('glow-grid');
+        gridNode.classList.remove('glow-grid-export');
         gridNode.style.borderColor = 'rgba(56, 189, 248, 0.4)';
       }
     }
@@ -4374,6 +4409,16 @@ export class EnergyStationCard extends HTMLElement {
     // 7. Inverter Self-Consumption & Essential House Loads Balance
     const gridInKw = isImport ? absGridKw : 0;
     const gridOutKw = isExport ? absGridKw : 0;
+
+    // Separate export power from the house load sensor if exporting
+    // (In Deye / Sunsynk inverters, Inverter Load Power includes grid export during selling)
+    let separatedSensorKw = rawSensorKw;
+    if (c.load?.separate_export !== false && isExport && gridOutKw > 0) {
+      if (rawSensorKw >= (gridOutKw - 0.05)) {
+        separatedSensorKw = Math.max(0, rawSensorKw - gridOutKw);
+      }
+    }
+
     const totalInflowKw = totalSolarKw + totalWindKw + (auxKw > 0 ? auxKw : 0) + gridInKw + batOutKw;
     const totalOutflowKnownKw = batInKw + gridOutKw + nonEssKw + carKw;
     const netAvailableKw = Math.max(0, totalInflowKw - totalOutflowKnownKw);
@@ -4390,8 +4435,8 @@ export class EnergyStationCard extends HTMLElement {
     let selfConsumptionKw = 0;
 
     if (hasValidPositiveSensor) {
-      // Physical sensor is valid and positive: use the measured load directly!
-      essentialKw = Math.max(subloadsTotalKw, rawSensorKw);
+      // Physical sensor is valid and positive: use the separated house load!
+      essentialKw = Math.max(subloadsTotalKw, separatedSensorKw);
 
       if (measuredSelfKw !== null) {
         selfConsumptionKw = measuredSelfKw;
@@ -5369,9 +5414,15 @@ export class EnergyStationCard extends HTMLElement {
     const fGrid = this.shadowRoot.getElementById('pathGridInvFlow');
     const pwrGrid = Math.abs(gridKw);
     const thresholdKw = (c.grid?.min_power_threshold !== undefined ? c.grid.min_power_threshold : 50) / 1000;
-    const sellingEnabled = c.grid?.selling_enabled === true;
+    const sGridExpDaily = this._getEntityState(c.grid?.export_daily_entity);
+    const hasDailyExport = sGridExpDaily && typeof sGridExpDaily.val === 'number' && sGridExpDaily.val > 0.01;
+    const sSellCtrl = this._getEntityState(c.controls?.sell_power_entity);
+    const hasSellPowerSet = sSellCtrl && typeof sSellCtrl.val === 'number' && sSellCtrl.val > 0;
+    const sellingEnabled = (c.grid?.selling_enabled !== false) || hasDailyExport || hasSellPowerSet;
+
     const isGridFlowActive = animEnabled && pwrGrid >= thresholdKw && (isImport || (isExport && sellingEnabled));
-    this._applyFlowAnimation(fGrid, 'flow-grid', isExport, calcSpeed(gridKw, 10.0), isGridFlowActive);
+    const gridFlowClass = isExport ? 'flow-grid exporting' : 'flow-grid';
+    this._applyFlowAnimation(fGrid, gridFlowClass, isExport, calcSpeed(gridKw, 10.0), isGridFlowActive);
 
     // 2. Solar -> Inverter
     const fSolar = this.shadowRoot.getElementById('pathSolarInvFlow');

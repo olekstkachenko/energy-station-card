@@ -193,7 +193,7 @@ export const DEFAULT_CONFIG = {
     voltage_threshold: 90, // поріг напруги (В), нижче якого мережа вважається вимкненою (блекаут)
     import_daily_entity: 'sensor.deye_12k_inverter_daily_energy_bought',
     export_daily_entity: 'sensor.deye_12k_inverter_daily_energy_sold',
-    selling_enabled: false, // чи продає станція в мережу (Зелений тариф / Net billing). Якщо false — анімація та розрахунок продажу ЗАВЖДИ вимкнені!
+    selling_enabled: true, // чи продає станція в мережу (Зелений тариф / Net billing). За замовчуванням увімкнено!
     power_sign: 'deye', // 'deye' (+ = Імпорт, - = Експорт) | 'inverted' (+ = Експорт, - = Імпорт)
     min_power_threshold: 50, // Watts (нижче цього значення анімація вимикається)
     invert_power: false,

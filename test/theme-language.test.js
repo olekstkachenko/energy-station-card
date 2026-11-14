@@ -603,6 +603,70 @@ test('Energy Station Card - Theme & Language Customization', async (t) => {
     assert.strictEqual(domMap.inverterSelfConsumptionVal.innerText, '100 Вт');
   });
 
+  await t.test('end-to-end DOM verification: displays genuine solar export (selling to grid) and separates export from house load (exact user screenshot scenario)', () => {
+    const card = new EnergyStationCard();
+    card._config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    card._language = 'uk';
+
+    const domMap = {};
+    card._nodes = new Proxy(domMap, {
+      get: (target, prop) => {
+        if (!(prop in target)) target[prop] = dummyNode();
+        return target[prop];
+      }
+    });
+
+    card.shadowRoot.getElementById = (id) => {
+      if (!domMap[id]) domMap[id] = dummyNode();
+      return domMap[id];
+    };
+
+    // User Scenario from screenshot:
+    // PV 1: 1508 W, PV 2: 1114 W, PV 3: 997 W (Total 3.619 kW)
+    // Battery: 146 W discharge (+146 W)
+    // Wind: 20 W + 3 W = 23 W
+    // Inverter telemetry: 238.90 V, 4.86 A (P = 1.161 kW export)
+    // Daily export: 1.00 kWh (+5.30 грн), Sell Power: 4000 W
+    // Load Sensor: 3569 W (3.569 kW total AC bridge output including export)
+    // Boiler: 1367 W (1.367 kW subload)
+    card._hass = {
+      states: {
+        'sensor.deye_12k_inverter_pv1_power': { state: '1508', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_12k_inverter_pv2_power': { state: '1114', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_12k_inverter_pv3_power': { state: '997', attributes: { unit_of_measurement: 'W' } },
+        'sensor.wind_turbine_1_power': { state: '20', attributes: { unit_of_measurement: 'W' } },
+        'sensor.wind_turbine_2_power': { state: '3', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_12k_inverter_battery_power': { state: '146', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_12k_inverter_grid_voltage': { state: '238.90', attributes: { unit_of_measurement: 'V' } },
+        'sensor.deye_12k_inverter_grid_current': { state: '4.86', attributes: { unit_of_measurement: 'A' } },
+        'sensor.deye_12k_inverter_total_grid_power': { state: '-1161', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_12k_inverter_load_power': { state: '3569', attributes: { unit_of_measurement: 'W' } },
+        'sensor.boiler_power': { state: '1367', attributes: { unit_of_measurement: 'W' } },
+        'sensor.deye_12k_inverter_daily_energy_sold': { state: '1.00', attributes: { unit_of_measurement: 'kWh' } },
+        'number.deye_12k_inverter_export_surplus_power': { state: '4000' }
+      }
+    };
+
+    card._updateValues();
+
+    // 1. Grid MUST display export: 1.161 кВт
+    assert.strictEqual(domMap.gridPowerVal.innerText, '1.161 кВт');
+    assert.strictEqual(domMap.gridDirectionLabel.innerText, '← Експорт');
+    assert.strictEqual(domMap.gridPowerVal.style.color, '#34d399');
+
+    // 2. House Load MUST separate export from total load: 3.569 - 1.161 = 2.408 кВт
+    assert.strictEqual(domMap.essentialPowerVal.innerText, '2.408 кВт');
+
+    // 3. Inverter self consumption absorbs remaining: 3.788 - (2.408 + 1.161) = 0.219 kW = 219 W
+    assert.strictEqual(domMap.inverterSelfConsumptionVal.innerText, '219 Вт');
+
+    // 4. Test failsafe when total_grid_power sensor is 0 W but physical mains telemetry has 4.86 A at 238.9 V
+    card._hass.states['sensor.deye_12k_inverter_total_grid_power'] = { state: '0', attributes: { unit_of_measurement: 'W' } };
+    card._updateValues();
+    assert.strictEqual(domMap.gridPowerVal.innerText, '1.161 кВт');
+    assert.strictEqual(domMap.gridDirectionLabel.innerText, '← Експорт');
+  });
+
   await t.test('dedicated edit button opens card editor via hui-card-options or redirects to ?edit=1', () => {
     const card = new EnergyStationCard();
     let editCalled = false;
