@@ -7,6 +7,7 @@ import {
   hourMapToSlots,
   extractOutageIntervals,
   computeOutageSummary,
+  fetchOutageSchedule,
   renderOutageWidgetHtml,
   getOutageWidgetStyles
 } from '../src/card/outage-schedule.js';
@@ -189,6 +190,42 @@ describe('Outage Schedule Module - Kyiv Oblast Group 6.1', () => {
     }, (k) => k);
     assert.strictEqual(miniGroupEl.textContent, '🕯️ Група 6.1');
     assert.strictEqual(miniStatusEl.textContent, '🟢 До відкл. 4 год');
+  });
+
+  test('fetchOutageSchedule appends time bucket to bust browser/webview disk cache', async () => {
+    let requestedUrl = null;
+    let requestOptions = null;
+    const fakeFetch = async (url, opts) => {
+      requestedUrl = url;
+      requestOptions = opts;
+      return {
+        ok: true,
+        json: async () => ({ regionId: 'kyiv-region', fact: { data: {} } })
+      };
+    };
+
+    const data = await fetchOutageSchedule('kyiv-region', fakeFetch, false);
+    assert.ok(data);
+    assert.ok(requestedUrl.includes('https://raw.githubusercontent.com/Baskerville42/outage-data-ua/main/data/kyiv-region.json?t='));
+    assert.strictEqual(requestOptions.cache, 'no-cache');
+  });
+
+  test('computeOutageSummary detects emergency shutdowns in attention text and falls back subgroup', () => {
+    const mockEmergencyJson = {
+      attention: {
+        text: 'Увага! В області введені екстрені відключення. Графіки тимчасово не діють.'
+      },
+      fact: {
+        data: [] // Empty array during emergency
+      }
+    };
+
+    const summary = computeOutageSummary(mockEmergencyJson, { region: 'kyiv-region', group: '6' });
+    assert.strictEqual(summary.isEmergency, true);
+    assert.ok(summary.attentionText.includes('екстрені відключення'));
+
+    const html = renderOutageWidgetHtml(summary, { lang: 'uk' });
+    assert.ok(html.includes('Екстрені відключення: графіки тимчасово не діють'));
   });
 });
 

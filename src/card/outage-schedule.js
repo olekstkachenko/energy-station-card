@@ -235,17 +235,27 @@ export function computeOutageSummary(json, outageCfg = {}, now = new Date(), haI
   let isFactToday = false;
   let isFactTomorrow = false;
 
+  const attentionText = typeof json?.attention?.text === 'string' ? json.attention.text.trim() : '';
+  const isEmergency = Boolean(
+    attentionText && (
+      attentionText.toLowerCase().includes('екстрен') ||
+      attentionText.toLowerCase().includes('аварійн') ||
+      attentionText.toLowerCase().includes('не діють')
+    )
+  );
+
   const showTomorrow = nowInfo.hour >= 22;
 
-  if (json?.fact?.data && typeof json.fact.data === 'object') {
+  if (json?.fact?.data && typeof json.fact.data === 'object' && !Array.isArray(json.fact.data)) {
     for (const [tsKey, groupsObj] of Object.entries(json.fact.data)) {
       if (!groupsObj || typeof groupsObj !== 'object') continue;
       const dayDate = unixSecToKyivDateStr(tsKey);
-      if (dayDate === nowInfo.dateStr && groupsObj[groupKey]) {
-        todayHourMap = groupsObj[groupKey];
+      const groupData = groupsObj[groupKey] || groupsObj[`${groupKey}.1`] || groupsObj[`${groupKey}.2`];
+      if (dayDate === nowInfo.dateStr && groupData) {
+        todayHourMap = groupData;
         isFactToday = true;
-      } else if (showTomorrow && dayDate === nowInfo.tomorrowDateStr && groupsObj[groupKey]) {
-        tomorrowHourMap = groupsObj[groupKey];
+      } else if (showTomorrow && dayDate === nowInfo.tomorrowDateStr && groupData) {
+        tomorrowHourMap = groupData;
         isFactTomorrow = true;
       }
     }
@@ -253,8 +263,14 @@ export function computeOutageSummary(json, outageCfg = {}, now = new Date(), haI
 
   // Preset weekly schedule fallback for today only when fact is not yet published.
   // Tomorrow schedule is intentionally hidden before 22:00 Kyiv time and requires updated fact data.
-  if (!todayHourMap && json?.preset?.data?.[groupKey]?.[nowInfo.weekdayIso]) {
-    todayHourMap = json.preset.data[groupKey][nowInfo.weekdayIso];
+  if (!todayHourMap) {
+    const presetObj = json?.preset?.data;
+    if (presetObj && typeof presetObj === 'object') {
+      const presetGroup = presetObj[groupKey] || presetObj[`${groupKey}.1`] || presetObj[`${groupKey}.2`];
+      if (presetGroup?.[nowInfo.weekdayIso]) {
+        todayHourMap = presetGroup[nowInfo.weekdayIso];
+      }
+    }
   }
 
   const hasData = Boolean(todayHourMap);
@@ -292,6 +308,8 @@ export function computeOutageSummary(json, outageCfg = {}, now = new Date(), haI
     hasData,
     isFactToday,
     isFactTomorrow,
+    isEmergency,
+    attentionText,
     todayDateStr: nowInfo.dateStr,
     tomorrowDateStr: nowInfo.tomorrowDateStr,
     currentSlotIndex: nowInfo.slotIndex,
@@ -347,10 +365,13 @@ export async function fetchOutageSchedule(region = 'kyiv-region', fetchFn = glob
   }
 
   const file = OUTAGE_REGIONS[regionId].jsonFile;
-  const url = `${OUTAGE_DATA_BASE_URL}/${file}${force ? `?t=${nowMs}` : ''}`;
+  // Use a 5-minute time bucket (or exact ms when forced) to ensure browser and WebView disk caches
+  // never freeze on stale schedules (e.g. past days like 17.11)
+  const bucket = Math.floor(nowMs / (5 * 60 * 1000));
+  const url = `${OUTAGE_DATA_BASE_URL}/${file}?t=${force ? nowMs : bucket}`;
 
   try {
-    const res = await fetchFn(url, { cache: force ? 'no-store' : 'default' });
+    const res = await fetchFn(url, { cache: force ? 'no-store' : 'no-cache' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     _scheduleCache.set(regionId, { data, fetchedAt: nowMs });
@@ -780,6 +801,14 @@ export function renderOutageWidgetHtml(summary, opts = {}) {
     countdownText = isEn ? 'No changes expected today' : 'Без змін до кінця доби';
   }
 
+  // Official DTEK emergency warning
+  let emergencyHtml = '';
+  if (summary.isEmergency) {
+    emergencyHtml = `<div class="es-outage-grid-verify warn es-mono" title="${summary.attentionText}">
+      <span>🚨 ${isEn ? 'Emergency Outages: Schedules Suspended' : 'Екстрені відключення: графіки тимчасово не діють'}</span>
+    </div>`;
+  }
+
   // Physical grid verification badge
   let verifyHtml = '';
   if (summary.isGridBlackout === true && summary.currentStatus === 'on') {
@@ -857,6 +886,7 @@ export function renderOutageWidgetHtml(summary, opts = {}) {
         <div class="es-outage-countdown es-mono">${countdownText}</div>
       </div>
 
+      ${emergencyHtml}
       ${verifyHtml}
 
       <div class="es-outage-timeline-wrap">
